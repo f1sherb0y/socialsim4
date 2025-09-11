@@ -1,6 +1,6 @@
-from agent import Agent
-from event import PublicEvent
-from simulator import Simulator
+from socialsimv4.core.agent import Agent
+from socialsimv4.core.event import PublicEvent
+from socialsimv4.core.simulator import Simulator
 
 
 class Scene:

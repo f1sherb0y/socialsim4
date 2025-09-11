@@ -2,7 +2,7 @@ import json
 import re
 
 import openai
-from memory import ShortTermMemory
+from socialsimv4.core.memory import ShortTermMemory
 
 # 假设的最大上下文字符长度（可调整，根据模型实际上下文窗口）
 MAX_CONTEXT_CHARS = 100000000

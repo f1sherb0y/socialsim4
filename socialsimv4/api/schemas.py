@@ -19,7 +19,7 @@ class User(UserBase):
     is_sso: Optional[bool] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Token(BaseModel):
@@ -58,7 +58,7 @@ class ProviderCreate(ProviderBase):
 
 class Provider(ProviderBase):
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProfilePlanReq(BaseModel):

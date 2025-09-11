@@ -1,5 +1,4 @@
-from event import Event, StatusEvent
-
+from socialsimv4.core.event import Event, StatusEvent
 from socialsimv4.core.agent import Agent
 
 
