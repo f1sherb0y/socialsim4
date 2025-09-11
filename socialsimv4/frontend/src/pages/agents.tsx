@@ -25,8 +25,11 @@ import backgroundImage from '@/assets/Untitled.png'
 
 // Common default values for Agent properties to fix TypeScript errors
 const agentDefaults = {
-    daily_plan_req: '',
-    bibliography: '',
+    user_profile: '',
+    style: '',
+    initial_instruction: '',
+    role_prompt: '',
+    action_space: ['send_message'],
 };
 
 export const AgentsPage = () => {
@@ -47,20 +50,8 @@ export const AgentsPage = () => {
 
     const validateAgent = (agent: apis.Agent) => {
         const agentErrors: { [field: string]: string } = {};
-        if (!agent.first_name || agent.first_name.trim() === '') {
-            agentErrors['first_name'] = 'First name is required.';
-        }
-        if (!agent.last_name || agent.last_name.trim() === '') {
-            agentErrors['last_name'] = 'Last name is required.';
-        }
-        if (!agent.innate || agent.innate.trim() === '') {
-            agentErrors['innate'] = 'Innate characteristics are required.';
-        }
-        if (!agent.daily_plan_req || agent.daily_plan_req.trim() === '') {
-            agentErrors['daily_plan_req'] = 'Daily plan requirements are required.';
-        }
-        if (!agent.learned || agent.learned.trim() === '') {
-            agentErrors['learned'] = 'Learned information is required.';
+        if (!agent.name || agent.name.trim() === '') {
+            agentErrors['name'] = 'Name is required.';
         }
         return agentErrors;
     };
@@ -82,11 +73,14 @@ export const AgentsPage = () => {
         const fetchTemplate = async () => {
             try {
                 if (ctx.data.templateCode && !ctx.data.currentTemplate) {
-                    const templateData = await apis.fetchTemplate(ctx.data.templateCode);
-                    ctx.setData({
-                        ...ctx.data,
-                        currentTemplate: templateData,
-                    });
+                    const templateId = parseInt(ctx.data.templateCode, 10);
+                    if (!isNaN(templateId)) {
+                        const templateData = await apis.fetchTemplate(templateId);
+                        ctx.setData({
+                            ...ctx.data,
+                            currentTemplate: templateData,
+                        });
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch template detail:", err);
@@ -97,15 +91,22 @@ export const AgentsPage = () => {
     }, []);
 
     useEffect(() => {
-        if (ctx.data.currentTemplate?.personas) {
-            const agentsWithId = ctx.data.currentTemplate.personas.map((agent, index) => ({
-                ...agent,
-                id: index + 1,
-            }));
-            setAgents(agentsWithId);
-            setNextAgentNumber(agentsWithId.length + 1);
-            if (agentsWithId.length > 0 && !selectedAgentId) {
-                setSelectedAgentId(agentsWithId[0].id);
+        if (ctx.data.currentTemplate?.template_json) {
+            try {
+                const templateJson = JSON.parse(ctx.data.currentTemplate.template_json);
+                if (templateJson.agents) {
+                    const agentsWithId = templateJson.agents.map((agent: apis.Agent, index: number) => ({
+                        ...agent,
+                        id: index + 1,
+                    }));
+                    setAgents(agentsWithId);
+                    setNextAgentNumber(agentsWithId.length + 1);
+                    if (agentsWithId.length > 0 && !selectedAgentId) {
+                        setSelectedAgentId(agentsWithId[0].id);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to parse template_json:", error);
             }
         }
     }, [ctx.data.currentTemplate]);
@@ -126,12 +127,7 @@ export const AgentsPage = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (localAgent) {
             const { name, value } = e.target;
-            let updatedAgent = { ...localAgent, [name]: value };
-
-            if (name === 'first_name' || name === 'last_name') {
-                updatedAgent.name = `${updatedAgent.first_name} ${updatedAgent.last_name}`.trim();
-            }
-
+            const updatedAgent = { ...localAgent, [name]: value };
             setLocalAgent(updatedAgent);
 
             setAgents(prevAgents =>
@@ -167,14 +163,6 @@ export const AgentsPage = () => {
         const newAgent: apis.Agent & { id: number } = {
             id: newId,
             name: newName,
-            first_name: 'Agent',
-            last_name: `${newId}`,
-            age: 0,
-            innate: '',
-            learned: '',
-            currently: '',
-            lifestyle: '',
-            living_area: '',
             ...agentDefaults,
         };
 
@@ -206,26 +194,24 @@ export const AgentsPage = () => {
             const { [agentId]: _, ...rest } = prevErrors;
             return rest;
         });
-
-        if (updatedAgents.length === 0) {
-            ctx.setData({
-                ...ctx.data,
-                currentTemplate: ctx.data.currentTemplate ? {
-                    ...ctx.data.currentTemplate,
-                    personas: []
-                } : undefined
-            });
-        }
     };
 
     const updateContextPersonas = (updatedAgents: (apis.Agent & { id: number })[]) => {
-        ctx.setData({
-            ...ctx.data,
-            currentTemplate: ctx.data.currentTemplate ? {
-                ...ctx.data.currentTemplate,
-                personas: updatedAgents.map(({ id, ...agent }) => agent)
-            } : undefined
-        });
+        if (ctx.data.currentTemplate) {
+            try {
+                const templateJson = JSON.parse(ctx.data.currentTemplate.template_json);
+                templateJson.agents = updatedAgents.map(({ id, ...agent }) => agent);
+                ctx.setData({
+                    ...ctx.data,
+                    currentTemplate: {
+                        ...ctx.data.currentTemplate,
+                        template_json: JSON.stringify(templateJson, null, 2),
+                    }
+                });
+            } catch (error) {
+                console.error("Failed to update template_json:", error);
+            }
+        }
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -508,87 +494,58 @@ export const AgentsPage = () => {
                                             <h1 className="text-3xl font-bold">{`${localAgent.name}`}</h1>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">姓氏</label>
-                                            <Input
-                                                name="first_name"
-                                                value={localAgent.first_name}
-                                                onChange={handleInputChange}
-                                                placeholder="First Name"
-                                                className={`w-full ${errors[localAgent.id]?.first_name ? 'border-red-500' : ''}`}
-                                            />
-                                            {errors[localAgent.id]?.first_name && <p className="text-red-500 text-sm mt-1">{errors[localAgent.id]?.first_name}</p>}
-                                        </div>
+                                    <div className="space-y-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">名字</label>
                                             <Input
-                                                name="last_name"
-                                                value={localAgent.last_name}
+                                                name="name"
+                                                value={localAgent.name}
                                                 onChange={handleInputChange}
-                                                placeholder="Last Name"
-                                                className={`w-full ${errors[localAgent.id]?.last_name ? 'border-red-500' : ''}`}
+                                                placeholder="Agent Name"
+                                                className={`w-full ${errors[localAgent.id]?.name ? 'border-red-500' : ''}`}
                                             />
-                                            {errors[localAgent.id]?.last_name && <p className="text-red-500 text-sm mt-1">{errors[localAgent.id]?.last_name}</p>}
+                                            {errors[localAgent.id]?.name && <p className="text-red-500 text-sm mt-1">{errors[localAgent.id]?.name}</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">年龄</label>
-                                            <Input name="age" type="number" value={localAgent.age} onChange={handleInputChange} placeholder="Age" className="w-full" />
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">用户资料</label>
+                                            <AutoResizeTextarea
+                                                name="user_profile"
+                                                value={localAgent.user_profile || ''}
+                                                onChange={handleInputChange}
+                                                placeholder="User Profile"
+                                                className="w-full min-h-[80px]"
+                                            />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">生活方式</label>
-                                            <Input name="lifestyle" value={localAgent.lifestyle} onChange={handleInputChange} placeholder="Lifestyle" className="w-full" />
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">风格</label>
+                                            <Input
+                                                name="style"
+                                                value={localAgent.style || ''}
+                                                onChange={handleInputChange}
+                                                placeholder="Style"
+                                                className="w-full"
+                                            />
                                         </div>
-                                    </div>
-                                    <div className="mt-6">
-                                        <div className="flex items-center align-center space-x-2 mb-1 relative">
-                                            <label className="block text-sm font-medium text-gray-700">每日计划要求</label>
-                                            <InfoTooltip message="详细描述智能体的日常活动安排，包括工作时间、休息时间以及其他日常活动。这将决定智能体在仿真中的行为模式。" />
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">初始指令</label>
+                                            <AutoResizeTextarea
+                                                name="initial_instruction"
+                                                value={localAgent.initial_instruction || ''}
+                                                onChange={handleInputChange}
+                                                placeholder="Initial Instruction"
+                                                className="w-full min-h-[80px]"
+                                            />
                                         </div>
-                                        <AutoResizeTextarea
-                                            name="daily_plan_req"
-                                            value={localAgent.daily_plan_req || ''}
-                                            onChange={handleInputChange}
-                                            placeholder="Daily Plan Requirements"
-                                            className={`w-full min-h-[80px] ${errors[localAgent.id]?.daily_plan_req ? 'border-red-500' : ''}`}
-                                        />
-                                        {errors[localAgent.id]?.daily_plan_req && <p className="text-red-500 text-sm mt-1">{errors[localAgent.id]?.daily_plan_req}</p>}
-                                    </div>
-                                    <div className="mt-6">
-                                        <div className="flex items-center align-center space-x-2 mb-1 relative">
-                                            <label className="block text-sm font-medium text-gray-700">内在性格</label>
-                                            <InfoTooltip message="描述智能体的性格特点和个性特征，如友好、内向、分析型等。这些特征将影响智能体的交互方式和决策过程。" />
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">角色提示</label>
+                                            <AutoResizeTextarea
+                                                name="role_prompt"
+                                                value={localAgent.role_prompt || ''}
+                                                onChange={handleInputChange}
+                                                placeholder="Role Prompt"
+                                                className="w-full min-h-[80px]"
+                                            />
                                         </div>
-                                        <AutoResizeTextarea
-                                            name="innate"
-                                            value={localAgent.innate}
-                                            onChange={handleInputChange}
-                                            placeholder="Innate Characteristics"
-                                            className={`w-full min-h-[80px] ${errors[localAgent.id]?.innate ? 'border-red-500' : ''}`}
-                                        />
-                                        {errors[localAgent.id]?.innate && <p className="text-red-500 text-sm mt-1">{errors[localAgent.id]?.innate}</p>}
-                                    </div>
-                                    <div className="mt-6">
-                                        <div className="flex items-center align-center space-x-2 mb-1 relative">
-                                            <label className="block text-sm font-medium text-gray-700">当前处境</label>
-                                            <InfoTooltip message="描述智能体的背景、职业、知识储备以及当前生活状况。这些信息将帮助智能体在仿真环境中做出更真实的决策。" />
-                                        </div>
-                                        <AutoResizeTextarea
-                                            name="learned"
-                                            value={localAgent.learned}
-                                            onChange={handleInputChange}
-                                            placeholder="Learned Information"
-                                            className={`w-full min-h-[80px] ${errors[localAgent.id]?.learned ? 'border-red-500' : ''}`}
-                                        />
-                                        {errors[localAgent.id]?.learned && <p className="text-red-500 text-sm mt-1">{errors[localAgent.id]?.learned}</p>}
-                                    </div>
-                                    <div className="mt-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">居住区域</label>
-                                        <Input name="living_area" value={localAgent.living_area} onChange={handleInputChange} placeholder="Living Area" className="w-full" />
-                                    </div>
-                                    <div className="mt-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">生平</label>
-                                        <AutoResizeTextarea name="bibliography" value={localAgent.bibliography || ''} onChange={handleInputChange} placeholder="Bibliography" className="w-full min-h-[80px]" />
                                     </div>
                                 </div>
                             )}

@@ -22,22 +22,11 @@ async def register(user_data: schemas.UserCreate, db: AsyncSession = Depends(dat
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
 
-    hashed_password = auth.get_password_hash(user_data.password)
-
-    new_user = database.User(
-        username=user_data.username,
-        email=user_data.email,
-        full_name=user_data.full_name,
-        hashed_password=hashed_password,
-    )
-
     try:
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
+        new_user = await auth.create_user(db=db, user=user_data)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     return new_user
 

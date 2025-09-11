@@ -1,10 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, create_engine
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    create_engine,
+)
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Float, Boolean, ForeignKey
-from . import config
+from sqlalchemy.sql import func
 
+from socialsimv4.api import config
 
 connect_args = {}
 if config.DATABASE_URL.startswith("sqlite"):
@@ -21,7 +31,14 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    full_name = Column(String, index=True)
+    institution = Column(String, index=True)
     hashed_password = Column(String)
+    registration_time = Column(DateTime(timezone=True), server_default=func.now())
+    disabled = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False)
+    is_sso = Column(Boolean, default=False)
 
 
 class SimulationTemplate(Base):
@@ -31,7 +48,8 @@ class SimulationTemplate(Base):
     name = Column(String, index=True)
     description = Column(Text)
     template_json = Column(Text)
-    owner_id = Column(Integer)
+    owner_id = Column(Integer, nullable=True)  # Nullable for public templates
+    is_public = Column(Boolean, default=False)
 
 
 class Provider(Base):
@@ -63,6 +81,7 @@ class Feedback(Base):
 async def create_db_and_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 async def get_db():
     async with async_session() as session:

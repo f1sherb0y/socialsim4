@@ -59,7 +59,21 @@ async def get_current_user(db: AsyncSession = Depends(database.get_db), token: s
         raise credentials_exception
     return user
 
-async def get_current_active_user(current_user: schemas.User = Depends(get_current_user)):
+async def get_current_active_user(current_user: database.User = Depends(get_current_user)):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+    return schemas.User.from_orm(current_user)
+
+async def create_user(db: AsyncSession, user: schemas.UserCreate):
+    hashed_password = get_password_hash(user.password)
+    db_user = database.User(
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        institution=user.institution,
+        hashed_password=hashed_password
+    )
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user

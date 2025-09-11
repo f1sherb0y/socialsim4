@@ -38,8 +38,7 @@ export const EventsPage = () => {
     const [selectedEvent, setSelectedEvent] = useState<(Event & { id: number }) | null>(null);
     const [nextEventId, setNextEventId] = useState(1);
     const [eventDescriptionError, setEventDescriptionError] = useState('');
-    const [workflow, setWorkflow] = useState<Record<string, apis.Stage>>(
-        ctx.data.currentTemplate?.workflow || {
+    const workflow = {
             "plan": {
                 task: "",
                 output_format: {
@@ -54,8 +53,7 @@ export const EventsPage = () => {
                     "decision": ""
                 }
             }
-        }
-    )
+        };
 
     useEffect(() => {
         if (events && events.length > 0) {
@@ -88,7 +86,7 @@ export const EventsPage = () => {
 
             if (experimentName.trim() === '') {
                 newErrors.experimentName = '实验名称不能为空';
-            } else if (ctx.data.allTemplates?.map(t => t.template_sim_code).includes(experimentName)) {
+            } else if (ctx.data.allTemplates?.map(t => t.name).includes(experimentName)) {
                 newErrors.experimentName = '实验名称已存在';
             } else if (ctx.data.allEnvs.includes(experimentName)) {
                 newErrors.experimentName = '实验名称已存在';
@@ -116,7 +114,7 @@ export const EventsPage = () => {
     };
 
     const updateWorkflow = (value: Record<string, apis.Stage>) => {
-        setWorkflow(value);
+        // setWorkflow(value);
         ctx.setData({
             ...ctx.data,
             currentTemplate: ctx.data.currentTemplate ? {
@@ -144,12 +142,10 @@ export const EventsPage = () => {
 
     const isFormValid = () => {
         const numValue = parseInt(replicateCount, 10);
-        const allEventDescriptionsFilled = events?.every(event => event.description.trim() !== '');
         return experimentName.trim() !== '' &&
             !isNaN(numValue) &&
             numValue >= 0 &&
-            !ctx.data.allTemplates?.map(t => t.template_sim_code).includes(experimentName) &&
-            allEventDescriptionsFilled && !ctx.data.allEnvs.includes(experimentName);
+            !ctx.data.allEnvs.includes(experimentName);
     };
 
     const addNewEvent = () => {
@@ -220,8 +216,8 @@ export const EventsPage = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                if (ctx.data.templateCode && !ctx.data.currentTemplate) {
-                    const templateData = await apis.fetchTemplate(ctx.data.templateCode);
+                if (ctx.data.templateId && !ctx.data.currentTemplate) {
+                    const templateData = await apis.fetchTemplate(ctx.data.templateId);
                     const events = templateData.events.map((value, index) => ({
                         ...value,
                         id: index + 1,
@@ -236,7 +232,6 @@ export const EventsPage = () => {
                         }
                     });
                     setEvents(events);
-                    setWorkflow(templateData.workflow);
                 }
             } catch (err) {
                 console.error("Failed to fetch template detail:", err);
@@ -300,7 +295,7 @@ export const EventsPage = () => {
                                 <div className="flex flex-col flex-grow flex" >
                                     <h3 className="text-lg font-semibold text-gray-700 mb-3">流程设计</h3>
                                     <FlowchartCanvas
-                                        workflow={workflow || {}}
+                                        workflow={workflow}
                                         onUpdate={updateWorkflow}
                                     />
                                 </div>

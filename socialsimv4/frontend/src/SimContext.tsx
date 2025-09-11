@@ -21,8 +21,9 @@ export interface SimContext {
     isRunning: boolean;
     isStarted: boolean;
     templateCode: string | undefined;
+    templateId: number | undefined;
     currSimCode: string | undefined;
-    allTemplates: apis.TemplateListItem[] | undefined;
+    allTemplates: apis.DBTemplate[] | undefined;
     currentTemplate: apis.Template | undefined;
     agents: { [agentName: string]: apis.Agent },
     llmProviders: Record<string, apis.LLMConfig> | undefined;
@@ -46,6 +47,7 @@ export const SimContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isStarted: false,
         currSimCode: "",
         templateCode: "",
+        templateId: undefined,
         agents: {},
         allTemplates: [],
         currentTemplate: undefined,

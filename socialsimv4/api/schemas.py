@@ -1,12 +1,13 @@
 from typing import Optional, List
-
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class UserBase(BaseModel):
     username: str
     email: Optional[str] = None
     full_name: Optional[str] = None
+    institution: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -17,6 +18,7 @@ class User(UserBase):
     disabled: Optional[bool] = None
     is_admin: Optional[bool] = None
     is_sso: Optional[bool] = None
+    registration_time: Optional[datetime] = None
 
     class Config:
         from_attributes = True

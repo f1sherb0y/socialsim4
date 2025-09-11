@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+passlib[bcrypt]
+python-jose[cryptography]
+pydantic
+aiofiles
+asyncpg
+aiosqlite
+# py-bcrypt
+psycopg2-binary

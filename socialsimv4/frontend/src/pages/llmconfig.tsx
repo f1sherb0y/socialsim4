@@ -33,7 +33,10 @@ export const ConfigPage = () => {
             const userProviders = await apis.getUserProviders();
             const defaultProviders: ProviderConfigs = {
                 chat: {
+                    usage: "chat",
+                    name: "chat",
                     kind: "chat",
+                    dialect: "",
                     base_url: "",
                     api_key: "",
                     model: "",
@@ -45,7 +48,10 @@ export const ConfigPage = () => {
                     stream: false,
                 },
                 embedding: {
+                    usage: "embedding",
+                    name: "embedding",
                     kind: "embedding",
+                    dialect: "",
                     base_url: "",
                     api_key: "",
                     model: "",
@@ -57,7 +63,10 @@ export const ConfigPage = () => {
                     stream: false,
                 },
                 completion: {
+                    usage: "completion",
+                    name: "completion",
                     kind: "completion",
+                    dialect: "",
                     base_url: "",
                     api_key: "",
                     model: "",
@@ -70,7 +79,12 @@ export const ConfigPage = () => {
                 },
             };
 
-            const providersData = { ...defaultProviders, ...userProviders };
+            const providersData = userProviders.reduce((acc, provider) => {
+                acc[provider.usage] = provider;
+                return acc;
+            }, defaultProviders);
+
+
             setProviders(providersData);
             ctx.setData({ ...ctx.data, llmProviders: providersData });
             // Initialize all collapsible sections to be closed
