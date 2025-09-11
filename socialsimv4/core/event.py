@@ -1,0 +1,38 @@
+class Event:
+    def to_string(self, time=None):
+        raise NotImplementedError
+
+    def get_sender(self):
+        return None
+
+
+class MessageEvent(Event):
+    def __init__(self, sender, group, message):
+        self.sender = sender
+        self.group = group
+        self.message = message
+
+    def to_string(self, time=None):
+        time_str = f"[{time}:00] " if time is not None else ""
+        return f"{time_str}Message: Sender={self.sender} | Group={self.group} | {self.message}"
+
+    def get_sender(self):
+        return self.sender
+
+
+class PublicEvent(Event):
+    def __init__(self, content):
+        self.content = content
+
+    def to_string(self, time=None):
+        time_str = f"[{time}:00] " if time is not None else ""
+        return f"{time_str}Public Event: {self.content}"
+
+
+class StatusEvent(Event):
+    def __init__(self, status_data):
+        self.status_data = status_data
+
+    def to_string(self, time=None):
+        time_str = f"[{time}:00] " if time is not None else ""
+        return f"{time_str}Status: {self.status_data}"
