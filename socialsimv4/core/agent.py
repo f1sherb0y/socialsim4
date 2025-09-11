@@ -19,11 +19,7 @@ class Agent:
         role_prompt="",
         action_space=[],
         max_repeat=3,
-        position=None,
-        hunger=0,
-        energy=100,
-        inventory=None,
-        map_position=None,
+        **kwargs,
     ):
         self.name = name
         self.user_profile = user_profile
@@ -34,12 +30,7 @@ class Agent:
         self.short_memory = ShortTermMemory()
         self.last_history_length = 0
         self.max_repeat = max_repeat
-        self.position = position or "home"
-        self.hunger = hunger
-        self.energy = energy
-        self.inventory = inventory or {}
-        self.joined_groups = set()  # 添加joined_groups属性
-        self.map_position = map_position or position or "village_center"  # 地图位置
+        self.properties = kwargs
 
     def system_prompt(self, scenario=None):
         base = f"""
@@ -63,15 +54,14 @@ class Agent:
 """
         return base
 
-    def call_llm(self, client, messages):
-        print(f"🤖 {self.name} 正在调用LLM API...")
+    def call_llm(self, clients, messages, client_name="general"):
+        print(f"🤖 {self.name} 正在调用LLM API (client: {client_name})...")
+        client = clients.get(client_name)
+        if not client:
+            raise ValueError(f"LLM client '{client_name}' not found.")
+
         try:
-            response = client.chat.completions.create(
-                model="gemini-2.5-flash",
-                messages=messages,
-                temperature=0.7,
-            )
-            result = response.choices[0].message.content.strip()
+            result = client.chat(messages)
             print(f"✅ {self.name} API调用成功，响应长度: {len(result)} 字符")
             return result
         except Exception as e:
@@ -136,7 +126,7 @@ History:
             
         return actions
 
-    def process(self, client, initiative=False, scenario=None):
+    def process(self, clients, initiative=False, scenario=None):
         print(f"🔄 {self.name} 开始处理 (initiative={initiative})")
         current_length = len(self.short_memory)
         if current_length == self.last_history_length and not initiative:
@@ -158,7 +148,7 @@ History:
         action_data = None
         for attempt in range(self.max_repeat):
             try:
-                llm_output = self.call_llm(client, ctx)
+                llm_output = self.call_llm(clients, ctx)
                 thoughts, plan, action_block = self._parse_full_response(llm_output)
                 actions = self._parse_actions(action_block)
                 
@@ -202,31 +192,23 @@ History:
             "short_memory": self.short_memory.get_all(),
             "last_history_length": self.last_history_length,
             "max_repeat": self.max_repeat,
-            "position": self.position,
-            "hunger": self.hunger,
-            "energy": self.energy,
-            "inventory": self.inventory,
-            "joined_groups": list(self.joined_groups),
-            "map_position": self.map_position,
+            "properties": self.properties,
         }
 
     @classmethod
-    def from_dict(cls, data, action_space_map):
+    def from_dict(cls, data):
+        from .registry import ACTION_SPACE_MAP
+
         agent = cls(
             name=data["name"],
             user_profile=data["user_profile"],
             style=data["style"],
             initial_instruction=data["initial_instruction"],
             role_prompt=data["role_prompt"],
-            action_space=[action_space_map[action_name] for action_name in data["action_space"]],
+            action_space=[ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]],
             max_repeat=data["max_repeat"],
-            position=data["position"],
-            hunger=data["hunger"],
-            energy=data["energy"],
-            inventory=data["inventory"],
-            map_position=data["map_position"],
+            **data["properties"],
         )
         agent.short_memory.history = data["short_memory"]
         agent.last_history_length = data["last_history_length"]
-        agent.joined_groups = set(data["joined_groups"])
         return agent

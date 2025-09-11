@@ -4,8 +4,8 @@ from socialsimv4.core.event import StatusEvent
 
 
 class VillageScene(Scene):
-    def __init__(self, name, main_group, initial_event, time_step=1):
-        super().__init__(name, main_group, initial_event)
+    def __init__(self, name, initial_event, time_step=1):
+        super().__init__(name, initial_event)
         self.state["map"] = {
             "home": {
                 "type": "residence",
@@ -54,19 +54,26 @@ I'm getting hungry. I should go to the farm to get some food.
 {"location": "farm"}
 """
 
+    def initialize_agent(self, agent: Agent):
+        """Initializes an agent with scene-specific properties."""
+        agent.properties["hunger"] = 0
+        agent.properties["energy"] = 100
+        agent.properties["inventory"] = {}
+        agent.properties["position"] = "home"
+
     def post_round(self, simulator):
         self.state["time"] += self.time_step
         for agent in simulator.agents.values():
-            agent.hunger = min(100, agent.hunger + 5)
-            agent.energy = max(0, agent.energy - 5)
-            if agent.hunger >= 80:
-                status = f"You are very hungry (hunger: {agent.hunger}). You should eat soon."
+            agent.properties["hunger"] = min(100, agent.properties["hunger"] + 5)
+            agent.properties["energy"] = max(0, agent.properties["energy"] - 5)
+            if agent.properties["hunger"] >= 80:
+                status = f"You are very hungry (hunger: {agent.properties['hunger']}). You should eat soon."
                 agent.append_env_message(
                     StatusEvent(status).to_string(self.state.get("time") % 24)
                 )
                 self.log(f"{agent.name} is very hungry!")
-            if agent.energy <= 20:
-                status = f"You are very tired (energy: {agent.energy}). You should sleep soon."
+            if agent.properties["energy"] <= 20:
+                status = f"You are very tired (energy: {agent.properties['energy']}). You should sleep soon."
                 agent.append_env_message(
                     StatusEvent(status).to_string(self.state.get("time") % 24)
                 )
@@ -76,9 +83,9 @@ I'm getting hungry. I should go to the farm to get some food.
         time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"
         return f"""
 --- Status ---
-Current position: {agent.position}
-Hunger level: {agent.hunger}
-Energy level: {agent.energy}
-Inventory: {agent.inventory}
+Current position: {agent.properties["position"]}
+Hunger level: {agent.properties["hunger"]}
+Energy level: {agent.properties["energy"]}
+Inventory: {agent.properties["inventory"]}
 Current time: {self.state.get("time", 0)} hours ({time_of_day})
 """

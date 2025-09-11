@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import auth, database, schemas
 
 router = APIRouter()
 
 @router.post("/register", response_model=schemas.User)
-async def register(user_data: schemas.UserCreate, db: Session = Depends(database.SessionLocal)):
+async def register(user_data: schemas.UserCreate, db: AsyncSession = Depends(database.get_db)):
     db_user = await auth.get_user(db, username=user_data.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -19,13 +19,13 @@ async def register(user_data: schemas.UserCreate, db: Session = Depends(database
         hashed_password=hashed_password,
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await db.commit()
+    await db.refresh(db_user)
     return db_user
 
 @router.post("/login", response_model=schemas.Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.SessionLocal)
+    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(database.get_db)
 ):
     user = await auth.get_user(db, username=form_data.username)
     if not user or not auth.verify_password(form_data.password, user.hashed_password):

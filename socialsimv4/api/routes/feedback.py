@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from .. import auth, database, schemas
 
@@ -13,7 +14,7 @@ router = APIRouter()
 async def submit_feedback(
     feedback_data: schemas.FeedbackCreate,
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    db: Session = Depends(database.SessionLocal),
+    db: AsyncSession = Depends(database.get_db),
 ):
     new_feedback = database.Feedback(
         user_username=current_user.username,
@@ -21,15 +22,15 @@ async def submit_feedback(
         timestamp=datetime.utcnow().isoformat(),
     )
     db.add(new_feedback)
-    db.commit()
-    db.refresh(new_feedback)
+    await db.commit()
+    await db.refresh(new_feedback)
     return {"status": "success", "message": "Feedback submitted successfully."}
 
 
 @router.get("/admin/feedbacks", response_model=List[schemas.FeedbackAdminResponse])
 async def get_all_feedbacks(
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    db: Session = Depends(database.SessionLocal),
+    db: AsyncSession = Depends(database.get_db),
 ):
     if not current_user.is_admin:
         raise HTTPException(
@@ -37,9 +38,10 @@ async def get_all_feedbacks(
             detail="Not authorized to access this resource",
         )
 
-    feedbacks = (
-        db.query(database.Feedback).order_by(database.Feedback.timestamp.desc()).all()
+    result = await db.execute(
+        select(database.Feedback).order_by(database.Feedback.timestamp.desc())
     )
+    feedbacks = result.scalars().all()
 
     # This is a simplified response. In a real application, you would
     # join with the users table to get the user's email.

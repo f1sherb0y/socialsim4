@@ -4,9 +4,8 @@ from simulator import Simulator
 
 
 class Scene:
-    def __init__(self, name, main_group, initial_event):
+    def __init__(self, name, initial_event):
         self.name = name
-        self.main_group = main_group
         self.initial_event = PublicEvent(initial_event)
         self.state = {}
 
@@ -54,10 +53,13 @@ The JSON object representing your action. You can perform multiple actions in on
         """Generates a status prompt for a given agent based on the scene's state."""
         return ""
 
+    def initialize_agent(self, agent: Agent):
+        """Initializes an agent with scene-specific properties."""
+        pass
+
     def to_dict(self):
         return {
             "name": self.name,
-            "main_group": self.main_group,
             "initial_event": self.initial_event.content,
             "state": self.state,
         }
@@ -69,7 +71,6 @@ The JSON object representing your action. You can perform multiple actions in on
         # creates the correct scene type based on the data.
         scene = cls(
             name=data["name"],
-            main_group=data["main_group"],
             initial_event=data["initial_event"],
         )
         scene.state = data["state"]

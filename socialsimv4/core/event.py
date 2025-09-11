@@ -7,14 +7,13 @@ class Event:
 
 
 class MessageEvent(Event):
-    def __init__(self, sender, group, message):
+    def __init__(self, sender, message):
         self.sender = sender
-        self.group = group
         self.message = message
 
     def to_string(self, time=None):
         time_str = f"[{time}:00] " if time is not None else ""
-        return f"{time_str}Message: Sender={self.sender} | Group={self.group} | {self.message}"
+        return f"{time_str}Message: Sender={self.sender} | {self.message}"
 
     def get_sender(self):
         return self.sender

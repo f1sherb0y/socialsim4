@@ -2,7 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from .. import auth, database, schemas
 
@@ -15,16 +16,16 @@ router = APIRouter()
 async def create_provider(
     provider: schemas.ProviderCreate,
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    db: Session = Depends(database.SessionLocal),
+    db: AsyncSession = Depends(database.get_db),
 ):
     new_provider = database.Provider(**provider.dict(), username=current_user.username)
     db.add(new_provider)
     try:
-        db.commit()
-        db.refresh(new_provider)
+        await db.commit()
+        await db.refresh(new_provider)
         return new_provider
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Provider with this usage already exists for the user.",
@@ -34,33 +35,31 @@ async def create_provider(
 @router.get("/providers", response_model=List[schemas.Provider])
 async def get_providers(
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    db: Session = Depends(database.SessionLocal),
+    db: AsyncSession = Depends(database.get_db),
 ):
-    return (
-        db.query(database.Provider)
-        .filter(database.Provider.username == current_user.username)
-        .all()
+    result = await db.execute(
+        select(database.Provider).filter(database.Provider.username == current_user.username)
     )
+    return result.scalars().all()
 
 
 @router.delete("/providers/{usage}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_provider(
     usage: str,
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    db: Session = Depends(database.SessionLocal),
+    db: AsyncSession = Depends(database.get_db),
 ):
-    provider = (
-        db.query(database.Provider)
-        .filter(
+    result = await db.execute(
+        select(database.Provider).filter(
             database.Provider.username == current_user.username,
             database.Provider.usage == usage,
         )
-        .first()
     )
+    provider = result.scalar_one_or_none()
     if provider is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
         )
 
-    db.delete(provider)
-    db.commit()
+    await db.delete(provider)
+    await db.commit()

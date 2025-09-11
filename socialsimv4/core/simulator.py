@@ -5,18 +5,18 @@ from socialsimv4.core.agent import Agent
 
 class Simulator:
     def __init__(
-        self, agents, scenario, client, broadcast_initial=True, status_update_interval=1
+        self, agents, scenario, clients, broadcast_initial=True, status_update_interval=1
     ):
         self.agents = {agent.name: agent for agent in agents}  # 用dict便于查找
-        self.client = client  # OpenAI客户端
+        self.clients = clients  # Dictionary of LLM clients
         self.scenario = scenario
-        self.main_group = scenario.main_group
         self.round_num = 0
         self.status_update_interval = status_update_interval
 
-        # 让所有智能体加入主组
-        for agent in agents:
-            agent.joined_groups.add(self.main_group)
+        # Initialize agents for the scene if it's a new simulation
+        if broadcast_initial:
+            for agent in agents:
+                self.scenario.initialize_agent(agent)
 
         # 初始化所有agent的personal_history：添加初始事件作为user role if flag is True
         if broadcast_initial:
@@ -36,31 +36,32 @@ class Simulator:
         return {
             "agents": {name: agent.to_dict() for name, agent in self.agents.items()},
             "scenario": self.scenario.to_dict(),
-            "main_group": self.main_group,
             "round_num": self.round_num,
             "status_update_interval": self.status_update_interval,
         }
 
     @classmethod
-    def from_dict(cls, data, client, action_space_map):
-        # Note: client is not serialized and must be passed in.
-        # action_space_map is also required to reconstruct agents.
+    def from_dict(cls, data, clients):
+        # Note: clients are not serialized and must be passed in.
         scenario_data = data["scenario"]
         # This is a simplified example. In a real application, you would
         # have a factory function to create the correct scene type.
-        from socialsimv4.core.scene import Scene
-
-        scenario = Scene.from_dict(scenario_data)
+        from socialsimv4.core.registry import SCENE_MAP
+        scene_type = scenario_data.get("type", "map_scene")
+        scene_class = SCENE_MAP.get(scene_type)
+        if not scene_class:
+            raise ValueError(f"Unknown scene type: {scene_type}")
+        scenario = scene_class.from_dict(scenario_data)
 
         agents = [
-            Agent.from_dict(agent_data, action_space_map)
+            Agent.from_dict(agent_data)
             for agent_data in data["agents"].values()
         ]
 
         simulator = cls(
             agents=agents,
             scenario=scenario,
-            client=client,
+            clients=clients,
             broadcast_initial=False,  # Don't rebroadcast initial event
             status_update_interval=data["status_update_interval"],
         )
@@ -78,7 +79,7 @@ class Simulator:
             # 每一轮都按固定顺序处理所有agent
             for agent_name in agent_order:
                 agent = self.agents.get(agent_name)
-                if not agent or self.main_group not in agent.joined_groups:
+                if not agent:
                     continue
 
                 # First agent (Host) in first round has initiative
@@ -95,7 +96,7 @@ class Simulator:
 
                 # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
                 action_datas = agent.process(
-                    self.client, initiative=is_initiative, scenario=self.scenario
+                    self.clients, initiative=is_initiative, scenario=self.scenario
                 )
                 for action_data in action_datas:
                     if action_data:

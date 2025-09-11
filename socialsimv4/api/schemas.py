@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -81,3 +81,26 @@ class FeedbackAdminResponse(BaseModel):
     user_email: str
     feedback_text: str
     timestamp: str
+
+class LLMConfig(BaseModel):
+    name: str
+    kind: str
+    model: str
+    dialect: str
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = 4096
+    top_p: Optional[float] = 1.0
+    frequency_penalty: Optional[float] = 0.0
+    presence_penalty: Optional[float] = 0.0
+    stream: Optional[bool] = False
+
+class StartReq(BaseModel):
+    sim_code: str
+    template_id: int
+    providers: List[LLMConfig]
+
+class LoadReq(BaseModel):
+    sim_code: str
+    providers: Optional[List[LLMConfig]] = None

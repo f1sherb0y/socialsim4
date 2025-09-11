@@ -186,13 +186,12 @@ class MapScene(Scene):
     def __init__(
         self,
         name: str,
-        main_group: str,
         initial_event: str,
         map_width: int = 20,
         map_height: int = 20,
         movement_cost: int = 1,
     ):
-        super().__init__(name, main_group, initial_event)
+        super().__init__(name, initial_event)
         self.game_map = GameMap(map_width, map_height)
         self.movement_cost = movement_cost  # 移动消耗的能量
         self.state["time"] = 0
@@ -238,6 +237,13 @@ I'm getting hungry. I should go to the farm to get some food.
 {"location": "farm"}
 """
 
+    def initialize_agent(self, agent: Agent):
+        """Initializes an agent with scene-specific properties."""
+        agent.properties["hunger"] = 0
+        agent.properties["energy"] = 100
+        agent.properties["inventory"] = {}
+        agent.properties["map_position"] = "village_center"
+
     def post_round(self, simulator: Simulator):
         """每轮结束后的处理"""
         self.state["time"] += 1
@@ -245,24 +251,23 @@ I'm getting hungry. I should go to the farm to get some food.
         # 更新智能体状态
         for agent in simulator.agents.values():
             # 基础生理需求变化
-            agent.hunger = min(100, agent.hunger + 3)  # 饥饿增长慢一些
-            agent.energy = max(0, agent.energy - 2)  # 能量消耗慢一些
+            agent.properties["hunger"] = min(100, agent.properties["hunger"] + 3)
+            agent.properties["energy"] = max(0, agent.properties["energy"] - 2)
 
             # 位置状态更新
-            if hasattr(agent, "map_position"):
-                location = self.game_map.get_location(agent.map_position)
-                if location and agent.name not in location.agents_here:
-                    location.add_agent(agent.name)
+            location = self.game_map.get_location(agent.properties["map_position"])
+            if location and agent.name not in location.agents_here:
+                location.add_agent(agent.name)
 
             # 发送状态警告
-            if agent.hunger >= 70:
-                status = f"你很饿了 (饥饿: {agent.hunger})，应该寻找食物。"
+            if agent.properties["hunger"] >= 70:
+                status = f"你很饿了 (饥饿: {agent.properties['hunger']})，应该寻找食物。"
                 agent.append_env_message(
                     StatusEvent(status).to_string(self.state.get("time"))
                 )
 
-            if agent.energy <= 30:
-                status = f"你很疲惫了 (能量: {agent.energy})，应该休息或减少移动。"
+            if agent.properties["energy"] <= 30:
+                status = f"你很疲惫了 (能量: {agent.properties['energy']})，应该休息或减少移动。"
                 agent.append_env_message(
                     StatusEvent(status).to_string(self.state.get("time"))
                 )
@@ -288,10 +293,7 @@ I'm getting hungry. I should go to the farm to get some food.
         """处理移动到位置的动作"""
         target_location = action_data.get("location")
 
-        if not hasattr(agent, "map_position"):
-            agent.map_position = "village_center"  # 默认起始位置
-
-        current_pos = agent.map_position
+        current_pos = agent.properties["map_position"]
         target_loc = self.game_map.get_location(target_location)
         current_loc = self.game_map.get_location(current_pos)
 
@@ -307,9 +309,9 @@ I'm getting hungry. I should go to the farm to get some food.
         distance = self.game_map.get_path_distance(current_pos, target_location)
         energy_cost = max(1, int(distance * self.movement_cost))
 
-        if agent.energy < energy_cost:
+        if agent.properties["energy"] < energy_cost:
             agent.append_env_message(
-                f"能量不足！移动到 {target_location} 需要 {energy_cost} 能量，你只有 {agent.energy}。"
+                f"能量不足！移动到 {target_location} 需要 {energy_cost} 能量，你只有 {agent.properties['energy']}。"
             )
             return False
 
@@ -318,8 +320,8 @@ I'm getting hungry. I should go to the farm to get some food.
             current_loc.remove_agent(agent.name)
         target_loc.add_agent(agent.name)
 
-        agent.map_position = target_location
-        agent.energy -= energy_cost
+        agent.properties["map_position"] = target_location
+        agent.properties["energy"] -= energy_cost
 
         # 广播移动事件
         message = f"{agent.name} 从 {current_pos} 移动到了 {target_location}"
@@ -339,10 +341,7 @@ I'm getting hungry. I should go to the farm to get some food.
 
     def _handle_look_around(self, action_data, agent: Agent, simulator: Simulator):
         """处理查看周围的动作"""
-        if not hasattr(agent, "map_position"):
-            agent.map_position = "village_center"
-
-        current_location = self.game_map.get_location(agent.map_position)
+        current_location = self.game_map.get_location(agent.properties["map_position"])
         if not current_location:
             return False
 
@@ -368,7 +367,7 @@ I'm getting hungry. I should go to the farm to get some food.
 
         info.append("📍 附近位置:")
         for loc in nearby_locations[:6]:  # 只显示最近的6个位置
-            if loc.name != agent.map_position:
+            if loc.name != agent.properties["map_position"]:
                 distance = current_location.get_distance_to(loc.x, loc.y)
                 info.append(
                     f"  - {loc.name} (距离: {distance:.1f}) - {loc.description}"
@@ -379,13 +378,10 @@ I'm getting hungry. I should go to the farm to get some food.
 
     def _handle_gather_resource(self, action_data, agent: Agent, simulator: Simulator):
         """处理收集资源的动作"""
-        if not hasattr(agent, "map_position"):
-            agent.map_position = "village_center"
-
         resource_type = action_data.get("resource")
         amount = action_data.get("amount", 1)
 
-        current_location = self.game_map.get_location(agent.map_position)
+        current_location = self.game_map.get_location(agent.properties["map_position"])
         if not current_location or resource_type not in current_location.resources:
             agent.append_env_message(f"这里没有 {resource_type} 可以收集。")
             return False
@@ -399,25 +395,22 @@ I'm getting hungry. I should go to the farm to get some food.
 
         # 执行收集
         current_location.resources[resource_type] -= actual_amount
-        agent.inventory[resource_type] = (
-            agent.inventory.get(resource_type, 0) + actual_amount
+        agent.properties["inventory"][resource_type] = (
+            agent.properties["inventory"].get(resource_type, 0) + actual_amount
         )
 
-        message = f"{agent.name} 在 {agent.map_position} 收集了 {actual_amount} 个 {resource_type}"
+        message = f"{agent.name} 在 {agent.properties['map_position']} 收集了 {actual_amount} 个 {resource_type}"
         simulator.broadcast(PublicEvent(message))
         self.log(f"🎁 {message}")
 
         agent.append_env_message(
-            f"你收集了 {actual_amount} 个 {resource_type}。库存: {agent.inventory}"
+            f"你收集了 {actual_amount} 个 {resource_type}。库存: {agent.properties['inventory']}"
         )
         return True
 
     def _handle_rest(self, action_data, agent: Agent, simulator: Simulator):
         """处理休息动作"""
-        if not hasattr(agent, "map_position"):
-            agent.map_position = "village_center"
-
-        current_location = self.game_map.get_location(agent.map_position)
+        current_location = self.game_map.get_location(agent.properties["map_position"])
 
         # 在房子里休息效果更好
         if current_location and current_location.location_type == "building":
@@ -429,7 +422,7 @@ I'm getting hungry. I should go to the farm to get some food.
                 f"你在 {current_location.name if current_location else '这里'} 休息了一会。"
             )
 
-        agent.energy = min(100, agent.energy + energy_gain)
+        agent.properties["energy"] = min(100, agent.properties["energy"] + energy_gain)
 
         message = f"{agent.name} 休息了一下"
         simulator.broadcast(PublicEvent(message))
@@ -441,9 +434,9 @@ I'm getting hungry. I should go to the farm to get some food.
         time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"
         return f"""
 --- Status ---
-Current position: {agent.map_position}
-Hunger level: {agent.hunger}
-Energy level: {agent.energy}
-Inventory: {agent.inventory}
+Current position: {agent.properties["map_position"]}
+Hunger level: {agent.properties["hunger"]}
+Energy level: {agent.properties["energy"]}
+Inventory: {agent.properties["inventory"]}
 Current time: {self.state.get("time", 0)} hours ({time_of_day})
 """
