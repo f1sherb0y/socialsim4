@@ -1,5 +1,5 @@
-from ..event import MessageEvent
-from ..action import Action
+from socialsimv4.core.event import MessageEvent
+from socialsimv4.core.action import Action
 
 
 class SendMessageAction(Action):

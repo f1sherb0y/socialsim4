@@ -44,12 +44,8 @@ async def start_simulation(
 
     # Create a dictionary of clients, keyed by provider name
     clients = {provider.name: create_llm_client(provider) for provider in req.providers}
-    
-    # For simplicity, we'll just use the first client for the simulator.
-    # A more advanced implementation could allow agents to use different clients.
-    client = list(clients.values())[0] if clients else None
 
-    simulator = Simulator(agents, scenario, client)
+    simulator = Simulator(agents, scenario, clients)
 
     if not simulation_manager.start_simulation(req.sim_code, simulator):
         raise HTTPException(status_code=400, detail="Simulation already running")

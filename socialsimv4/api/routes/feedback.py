@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from .. import auth, database, schemas
+from socialsimv4.api import auth, database, schemas
 
 router = APIRouter()
 

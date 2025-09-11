@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, Text, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Float, Boolean, ForeignKey
+
 
 DATABASE_URL = "sqlite+aiosqlite:///./socialsim.db"
 
@@ -32,19 +34,18 @@ class SimulationTemplate(Base):
 class Provider(Base):
     __tablename__ = "providers"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, index=True)
-    usage = Column(String)
-    kind = Column(String)
-    base_url = Column(String, nullable=True)
-    api_key = Column(String, nullable=True)
-    model = Column(String, nullable=True)
-    temperature = Column(Integer, nullable=True)
-    max_tokens = Column(Integer, nullable=True)
-    top_p = Column(Integer, nullable=True)
-    frequency_penalty = Column(Integer, nullable=True)
-    presence_penalty = Column(Integer, nullable=True)
-    stream = Column(Integer, nullable=True)
+    username = Column(String(50), ForeignKey("users.username"), primary_key=True)
+    usage = Column(String(50), primary_key=True)
+    kind = Column(String(50), nullable=False)
+    model = Column(String(100), nullable=False)
+    api_key = Column(String(100), nullable=False)
+    base_url = Column(String(200))
+    temperature = Column(Float, default=1.0)
+    max_tokens = Column(Integer, default=4096)
+    top_p = Column(Float, default=0.7)
+    frequency_penalty = Column(Float, default=0.0)
+    presence_penalty = Column(Float, default=0.0)
+    stream = Column(Boolean, default=False)
 
 
 class Feedback(Base):
