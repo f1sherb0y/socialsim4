@@ -3,11 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean, ForeignKey
+from . import config
 
 
-DATABASE_URL = "sqlite+aiosqlite:///./socialsim.db"
+connect_args = {}
+if config.DATABASE_URL.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
 
-engine = create_async_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_async_engine(config.DATABASE_URL, connect_args=connect_args)
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 Base = declarative_base()

@@ -9,6 +9,7 @@ class SendMessageAction(Action):
     def handle(self, action_data, agent, simulator, scenario):
         message = action_data.get("message")
         if message:
+            agent.log_event("send_message", {"agent": agent.name, "message": message})
             event = MessageEvent(agent.name, message)
             formatted = event.to_string(scenario.state.get("time"))
             for a in simulator.agents.values():
@@ -24,5 +25,6 @@ class SkipReplyAction(Action):
     INSTRUCTION = """- To skip a reply: {"action": "skip_reply"}"""
 
     def handle(self, action_data, agent, simulator, scenario):
+        agent.log_event("skip_reply", {"agent": agent.name})
         scenario.log(f"{agent.name} decided to skip a reply.")
         return True

@@ -1,11 +1,17 @@
+import json
 from socialsimv4.core.event import Event, StatusEvent
 from socialsimv4.core.agent import Agent
 
 
 class Simulator:
     def __init__(
-        self, agents, scenario, clients, broadcast_initial=True, status_update_interval=1
+        self, agents, scenario, clients, broadcast_initial=True, status_update_interval=1, event_handler=None
     ):
+        self.log_event = event_handler
+        
+        for agent in agents:
+            agent.log_event = self.log_event
+
         self.agents = {agent.name: agent for agent in agents}  # 用dict便于查找
         self.clients = clients  # Dictionary of LLM clients
         self.scenario = scenario
@@ -53,7 +59,7 @@ class Simulator:
         scenario = scene_class.from_dict(scenario_data)
 
         agents = [
-            Agent.from_dict(agent_data)
+            Agent.from_dict(agent_data, event_handler=None) # event_handler will be set by SimulationInstance
             for agent_data in data["agents"].values()
         ]
 
@@ -94,12 +100,17 @@ class Simulator:
                         agent.append_env_message(status_prompt)
 
                 # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
+                self.log_event("agent_process_start", {"agent": agent.name})
                 action_datas = agent.process(
                     self.clients, initiative=is_initiative, scenario=self.scenario
                 )
+                self.log_event("agent_process_end", {"agent": agent.name, "actions": action_datas})
+
                 for action_data in action_datas:
                     if action_data:
+                        self.log_event("action_start", {"agent": agent.name, "action": action_data})
                         self.scenario.parse_and_handle_action(action_data, agent, self)
+                        self.log_event("action_end", {"agent": agent.name, "action": action_data})
 
             self.scenario.post_round(self)
 

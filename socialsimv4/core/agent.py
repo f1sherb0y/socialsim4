@@ -19,6 +19,7 @@ class Agent:
         role_prompt="",
         action_space=[],
         max_repeat=3,
+        event_handler=None,
         **kwargs,
     ):
         self.name = name
@@ -31,6 +32,7 @@ class Agent:
         self.last_history_length = 0
         self.max_repeat = max_repeat
         self.properties = kwargs
+        self.log_event = event_handler
 
     def system_prompt(self, scenario=None):
         base = f"""
@@ -196,7 +198,7 @@ History:
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data, event_handler=None):
         from .registry import ACTION_SPACE_MAP
 
         agent = cls(
@@ -207,6 +209,7 @@ History:
             role_prompt=data["role_prompt"],
             action_space=[ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]],
             max_repeat=data["max_repeat"],
+            event_handler=event_handler,
             **data["properties"],
         )
         agent.short_memory.history = data["short_memory"]

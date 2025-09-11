@@ -1,6 +1,6 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -45,9 +45,7 @@ async def start_simulation(
     # Create a dictionary of clients, keyed by provider name
     clients = {provider.name: create_llm_client(provider) for provider in req.providers}
 
-    simulator = Simulator(agents, scenario, clients)
-
-    if not simulation_manager.start_simulation(req.sim_code, simulator):
+    if not simulation_manager.start_simulation(req.sim_code, agents, scenario, clients):
         raise HTTPException(status_code=400, detail="Simulation already running")
 
     return {"status": "success", "message": f"Simulation '{req.sim_code}' started."}
@@ -57,11 +55,11 @@ async def start_simulation(
 async def get_simulation_status(
     sim_code: str, current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    simulator = simulation_manager.get_simulation(sim_code)
-    if not simulator:
+    instance = simulation_manager.get_simulation(sim_code)
+    if not instance:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
-    return {"status": "running", "round": simulator.round_num}
+    return {"status": "running", "round": instance.simulator.round_num}
 
 
 @router.post("/run")
@@ -70,11 +68,11 @@ async def run_simulation(
     rounds: int = 1,
     current_user: schemas.User = Depends(auth.get_current_active_user),
 ):
-    simulator = simulation_manager.get_simulation(sim_code)
-    if not simulator:
+    instance = simulation_manager.get_simulation(sim_code)
+    if not instance:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
-    simulator.run(max_rounds=simulator.round_num + rounds)
+    instance.simulator.run(max_rounds=instance.simulator.round_num + rounds)
 
     return {
         "status": "success",
@@ -86,13 +84,13 @@ async def run_simulation(
 async def save_simulation(
     sim_code: str, current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    simulator = simulation_manager.get_simulation(sim_code)
-    if not simulator:
+    instance = simulation_manager.get_simulation(sim_code)
+    if not instance:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
     save_path = os.path.join(config.STORAGE_PATH, f"{sim_code}.json")
     with open(save_path, "w") as f:
-        json.dump(simulator.to_dict(), f, indent=2)
+        json.dump(instance.simulator.to_dict(), f, indent=2)
 
     return {"status": "success", "message": f"Simulation '{sim_code}' saved."}
 
@@ -118,12 +116,27 @@ async def load_simulation(
 
         clients = {provider.name: create_llm_client(provider) for provider in providers}
 
-        simulator = Simulator.from_dict(data, clients)
-        simulation_manager.simulations[req.sim_code] = simulator
+        simulation_manager.load_simulation(req.sim_code, data, clients)
 
         return {"status": "success", "message": f"Simulation '{req.sim_code}' loaded."}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Saved simulation not found")
+
+
+@router.websocket("/ws/{sim_code}")
+async def websocket_endpoint(websocket: WebSocket, sim_code: str):
+    await websocket.accept()
+    instance = simulation_manager.get_simulation(sim_code)
+    if not instance:
+        await websocket.close(code=1008, reason="Simulation not found")
+        return
+
+    instance.add_websocket(websocket)
+    try:
+        while True:
+            await websocket.receive_text()  # Keep the connection alive
+    except WebSocketDisconnect:
+        instance.remove_websocket(websocket)
 
 
 # Templates Routes
