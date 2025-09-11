@@ -33,6 +33,5 @@ I think I'll say hello to everyone.
 1. Send a greeting message.
 
 --- Action ---
---- Send Message ---
-Hey everyone!
+{"action": "send_message", "message": "Hi everyone!"}
 """

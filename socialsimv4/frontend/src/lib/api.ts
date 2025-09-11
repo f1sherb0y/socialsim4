@@ -125,6 +125,8 @@ export namespace apis {
         initial_instruction: string;
         role_prompt: string;
         action_space: string[];
+        max_repeat?: number;
+        properties?: Record<string, any>;
     }
 
     export interface LLMConfig {
@@ -289,14 +291,15 @@ export namespace apis {
 
     export const startSim = async (
         simCode: string,
-        templateId: number,
-        providers: LLMConfig[],
+        template: Template,
+        providers: Record<string, LLMConfig>,
     ): Promise<any> => {
+        console.log(providers)
         try {
             const response = await api.post(urls.startSim, {
                 sim_code: simCode,
-                template_id: templateId,
-                providers,
+                template: template,
+                providers: Object.values(providers),
             });
             return response.data;
         } catch (error) {
@@ -339,6 +342,7 @@ export namespace apis {
                 initial_instruction: "Mock everyone.",
                 role_prompt: "You are a mocker.",
                 action_space: ["send_message"],
+                max_repeat: 3,
             }, a_mem: {}, s_mem: {}
         });
     };

@@ -46,7 +46,6 @@ export const ConfirmPage = () => {
                 ctx.data.currSimCode || '',
                 ctx.data.currentTemplate,
                 ctx.data.llmProviders,
-                ctx.data.initialRounds || 0
             );
             navigate('/interact');
         } catch (error) {
@@ -132,7 +131,6 @@ export const ConfirmPage = () => {
                                         <RandomAvatar className="h-10 w-10 mr-4" name={`${agent.name}`} />
                                         <div>
                                             <p className="font-semibold">{agent.name}</p>
-                                            <p className="text-sm">{agent.age}岁</p>
                                         </div>
                                     </div>
                                 ))}

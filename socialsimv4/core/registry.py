@@ -7,9 +7,9 @@ from .actions.map_actions import (
     QuickMoveAction,
     RestAction,
 )
+from .scenes.council_scene import CouncilScene
 from .scenes.map_scene import MapScene
 from .scenes.simple_chat_scene import SimpleChatScene
-from .scenes.council_scene import CouncilScene
 from .scenes.village_scene import VillageScene
 
 ACTION_SPACE_MAP = {

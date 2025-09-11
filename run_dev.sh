@@ -22,6 +22,7 @@ export BACKEND_PORT=${BACKEND_PORT:-8000}
 export STORAGE_PATH=${STORAGE_PATH:-./storage}
 export API_PREFIX=${API_PREFIX:-/api}
 export DATABASE_URL=${DATABASE_URL:-"postgresql+asyncpg://postgres:123321@localhost/socialsim"}
+export MAX_REPEAT=${MAX_REPEAT:-3}
 
 
 # --- Backend Setup ---

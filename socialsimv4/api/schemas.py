@@ -1,6 +1,7 @@
-from typing import Optional, List
-from pydantic import BaseModel
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class UserBase(BaseModel):
@@ -15,6 +16,7 @@ class UserCreate(UserBase):
 
 
 class User(UserBase):
+    id: int
     disabled: Optional[bool] = None
     is_admin: Optional[bool] = None
     is_sso: Optional[bool] = None
@@ -84,6 +86,7 @@ class FeedbackAdminResponse(BaseModel):
     feedback_text: str
     timestamp: str
 
+
 class LLMConfig(BaseModel):
     name: str
     kind: str
@@ -98,10 +101,32 @@ class LLMConfig(BaseModel):
     presence_penalty: Optional[float] = 0.0
     stream: Optional[bool] = False
 
+
+class Agent(BaseModel):
+    name: str
+    user_profile: str
+    style: str
+    initial_instruction: str
+    role_prompt: str
+    action_space: List[str]
+    max_repeat: Optional[int] = None
+    properties: Optional[dict] = {}
+
+
+class Template(BaseModel):
+    simCode: str
+    events: List[dict]
+    personas: List[Agent]
+    meta: dict
+    workflow: dict
+    template_json: str
+
+
 class StartReq(BaseModel):
     sim_code: str
-    template_id: int
+    template: Template
     providers: List[LLMConfig]
+
 
 class LoadReq(BaseModel):
     sim_code: str

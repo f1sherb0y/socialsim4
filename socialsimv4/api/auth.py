@@ -20,11 +20,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -36,11 +39,18 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_user(db: AsyncSession, username: str):
-    result = await db.execute(select(database.User).filter(database.User.username == username))
-    return result.scalar_one_or_none()
 
-async def get_current_user(db: AsyncSession = Depends(database.get_db), token: str = Depends(oauth2_scheme)):
+async def get_user(db: AsyncSession, username: str):
+    result = await db.execute(
+        select(database.User).filter(database.User.username == username)
+    )
+    db_user = result.scalar_one_or_none()
+    return db_user
+
+
+async def get_current_user(
+    db: AsyncSession = Depends(database.get_db), token: str = Depends(oauth2_scheme)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -54,15 +64,19 @@ async def get_current_user(db: AsyncSession = Depends(database.get_db), token: s
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = await get_user(db, username=token_data.username)
-    if user is None:
+    db_user = await get_user(db, username=token_data.username)
+    if db_user is None:
         raise credentials_exception
-    return user
+    return schemas.User.from_orm(db_user)
 
-async def get_current_active_user(current_user: database.User = Depends(get_current_user)):
+
+async def get_current_active_user(
+    current_user: schemas.User = Depends(get_current_user),
+):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
-    return schemas.User.from_orm(current_user)
+    return current_user
+
 
 async def create_user(db: AsyncSession, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
@@ -71,7 +85,7 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate):
         email=user.email,
         full_name=user.full_name,
         institution=user.institution,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
     )
     db.add(db_user)
     await db.commit()

@@ -17,14 +17,22 @@ class Scene:
 
     def get_output_format(self):
         return """
+Your entire response MUST follow the format specified below. You must generate each of the three sections: Thoughts, Plan, and Action, in every turn.
+
 --- Thoughts ---
-Your private thoughts and reasoning about the current situation.
+// Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have. This section MUST include two parts:
+// 1. Re-evaluation: Analyze the latest messages in the conversation. Is your current Plan still relevant? Does it need to be modified? Should you add, remove, or reorder steps? Should you jump to a different step instead of proceeding sequentially? Explicitly state your conclusion about the plan.
+// 2. Strategy for This Turn: Based on your re-evaluation, decide on the immediate goal for your current turn.
 
 --- Plan ---
-Your plan for what to do next.
+// This is your living strategic document, not a rigid script. It must be updated in every turn based on your `Re-evaluation`. Mark your immediate focus with `[CURRENT]`.
+1. [Step 1]
+2. [Step 2] [CURRENT]
+3. [Step 3]
 
 --- Action ---
-The JSON object representing your action. You can perform multiple actions in one turn by outputting an array of action objects.
+// Execute the single action that corresponds to the [CURRENT] step of your plan. This section must contain exactly one action chosen from the Action Space below.
+[Formatted action from the Action Space]
 """
 
     def get_examples(self):
@@ -73,5 +81,5 @@ The JSON object representing your action. You can perform multiple actions in on
             name=data["name"],
             initial_event=data["initial_event"],
         )
-        scene.state = data["state"]
+        scene.state = data.get("state", dict())
         return scene

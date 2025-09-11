@@ -546,6 +546,36 @@ export const AgentsPage = () => {
                                                 className="w-full min-h-[80px]"
                                             />
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Properties</label>
+                                            <AutoResizeTextarea
+                                                name="properties"
+                                                value={localAgent.properties ? JSON.stringify(localAgent.properties, null, 2) : "{}"}
+                                                onChange={(e) => {
+                                                    if (localAgent) {
+                                                        try {
+                                                            const newProperties = JSON.parse(e.target.value);
+                                                            const updatedAgent = { ...localAgent, properties: newProperties };
+                                                            setLocalAgent(updatedAgent);
+
+                                                            setAgents(prevAgents =>
+                                                                prevAgents.map(agent =>
+                                                                    agent.id === updatedAgent.id ? updatedAgent : agent
+                                                                )
+                                                            );
+
+                                                            updateContextPersonas(agents.map(agent =>
+                                                                agent.id === updatedAgent.id ? updatedAgent : agent
+                                                            ));
+                                                        } catch (error) {
+                                                            console.error("Invalid JSON for properties:", error);
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Agent Properties (JSON)"
+                                                className="w-full min-h-[120px] font-mono"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}

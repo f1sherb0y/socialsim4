@@ -249,16 +249,12 @@ const AgentStatusCard: React.FC<{ agent: apis.Agent, onViewFullInfo: (agentName:
                 </Button>
             </CardHeader>
             <CardContent>
-                <p><strong>Age:</strong> {agent.age}</p>
-                <p><strong>Lifestyle:</strong> {agent.lifestyle}</p>
-                <p><strong>Currently:</strong> {agent.currently}</p>
+                <p><strong>Style:</strong> {agent.style}</p>
+                <p><strong>UserProfile:</strong> {agent.user_profile}</p>
                 {expanded && (
                     <>
-                        {/* <p><strong>Memory:</strong> {agent.memory?.join(', ')}</p> */}
-                        {/* <p><strong>Plan:</strong> {agent.plan?.join(', ')}</p> */}
-                        <p><strong>Bibliography:</strong> {agent.bibliography}</p>
-                        <p><strong>Innate Traits:</strong> {agent.innate}</p>
-                        <p><strong>Learned Traits:</strong> {agent.learned}</p>
+                        <p><strong>Initial Instruction:</strong> {agent.initial_instruction}</p>
+                        <p><strong>Role Prompt:</strong> {agent.role_prompt}</p>
                     </>
                 )}
             </CardContent>
@@ -330,15 +326,10 @@ const AgentStatusTab: React.FC<{ isRunning: boolean }> = ({ isRunning }) => {
                                         {
                                             title: "Basic Info", fields: [
                                                 { label: "Name", value: selectedAgent.name },
-                                                { label: "First Name", value: selectedAgent.first_name },
-                                                { label: "Last Name", value: selectedAgent.last_name },
-                                                { label: "Age", value: selectedAgent.age },
-                                                { label: "Innate Traits", value: selectedAgent.innate },
-                                                { label: "Learned Traits", value: selectedAgent.learned },
-                                                { label: "Currently", value: selectedAgent.currently },
-                                                { label: "Lifestyle", value: selectedAgent.lifestyle },
-                                                { label: "Living Area", value: selectedAgent.living_area },
-                                                // { label: "Avatar", value: selectedAgent.avatar },
+                                                { label: "Style", value: selectedAgent.style },
+                                                { label: "UserProfile", value: selectedAgent.user_profile },
+                                                { label: "Initial Instruction", value: selectedAgent.initial_instruction },
+                                                { label: "Role Prompt", value: selectedAgent.role_prompt },
                                             ]
                                         },
                                         {
@@ -360,17 +351,6 @@ const AgentStatusTab: React.FC<{ isRunning: boolean }> = ({ isRunning }) => {
                                                 // { label: "Importance Trigger Current", value: selectedAgent.importance_trigger_curr },
                                                 // { label: "Importance Element N", value: selectedAgent.importance_ele_n },
                                                 // { label: "Thought Count", value: selectedAgent.thought_count },
-                                            ]
-                                        },
-                                        {
-                                            title: "Plan", fields: [
-                                                { label: "Daily Plan Requirement", value: selectedAgent.daily_plan_req },
-                                                // { label: "Daily Requirements", value: selectedAgent.daily_req?.join(', ') },
-                                                // { label: "Daily Schedule", value: selectedAgent.f_daily_schedule?.join(', ') },
-                                                // { label: "Hourly Schedule", value: selectedAgent.f_daily_schedule_hourly_org?.join(', ') },
-                                                // { label: "Plan", value: selectedAgent.plan?.join(', ') },
-                                                // { label: "Memory", value: selectedAgent.memory?.join(', ') },
-                                                { label: "Bibliography", value: selectedAgent.bibliography },
                                             ]
                                         },
                                         {
@@ -647,7 +627,7 @@ export const InteractPage: React.FC = () => {
     const handleRunSimulation = async (rounds: number) => {
         try {
             setIsRunning(true);
-            await apis.runSim(rounds, ctx.data.currSimCode || "");
+            await apis.runSim(ctx.data.currSimCode || "", rounds);
         } catch (error) {
             console.error("Error running simulation:", error);
             // Handle the error, e.g., show an error message to the user
@@ -681,7 +661,7 @@ export const InteractPage: React.FC = () => {
                     },
                     {
                         sender: agentName,
-                        content: `Great question! My current primary focus is ${persona.currently}. I'm really passionate about ${persona.innate} and always looking to improve my skills in ${persona.learned}.`,
+                        content: `Great question! My current primary focus is ${persona.style}. I'm really passionate about ${persona.user_profile} and always looking to improve my skills in ${persona.initial_instruction}.`,
                         timestamp: new Date().toLocaleTimeString(),
                         type: 'private',
                         role: 'agent',
@@ -760,6 +740,17 @@ export const InteractPage: React.FC = () => {
                     } else if (e.type == "private") {
                         addPrivateMessage(e.sender, e);
                     }
+                } else if (d.type === "send_message") {
+                    const { agent, message } = d.data;
+                    const newMessage: ChatMessage = {
+                        sender: agent,
+                        content: message,
+                        timestamp: new Date().toLocaleTimeString(),
+                        type: 'public',
+                        role: 'agent',
+                        subject: 'Public Chat'
+                    };
+                    addPublicMessage(newMessage);
                 }
             };
         }

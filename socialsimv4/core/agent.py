@@ -2,6 +2,8 @@ import json
 import re
 
 import openai
+
+from socialsimv4.api.config import MAX_REPEAT
 from socialsimv4.core.memory import ShortTermMemory
 
 # 假设的最大上下文字符长度（可调整，根据模型实际上下文窗口）
@@ -18,7 +20,7 @@ class Agent:
         initial_instruction="",
         role_prompt="",
         action_space=[],
-        max_repeat=3,
+        max_repeat=MAX_REPEAT,
         event_handler=None,
         **kwargs,
     ):
@@ -36,6 +38,9 @@ class Agent:
 
     def system_prompt(self, scenario=None):
         base = f"""
+You are {self.name}.
+You speak in a {self.style} style.
+
 {self.user_profile}
 
 {self.role_prompt}
@@ -46,25 +51,30 @@ class Agent:
 
 {scenario.get_output_format() if scenario else ""}
 
+Action Space:
+
 {"".join(action.INSTRUCTION for action in self.action_space)}
 
-- Respond in character: keep it {self.style}.
 
+Here are some examples:
 {scenario.get_examples() if scenario else ""}
 
+
+Initial instruction:
 {self.initial_instruction}
 """
         return base
 
-    def call_llm(self, clients, messages, client_name="general"):
+    def call_llm(self, clients, messages, client_name="chat"):
         print(f"🤖 {self.name} 正在调用LLM API (client: {client_name})...")
+        print(f"Messages = {messages}")
         client = clients.get(client_name)
         if not client:
             raise ValueError(f"LLM client '{client_name}' not found.")
 
         try:
             result = client.chat(messages)
-            print(f"✅ {self.name} API调用成功，响应长度: {len(result)} 字符")
+            print(f"✅ {self.name} API调用成功，响应长度: {len(result)} 字符\n{result}")
             return result
         except Exception as e:
             print(f"❌ {self.name} API调用失败: {e}")
@@ -115,18 +125,35 @@ History:
         return thoughts, plan, action
 
     def _parse_actions(self, action_block):
-        """Extracts a list of actions from the action block."""
-        actions = []
-        # Pattern to find all --- Action Type --- sections
-        pattern = r"--- (.+?) ---\s*(.*?)(?=\n--- |\Z)"
-        matches = re.findall(pattern, action_block, re.DOTALL)
-        
-        for match in matches:
-            action_type = match[0].strip().lower().replace(" ", "_")
-            action_content = match[1].strip()
-            actions.append({"action": action_type, "content": action_content})
-            
-        return actions
+        """Parses the action block which should contain a JSON object or a list of JSON objects."""
+        action_block = action_block.strip()
+        if action_block.startswith("```json"):
+            action_block = action_block[7:-3].strip()
+        elif action_block.startswith("`"):
+            action_block = action_block.strip("`")
+
+        try:
+            data = json.loads(action_block)
+            if isinstance(data, dict):
+                return [data]  # It's a single action
+            elif isinstance(data, list):
+                return data  # It's a list of actions
+            else:
+                # Parsed but not a dict or list, not a valid action structure
+                return []
+        except json.JSONDecodeError:
+            # Fallback for malformed JSON. Try to find JSON within the string.
+            match = re.search(r"\[.*\]|\{.*\}", action_block, re.DOTALL)
+            if match:
+                try:
+                    data = json.loads(match.group(0))
+                    if isinstance(data, dict):
+                        return [data]
+                    elif isinstance(data, list):
+                        return data
+                except json.JSONDecodeError:
+                    pass  # JSON found but still couldn't parse
+            return []
 
     def process(self, clients, initiative=False, scenario=None):
         print(f"🔄 {self.name} 开始处理 (initiative={initiative})")
@@ -145,23 +172,19 @@ History:
         # Get history from memory
         ctx = self.short_memory.searilize(dialect="default")
         ctx.insert(0, {"role": "system", "content": system_prompt})
-        print(f"📤 {self.name} 准备发送 {len(ctx)} 条消息到LLM")
+        print(
+            f"📤 {self.name} 准备发送 {len(ctx)} 条消息到LLM, max_repeat={self.max_repeat}"
+        )
 
         action_data = None
         for attempt in range(self.max_repeat):
             try:
                 llm_output = self.call_llm(clients, ctx)
                 thoughts, plan, action_block = self._parse_full_response(llm_output)
-                actions = self._parse_actions(action_block)
-                
-                action_data = []
-                for action in actions:
-                    # Try to parse content as JSON, otherwise treat as raw string
-                    try:
-                        content_json = json.loads(action["content"])
-                        action_data.append({**{"action": action["action"]}, **content_json})
-                    except json.JSONDecodeError:
-                        action_data.append({"action": action["action"], "message": action["content"]})
+                action_data = self._parse_actions(action_block)
+
+                if not action_data:
+                    raise ValueError("No valid action found in LLM output")
 
                 # If parsing succeeds, break
                 break
@@ -207,11 +230,13 @@ History:
             style=data["style"],
             initial_instruction=data["initial_instruction"],
             role_prompt=data["role_prompt"],
-            action_space=[ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]],
-            max_repeat=data["max_repeat"],
+            action_space=[
+                ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]
+            ],
+            max_repeat=data.get("max_repeat", MAX_REPEAT),
             event_handler=event_handler,
-            **data["properties"],
+            **data.get("properties", {}),
         )
-        agent.short_memory.history = data["short_memory"]
-        agent.last_history_length = data["last_history_length"]
+        agent.short_memory.history = data.get("short_memory", [])
+        agent.last_history_length = data.get("last_history_length", 0)
         return agent

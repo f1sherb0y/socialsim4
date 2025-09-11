@@ -36,7 +36,7 @@ export const ConfigPage = () => {
                     usage: "chat",
                     name: "chat",
                     kind: "chat",
-                    dialect: "",
+                    dialect: "openai",
                     base_url: "",
                     api_key: "",
                     model: "",
@@ -51,7 +51,7 @@ export const ConfigPage = () => {
                     usage: "embedding",
                     name: "embedding",
                     kind: "embedding",
-                    dialect: "",
+                    dialect: "openai",
                     base_url: "",
                     api_key: "",
                     model: "",
@@ -66,7 +66,7 @@ export const ConfigPage = () => {
                     usage: "completion",
                     name: "completion",
                     kind: "completion",
-                    dialect: "",
+                    dialect: "openai",
                     base_url: "",
                     api_key: "",
                     model: "",
@@ -79,11 +79,16 @@ export const ConfigPage = () => {
                 },
             };
 
-            const providersData = userProviders.reduce((acc, provider) => {
-                acc[provider.usage] = provider;
-                return acc;
-            }, defaultProviders);
+            const userProvidersMap = userProviders.reduce((map, provider) => {
+                map[provider.usage] = provider;
+                return map;
+            }, {} as Record<string, Partial<LLMConfig>>);
 
+            const providersData: ProviderConfigs = {
+                chat: { ...defaultProviders.chat, ...userProvidersMap.chat },
+                embedding: { ...defaultProviders.embedding, ...userProvidersMap.embedding },
+                completion: { ...defaultProviders.completion, ...userProvidersMap.completion },
+            };
 
             setProviders(providersData);
             ctx.setData({ ...ctx.data, llmProviders: providersData });

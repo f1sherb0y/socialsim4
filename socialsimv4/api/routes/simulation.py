@@ -1,20 +1,19 @@
 import json
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.simulator import Simulator
-from socialsimv4.core.registry import SCENE_MAP
-
-import os
-from socialsimv4.api import auth, database, schemas, config
+from socialsimv4.api import auth, config, database, schemas
 from socialsimv4.api.simulation_manager import simulation_manager
+from socialsimv4.core.agent import Agent
+from socialsimv4.core.llm import create_llm_client
+from socialsimv4.core.registry import SCENE_MAP
+from socialsimv4.core.simulator import Simulator
 
 router = APIRouter()
 
-from socialsimv4.core.llm import create_llm_client
 
 @router.post("/start")
 async def start_simulation(
@@ -22,19 +21,24 @@ async def start_simulation(
     current_user: schemas.User = Depends(auth.get_current_active_user),
     db: AsyncSession = Depends(database.get_db),
 ):
-    result = await db.execute(
-        select(database.SimulationTemplate).filter(database.SimulationTemplate.id == req.template_id)
+    # Save the template to the database
+    new_template = database.SimulationTemplate(
+        name=req.template.meta.get("name", "Untitled"),
+        description=req.template.meta.get("description", ""),
+        template_json=req.template.template_json,
+        owner_id=current_user.id,
+        is_public=False,  # Or handle this based on request
     )
-    template = result.scalar_one_or_none()
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
+    db.add(new_template)
+    await db.commit()
 
-    template_data = json.loads(template.template_json)
+    template_data = json.loads(req.template.template_json)
 
-    agents = [
-        Agent.from_dict(agent_data)
-        for agent_data in template_data["agents"]
-    ]
+    for agent_data in template_data["agents"]:
+        if "properties" not in agent_data:
+            agent_data["properties"] = {}
+
+    agents = [Agent.from_dict(agent_data) for agent_data in template_data["agents"]]
 
     scene_type = template_data["scenario"]["type"]
     scene_class = SCENE_MAP.get(scene_type)
@@ -109,7 +113,9 @@ async def load_simulation(
         providers = req.providers
         if not providers:
             result = await db.execute(
-                select(database.Provider).filter(database.Provider.username == current_user.username)
+                select(database.Provider).filter(
+                    database.Provider.username == current_user.username
+                )
             )
             db_providers = result.scalars().all()
             providers = [schemas.LLMConfig.from_orm(p) for p in db_providers]
@@ -159,7 +165,9 @@ async def delete_template(
     db: AsyncSession = Depends(database.get_db),
 ):
     result = await db.execute(
-        select(database.SimulationTemplate).filter(database.SimulationTemplate.id == template_id)
+        select(database.SimulationTemplate).filter(
+            database.SimulationTemplate.id == template_id
+        )
     )
     template = result.scalar_one_or_none()
     if not template:
@@ -177,7 +185,9 @@ async def fetch_template(
     db: AsyncSession = Depends(database.get_db),
 ):
     result = await db.execute(
-        select(database.SimulationTemplate).filter(database.SimulationTemplate.id == template_id)
+        select(database.SimulationTemplate).filter(
+            database.SimulationTemplate.id == template_id
+        )
     )
     template = result.scalar_one_or_none()
     if not template:

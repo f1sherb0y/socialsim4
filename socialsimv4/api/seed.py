@@ -23,6 +23,7 @@ simple_chat_template = {
                     "initial_instruction": "You are Alice. Greet everyone and start a conversation.",
                     "role_prompt": "You are a participant in a chat room.",
                     "action_space": ["send_message"],
+                    "properties": {},
                 },
                 {
                     "name": "Bob",
@@ -31,10 +32,11 @@ simple_chat_template = {
                     "initial_instruction": "You are Bob. Respond to others if you have something interesting to say.",
                     "role_prompt": "You are a participant in a chat room.",
                     "action_space": ["send_message"],
+                    "properties": {},
                 },
             ],
             "scenario": {
-                "type": "simple_chat",
+                "type": "simple_chat_scene",
                 "name": "Simple Chat",
                 "initial_event": "The chat room is now open.",
             },
@@ -63,6 +65,12 @@ map_scene_template = {
                         "rest",
                         "send_message",
                     ],
+                    "properties": {
+                        "hunger": 0,
+                        "energy": 100,
+                        "inventory": {},
+                        "map_position": "village_center",
+                    },
                 },
                 {
                     "name": "Merchant Sarah",
@@ -77,10 +85,16 @@ map_scene_template = {
                         "rest",
                         "send_message",
                     ],
+                    "properties": {
+                        "hunger": 0,
+                        "energy": 100,
+                        "inventory": {},
+                        "map_position": "village_center",
+                    },
                 },
             ],
             "scenario": {
-                "type": "map",
+                "type": "map_scene",
                 "name": "Virtual Village",
                 "initial_event": "A new day has begun in the village.",
             },
@@ -103,6 +117,7 @@ council_scene_template = {
                     "initial_instruction": "You are Mayor Adams. You must lead the council meeting and ensure a decision is made on the new proposal.",
                     "role_prompt": "You are the mayor and chair of the town council.",
                     "action_space": ["send_message", "cast_vote"],
+                    "properties": {},
                 },
                 {
                     "name": "Councilor Brown",
@@ -111,6 +126,7 @@ council_scene_template = {
                     "initial_instruction": "You are Councilor Brown. You must argue against the new factory proposal.",
                     "role_prompt": "You are a member of the town council.",
                     "action_space": ["send_message", "cast_vote"],
+                    "properties": {},
                 },
                 {
                     "name": "Councilor Green",
@@ -119,10 +135,11 @@ council_scene_template = {
                     "initial_instruction": "You are Councilor Green. You must argue in favor of the new factory proposal.",
                     "role_prompt": "You are a member of the town council.",
                     "action_space": ["send_message", "cast_vote"],
+                    "properties": {},
                 },
             ],
             "scenario": {
-                "type": "council",
+                "type": "council_scene",
                 "name": "Town Council Meeting",
                 "initial_event": "The town council meeting has been called to order to discuss the proposal for a new factory.",
             },
