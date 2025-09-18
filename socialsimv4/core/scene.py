@@ -17,41 +17,9 @@ class Scene:
         return ""
 
     def get_output_format(self):
-        return """
-Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
-
-Planning guidelines (read carefully):
-- Goals: stable end-states. Rarely change; name and describe them briefly.
-- Milestones: observable sub-results that indicate progress toward goals.
-- Current Focus: the single step you are executing now. Align Action with this.
-- Strategy: a brief approach for achieving the goals over time.
-- Prefer continuity: preserve unaffected goals/milestones; make the smallest coherent change when adapting to new information. State what stays the same.
-
---- Thoughts ---
-Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
-Re-evaluation: Compare the latest events with your current plan. Is your plan still relevant? Should you add, remove, or reorder steps? Should you jump to a different step instead of proceeding sequentially? Prefer continuity; preserve unaffected goals and milestones. Explicitly state whether you are keeping or changing the plan and why.
-Strategy for This Turn: Based on your re-evaluation, state your immediate objective for this turn and the short rationale for how you will achieve it.
-
---- Plan ---
-// Update the living plan if needed; mark your immediate focus with [CURRENT]. Keep steps concise and executable.
-1. [Step 1]
-2. [Step 2] [CURRENT]
-3. [Step 3]
-
---- Action ---
-// Output exactly one JSON action from the Action Space. No extra text.
-{"action": "...", ...}
-
---- Plan Update ---
-// Optional. Include ONLY if you are changing the plan.
-// Output either:
-// - no change
-// - or a JSON object with either a full `replace` or a partial `patch`, plus an optional natural-language `justification`.
-// Example (patch):
-// {"justification":"...","patch":{"current_focus":{"goal_id":"g1","step":"..."},"notes":"..."}}
-// Example (replace):
-// {"justification":"...","replace":{"goals":[...],"milestones":[...],"current_focus":{...},"strategy":"...","notes":"..."}}
-"""
+        # Format instructions are now injected by Agent.get_output_format().
+        # Scenes can override this if they need scene-specific format additions.
+        return ""
 
     def get_examples(self):
         return ""

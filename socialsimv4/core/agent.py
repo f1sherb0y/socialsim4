@@ -114,6 +114,27 @@ General Planning Principles:
 - Use milestones to track observable progress.
 - Keep a single Current Focus and align your Action to it.
 - Prefer minimal coherent changes; when adapting, preserve unaffected goals and milestones and state what remains unchanged.
+
+Plan State JSON Schema (reference):
+{
+  "goals": [
+    {"id": "g1", "desc": "...", "priority": "low|normal|high", "status": "pending|current|done"}
+  ],
+  "milestones": [
+    {"id": "m1", "desc": "...", "status": "pending|done"}
+  ],
+  "current_focus": {"goal_id": "g1", "step": "..."},
+  "strategy": "...",
+  "notes": "..."
+}
+
+Plan Update JSON Format (you emit this ONLY if changing the plan):
+- Use exactly one of:
+  1) Replace the entire plan_state:
+     {"justification":"...", "replace": {PLAN_STATE_OBJECT}}
+  2) Patch fields (arrays replace entirely):
+     {"justification":"...", "patch": {"goals":[...], "milestones":[...], "current_focus":{...}, "strategy":"...", "notes":"..."}}
+- Missing fields mean no change. Unknown keys are ignored. Output valid JSON only (no comments).
 """
 
         base = f"""
@@ -132,7 +153,7 @@ You speak in a {self.style} style.
 
 {scenario.get_behavior_guidelines() if scenario else ""}
 
-{scenario.get_output_format() if scenario else ""}
+{self.get_output_format()}
 
 Action Space:
 
@@ -147,6 +168,50 @@ Initial instruction:
 {self.initial_instruction}
 """
         return base
+
+    def get_output_format(self):
+        return """
+Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
+
+Planning guidelines (read carefully):
+- Goals: stable end-states. Rarely change; name and describe them briefly.
+- Milestones: observable sub-results that indicate progress toward goals.
+- Current Focus: the single step you are executing now. Align Action with this.
+- Strategy: a brief approach for achieving the goals over time.
+- Prefer continuity: preserve unaffected goals/milestones; make the smallest coherent change when adapting to new information. State what stays the same.
+
+--- Thoughts ---
+Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
+Re-evaluation: Compare the latest events with your current plan. Is your plan still relevant? Should you add, remove, or reorder steps? Should you jump to a different step instead of proceeding sequentially? Prefer continuity; preserve unaffected goals and milestones. Explicitly state whether you are keeping or changing the plan and why.
+Strategy for This Turn: Based on your re-evaluation, state your immediate objective for this turn and the short rationale for how you will achieve it.
+
+--- Plan ---
+// Update the living plan if needed; mark your immediate focus with [CURRENT]. Keep steps concise and executable.
+1. [Step 1]
+2. [Step 2] [CURRENT]
+3. [Step 3]
+
+--- Action ---
+// Output exactly one JSON action from the Action Space. No extra text.
+{"action": "...", ...}
+
+--- Plan Update ---
+// Optional. Include ONLY if you are changing the plan.
+// Output either:
+// - no change
+// - or a JSON object with either a full `replace` or a partial `patch`, plus an optional natural-language `justification`.
+// Example (patch):
+// {"justification":"...","patch":{"current_focus":{"goal_id":"g1","step":"..."},"notes":"..."}}
+// Example (replace):
+// {"justification":"...","replace":{"goals":[...],"milestones":[...],"current_focus":{...},"strategy":"...","notes":"..."}}
+// Plan State schema reference:
+// {"goals":[{"id":"g1","desc":"...","priority":"low|normal|high","status":"pending|current|done"}],
+//  "milestones":[{"id":"m1","desc":"...","status":"pending|done"}],
+//  "current_focus":{"goal_id":"g1","step":"..."},
+//  "strategy":"...",
+//  "notes":"..."}
+// JSON must be valid (no comments or trailing commas). If Plan State is empty, initialize it using a `replace`.
+"""
 
     def call_llm(self, clients, messages, client_name="chat"):
         print(f"LLM call for {self.name} (client: {client_name})...")
