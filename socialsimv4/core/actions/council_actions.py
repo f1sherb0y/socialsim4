@@ -42,6 +42,7 @@ class GetVotingResultAction(Action):
                     f"Not all votes are in yet. {pending} votes pending."
                 )
                 agent.append_env_message(info.to_string())
+                simulator.record_event(info, recipients=[agent.name])
                 return True
         return False
 

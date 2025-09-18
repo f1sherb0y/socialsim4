@@ -425,15 +425,19 @@ There are people nearby; I'll greet them.
                 status = (
                     f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
                 )
+                evt = StatusEvent(status)
                 agent.append_env_message(
-                    StatusEvent(status).to_string(self.state.get("time"))
+                    evt.to_string(self.state.get("time"))
                 )
+                simulator.record_event(evt, recipients=[agent.name])
 
             if agent.properties["energy"] <= 30:
                 status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
+                evt = StatusEvent(status)
                 agent.append_env_message(
-                    StatusEvent(status).to_string(self.state.get("time"))
+                    evt.to_string(self.state.get("time"))
                 )
+                simulator.record_event(evt, recipients=[agent.name])
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
         time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"
@@ -456,6 +460,7 @@ Current time: {self.state.get("time", 0)} hours ({time_of_day})
         time = self.state.get("time")
         formatted = event.to_string(time)
         sxy = sender.properties.get("map_xy")
+        recipients = []
         for a in simulator.agents.values():
             if a.name == sender.name:
                 continue
@@ -463,10 +468,13 @@ Current time: {self.state.get("time", 0)} hours ({time_of_day})
             if not sxy or not axy:
                 # Fallback: if coords missing, deliver as default
                 a.append_env_message(formatted)
+                recipients.append(a.name)
                 continue
             dist = abs(sxy[0] - axy[0]) + abs(sxy[1] - axy[1])
             if dist <= self.chat_range:
                 a.append_env_message(formatted)
+                recipients.append(a.name)
+        simulator.record_event(event, recipients=recipients)
 
     def to_dict(self):
         base = super().to_dict()

@@ -23,6 +23,7 @@ class Simulator:
         self.clients = clients  # Dictionary of LLM clients
         self.scenario = scenario
         self.round_num = 0
+        self.event_log = []  # chronological list of events (dict records)
         self.status_update_interval = status_update_interval
 
         # Initialize agents for the scene if it's a new simulation
@@ -34,15 +35,39 @@ class Simulator:
         if broadcast_initial:
             self.broadcast(self.scenario.initial_event)
 
+    def record_event(self, event: Event, recipients=None):
+        """Record an event with time, type, text, sender, recipients.
+        recipients: list of agent names or None (means broadcast to all except sender).
+        """
+        time = self.scenario.state.get("time")
+        try:
+            text = event.to_string(time)
+        except Exception:
+            text = str(event)
+        record = {
+            "time": time,
+            "type": event.__class__.__name__,
+            "sender": event.get_sender() if hasattr(event, "get_sender") else None,
+            "recipients": recipients,  # None implies broadcast
+            "text": text,
+        }
+        self.event_log.append(record)
+        if self.log_event:
+            self.log_event("event_recorded", record)
+
     def broadcast(self, event: Event):
         sender = event.get_sender()
         time = self.scenario.state.get("time")
         formatted = event.to_string(time)
 
+        recipients = []
         for agent in self.agents.values():
             # Since we removed joined_groups, we assume all agents are in the main group
             if agent.name != sender:
                 agent.append_env_message(formatted)
+                recipients.append(agent.name)
+        # Record broadcast
+        self.record_event(event, recipients=recipients)
 
     def to_dict(self):
         return {
@@ -50,6 +75,7 @@ class Simulator:
             "scenario": self.scenario.to_dict(),
             "round_num": self.round_num,
             "status_update_interval": self.status_update_interval,
+            "event_log": self.event_log,
         }
 
     @classmethod
@@ -81,7 +107,12 @@ class Simulator:
             status_update_interval=data["status_update_interval"],
         )
         simulator.round_num = data["round_num"]
+        simulator.event_log = data.get("event_log", [])
         return simulator
+
+    def get_transcript(self) -> str:
+        """Return a plain-text transcript of all recorded events so far."""
+        return "\n".join(record.get("text", "") for record in self.event_log)
 
     def run(self, num_rounds=50):
         agent_order = list(self.agents.keys())  # 动态顺序，基于agents dict keys
@@ -106,7 +137,10 @@ class Simulator:
                 ):
                     status_prompt = self.scenario.get_agent_status_prompt(agent)
                     if status_prompt:
-                        agent.append_env_message(status_prompt)
+                        # Wrap as a status event for logging
+                        evt = StatusEvent(status_prompt)
+                        agent.append_env_message(evt.to_string(self.scenario.state.get("time")))
+                        self.record_event(evt, recipients=[agent.name])
 
                 # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
                 self.log_event("agent_process_start", {"agent": agent.name})
