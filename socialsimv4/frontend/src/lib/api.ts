@@ -293,6 +293,7 @@ export namespace apis {
         simCode: string,
         template: Template,
         providers: Record<string, LLMConfig>,
+        initial_rounds: number,
     ): Promise<any> => {
         console.log(providers)
         try {
@@ -300,6 +301,7 @@ export namespace apis {
                 sim_code: simCode,
                 template: template,
                 providers: Object.values(providers),
+                initial_rounds: initial_rounds,
             });
             return response.data;
         } catch (error) {
@@ -379,7 +381,7 @@ export namespace apis {
         return Promise.resolve({ status: "success", message: "Mocked response" });
     };
 
-    export const queryStatus = async (simCode: string): Promise<'running' | 'stopped' | 'started' | 'terminated'> => {
+    export const queryStatus = async (simCode: string): Promise<'running' | 'idle' | 'terminated'> => {
         try {
             const response = await api.get(urls.queryStatus, { params: { sim_code: simCode } });
             return response.data.status;

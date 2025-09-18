@@ -66,7 +66,7 @@ Initial instruction:
         return base
 
     def call_llm(self, clients, messages, client_name="chat"):
-        print(f"🤖 {self.name} 正在调用LLM API (client: {client_name})...")
+        print(f"LLM call for {self.name} (client: {client_name})...")
         print(f"Messages = {messages}")
         client = clients.get(client_name)
         if not client:
@@ -74,10 +74,10 @@ Initial instruction:
 
         try:
             result = client.chat(messages)
-            print(f"✅ {self.name} API调用成功，响应长度: {len(result)} 字符\n{result}")
+            print(f"LLM API succeeded for {self.name}, response length: {len(result)}\n{result}")
             return result
         except Exception as e:
-            print(f"❌ {self.name} API调用失败: {e}")
+            print(f"LLM API failed for {self.name}: {e}")
             raise
 
     def summarize_history(self, client):
@@ -156,14 +156,14 @@ History:
             return []
 
     def process(self, clients, initiative=False, scenario=None):
-        print(f"🔄 {self.name} 开始处理 (initiative={initiative})")
+        print(f"Processing {self.name} (initiative={initiative})")
         current_length = len(self.short_memory)
         if current_length == self.last_history_length and not initiative:
             # 没有新事件，无反应
-            print(f"⏭️ {self.name} 没有新消息，跳过")
+            print(f"No new messages for {self.name}, skipping")
             return {}
 
-        print(f"📝 {self.name} 有 {current_length} 条消息需要处理")
+        print(f"{self.name} has {current_length} messages to process")
 
         # 检查并总结如果需要
 
@@ -172,9 +172,7 @@ History:
         # Get history from memory
         ctx = self.short_memory.searilize(dialect="default")
         ctx.insert(0, {"role": "system", "content": system_prompt})
-        print(
-            f"📤 {self.name} 准备发送 {len(ctx)} 条消息到LLM, max_repeat={self.max_repeat}"
-        )
+        print(f"{self.name} will send {len(ctx)} messages to LLM, max_repeat={self.max_repeat}")
 
         action_data = None
         for attempt in range(self.max_repeat):

@@ -126,6 +126,7 @@ class StartReq(BaseModel):
     sim_code: str
     template: Template
     providers: List[LLMConfig]
+    initial_rounds: Optional[int] = 1
 
 
 class LoadReq(BaseModel):

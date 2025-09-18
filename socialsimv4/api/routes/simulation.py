@@ -49,7 +49,9 @@ async def start_simulation(
     # Create a dictionary of clients, keyed by provider name
     clients = {provider.name: create_llm_client(provider) for provider in req.providers}
 
-    if not simulation_manager.start_simulation(req.sim_code, agents, scenario, clients):
+    if not simulation_manager.start_simulation(
+        req.sim_code, agents, scenario, clients, initial_rounds=req.initial_rounds
+    ):
         raise HTTPException(status_code=400, detail="Simulation already running")
 
     return {"status": "success", "message": f"Simulation '{req.sim_code}' started."}
@@ -61,9 +63,11 @@ async def get_simulation_status(
 ):
     instance = simulation_manager.get_simulation(sim_code)
     if not instance:
+        # This will be caught by the frontend and interpreted as 'terminated'
         raise HTTPException(status_code=404, detail="Simulation not found")
 
-    return {"status": "running", "round": instance.simulator.round_num}
+    status = "running" if instance.running else "idle"
+    return {"status": status, "round": instance.simulator.round_num}
 
 
 @router.post("/run")
@@ -72,16 +76,11 @@ async def run_simulation(
     rounds: int = 1,
     current_user: schemas.User = Depends(auth.get_current_active_user),
 ):
-    instance = simulation_manager.get_simulation(sim_code)
-    if not instance:
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    success, message = simulation_manager.run_simulation(sim_code, rounds)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
 
-    instance.simulator.run(max_rounds=instance.simulator.round_num + rounds)
-
-    return {
-        "status": "success",
-        "message": f"Ran simulation '{sim_code}' for {rounds} round(s).",
-    }
+    return {"status": "success", "message": message}
 
 
 @router.post("/save")

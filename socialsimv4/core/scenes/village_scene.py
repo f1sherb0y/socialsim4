@@ -4,6 +4,7 @@ from socialsimv4.core.event import StatusEvent
 
 
 class VillageScene(Scene):
+    TYPE = "village_scene"
     def __init__(self, name, initial_event, time_step=1):
         super().__init__(name, initial_event)
         self.state["map"] = {

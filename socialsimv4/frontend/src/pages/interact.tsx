@@ -687,7 +687,7 @@ export const InteractPage: React.FC = () => {
                 } else {
                     setIsSimOffline(false);
                 }
-                if (status !== 'running' && initialCheckRef.current) {
+                if (status === 'idle' && initialCheckRef.current) {
                     setShowGuide(true);
                     initialCheckRef.current = false;  // 标记为已检查
                 }

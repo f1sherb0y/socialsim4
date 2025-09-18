@@ -1,10 +1,12 @@
-import threading
-import queue
-import time
 import asyncio
 import json
+import queue
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
+
 from fastapi import WebSocket
+
 from socialsimv4.core.simulator import Simulator
 
 
@@ -14,14 +16,31 @@ class SimulationInstance:
         self.active_websockets = {}
         self.ws_lock = threading.Lock()
         self.message_queue = queue.Queue()
+        self.running = False
+        self.run_lock = threading.Lock()
         # The simulator's event handler is now set at its creation time.
         # This instance's job is to provide that handler.
         self.simulator.log_event = self.handle_event
         for agent in self.simulator.agents.values():
             agent.log_event = self.handle_event
 
-        self.message_sender_thread = threading.Thread(target=self.message_sender_loop, daemon=True)
+        self.message_sender_thread = threading.Thread(
+            target=self.message_sender_loop, daemon=True
+        )
         self.message_sender_thread.start()
+
+    def run(self, num_rounds):
+        with self.run_lock:
+            if self.running:
+                print(f"Simulation {self.simulator} is already running.")
+                return  # Already running
+            self.running = True
+
+        try:
+            self.simulator.run(num_rounds=num_rounds)
+        finally:
+            with self.run_lock:
+                self.running = False
 
     def handle_event(self, event_type, data):
         self.message_queue.put(json.dumps({"type": event_type, "data": data}))
@@ -66,17 +85,28 @@ class SimulationManager:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.lock = threading.Lock()
 
-    def start_simulation(self, sim_code, agents, scenario, clients):
+    def start_simulation(self, sim_code, agents, scenario, clients, initial_rounds=1):
         with self.lock:
             if sim_code in self.simulations:
                 return False  # Simulation already running
-            
+
             simulator = Simulator(agents, scenario, clients)
             instance = SimulationInstance(simulator)
             self.simulations[sim_code] = instance
 
-        self.executor.submit(instance.simulator.run)
+        self.executor.submit(instance.run, num_rounds=initial_rounds)
         return True
+
+    def run_simulation(self, sim_code, rounds):
+        instance = self.get_simulation(sim_code)
+        if not instance:
+            return False, "Simulation not found"
+
+        if instance.running:
+            return False, "Simulation is already running"
+
+        self.executor.submit(instance.run, num_rounds=rounds)
+        return True, f"Ran simulation '{sim_code}' for {rounds} round(s)."
 
     def load_simulation(self, sim_code, data, clients):
         with self.lock:
@@ -86,8 +116,8 @@ class SimulationManager:
             simulator = Simulator.from_dict(data, clients)
             instance = SimulationInstance(simulator)
             self.simulations[sim_code] = instance
-        
-        self.executor.submit(instance.simulator.run)
+
+        # Do not start simulation on load
         return True
 
     def get_simulation(self, sim_code):

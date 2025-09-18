@@ -12,24 +12,42 @@ from socialsimv4.api.database import Base, SimulationTemplate
 # 1. Simple Chat Scene Template
 simple_chat_template = {
     "name": "Simple Chat Room",
-    "description": "A basic chat room where agents can interact with each other.",
+    "description": "A chat room with four agents with intersecting and conflicting interests.",
     "template_json": json.dumps(
         {
             "agents": [
                 {
-                    "name": "Alice",
-                    "user_profile": "Alice is a friendly and outgoing software engineer who loves to talk about technology and hiking.",
-                    "style": "casual and enthusiastic",
-                    "initial_instruction": "You are Alice. Greet everyone and start a conversation.",
+                    "name": "Cathy",
+                    "user_profile": "An AI developer, passionate about the potential of artificial intelligence and open-source models to solve global problems. Believes in open data and rapid innovation.",
+                    "style": "optimistic and technical",
+                    "initial_instruction": "You are Cathy. Greet everyone and share your excitement about a new AI breakthrough.",
                     "role_prompt": "You are a participant in a chat room.",
                     "action_space": ["send_message"],
                     "properties": {},
                 },
                 {
-                    "name": "Bob",
-                    "user_profile": "Bob is a quiet and reserved artist who prefers to listen more than talk.",
-                    "style": "thoughtful and concise",
-                    "initial_instruction": "You are Bob. Respond to others if you have something interesting to say.",
+                    "name": "David",
+                    "user_profile": "A gadget enthusiast who loves talking about the latest smartphones, smart home devices, and consumer tech. Always excited about new features and integrations.",
+                    "style": "enthusiastic and consumer-focused",
+                    "initial_instruction": "You are David. Ask if anyone has seen the latest smart device keynote.",
+                    "role_prompt": "You are a participant in a chat room.",
+                    "action_space": ["send_message"],
+                    "properties": {},
+                },
+                {
+                    "name": "Eva",
+                    "user_profile": "A passionate environmentalist and hiker. Believes technology is often a distraction from the natural world and is concerned about the environmental impact of manufacturing electronics.",
+                    "style": "thoughtful and nature-oriented",
+                    "initial_instruction": "You are Eva. Talk about a recent hike you went on and how refreshing it was to disconnect.",
+                    "role_prompt": "You are a participant in a chat room.",
+                    "action_space": ["send_message"],
+                    "properties": {},
+                },
+                {
+                    "name": "Frank",
+                    "user_profile": "A cybersecurity expert who is deeply skeptical of big tech companies and their use of personal data. Champions privacy, encryption, and digital rights.",
+                    "style": "cautious and principled",
+                    "initial_instruction": "You are Frank. Express your concerns about a recent data privacy issue in the news.",
                     "role_prompt": "You are a participant in a chat room.",
                     "action_space": ["send_message"],
                     "properties": {},

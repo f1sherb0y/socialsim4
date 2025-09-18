@@ -1,14 +1,21 @@
 import json
-from socialsimv4.core.event import Event, StatusEvent
+
 from socialsimv4.core.agent import Agent
+from socialsimv4.core.event import Event, StatusEvent
 
 
 class Simulator:
     def __init__(
-        self, agents, scenario, clients, broadcast_initial=True, status_update_interval=1, event_handler=None
+        self,
+        agents,
+        scenario,
+        clients,
+        broadcast_initial=True,
+        status_update_interval=1,
+        event_handler=None,
     ):
         self.log_event = event_handler
-        
+
         for agent in agents:
             agent.log_event = self.log_event
 
@@ -52,6 +59,7 @@ class Simulator:
         # This is a simplified example. In a real application, you would
         # have a factory function to create the correct scene type.
         from socialsimv4.core.registry import SCENE_MAP
+
         scene_type = scenario_data.get("type", "map_scene")
         scene_class = SCENE_MAP.get(scene_type)
         if not scene_class:
@@ -59,7 +67,9 @@ class Simulator:
         scenario = scene_class.from_dict(scenario_data)
 
         agents = [
-            Agent.from_dict(agent_data, event_handler=None) # event_handler will be set by SimulationInstance
+            Agent.from_dict(
+                agent_data, event_handler=None
+            )  # event_handler will be set by SimulationInstance
             for agent_data in data["agents"].values()
         ]
 
@@ -73,14 +83,13 @@ class Simulator:
         simulator.round_num = data["round_num"]
         return simulator
 
-    def run(self, max_rounds=50):
+    def run(self, num_rounds=50):
         agent_order = list(self.agents.keys())  # 动态顺序，基于agents dict keys
 
         print("--- Initialization ---")
+        round = 0
 
-        self.round_num = 0
-
-        while self.round_num < max_rounds:
+        while round < num_rounds:
             # 每一轮都按固定顺序处理所有agent
             for agent_name in agent_order:
                 agent = self.agents.get(agent_name)
@@ -104,13 +113,19 @@ class Simulator:
                 action_datas = agent.process(
                     self.clients, initiative=is_initiative, scenario=self.scenario
                 )
-                self.log_event("agent_process_end", {"agent": agent.name, "actions": action_datas})
+                self.log_event(
+                    "agent_process_end", {"agent": agent.name, "actions": action_datas}
+                )
 
                 for action_data in action_datas:
                     if action_data:
-                        self.log_event("action_start", {"agent": agent.name, "action": action_data})
+                        self.log_event(
+                            "action_start", {"agent": agent.name, "action": action_data}
+                        )
                         self.scenario.parse_and_handle_action(action_data, agent, self)
-                        self.log_event("action_end", {"agent": agent.name, "action": action_data})
+                        self.log_event(
+                            "action_end", {"agent": agent.name, "action": action_data}
+                        )
 
             self.scenario.post_round(self)
 
@@ -119,6 +134,7 @@ class Simulator:
                 break
 
             self.round_num += 1
+            round += 1
             print(f"--- Round {self.round_num} End ---")
 
         print("--- Simulation Complete ---")

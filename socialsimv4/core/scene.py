@@ -4,6 +4,7 @@ from socialsimv4.core.simulator import Simulator
 
 
 class Scene:
+    TYPE = "scene"
     def __init__(self, name, initial_event):
         self.name = name
         self.initial_event = PublicEvent(initial_event)
@@ -47,6 +48,13 @@ Your entire response MUST follow the format specified below. You must generate e
                 return act.handle(action_data, agent, simulator, self)
         return False
 
+    def deliver_message(self, event, sender: Agent, simulator: Simulator):
+        """Deliver a chat message event. Default behavior is global broadcast
+        to all agents except the sender. Scenes can override to restrict scope
+        (e.g., proximity-based chat in map scenes).
+        """
+        simulator.broadcast(event)
+
     def post_round(self, simulator):
         pass
 
@@ -70,6 +78,7 @@ Your entire response MUST follow the format specified below. You must generate e
             "name": self.name,
             "initial_event": self.initial_event.content,
             "state": self.state,
+            "type": getattr(self, "TYPE", "scene"),
         }
 
     @classmethod
