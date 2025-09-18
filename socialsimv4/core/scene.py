@@ -18,28 +18,35 @@ class Scene:
 
     def get_output_format(self):
         return """
-Your entire response MUST follow the format specified below. Generate the three sections: Thoughts, Plan, and Action in every turn. Optionally include a Plan Update when you decide the plan should change.
+Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
+
+Planning guidelines (read carefully):
+- Goals: stable end-states. Rarely change; name and describe them briefly.
+- Milestones: observable sub-results that indicate progress toward goals.
+- Current Focus: the single step you are executing now. Align Action with this.
+- Strategy: a brief approach for achieving the goals over time.
+- Prefer continuity: preserve unaffected goals/milestones; make the smallest coherent change when adapting to new information. State what stays the same.
 
 --- Thoughts ---
-// Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
-// Re-evaluation: Compare new events with your current plan. Prefer continuity; change only when new information materially affects outcomes. If changing, state what remains unchanged and why the change improves results.
-// Strategy for This Turn: Based on your re-evaluation, decide the immediate goal for this turn.
+Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
+Re-evaluation: Compare the latest events with your current plan. Is your plan still relevant? Should you add, remove, or reorder steps? Should you jump to a different step instead of proceeding sequentially? Prefer continuity; preserve unaffected goals and milestones. Explicitly state whether you are keeping or changing the plan and why.
+Strategy for This Turn: Based on your re-evaluation, state your immediate objective for this turn and the short rationale for how you will achieve it.
 
 --- Plan ---
-// This is your living strategic document, not a rigid script. Update it every turn as needed based on your Re-evaluation. Mark your immediate focus with `[CURRENT]`.
+// Update the living plan if needed; mark your immediate focus with [CURRENT]. Keep steps concise and executable.
 1. [Step 1]
 2. [Step 2] [CURRENT]
 3. [Step 3]
 
 --- Action ---
-// Execute the single action that corresponds to the [CURRENT] step of your plan. This section must contain exactly one action chosen from the Action Space below.
-[Formatted action from the Action Space]
+// Output exactly one JSON action from the Action Space. No extra text.
+{"action": "...", ...}
 
 --- Plan Update ---
-// Optional. Include this section ONLY if you decide the plan should change.
+// Optional. Include ONLY if you are changing the plan.
 // Output either:
 // - no change
-// - or a JSON object with either a full `replace` or partial `patch`, and an optional natural-language `justification`.
+// - or a JSON object with either a full `replace` or a partial `patch`, plus an optional natural-language `justification`.
 // Example (patch):
 // {"justification":"...","patch":{"current_focus":{"goal_id":"g1","step":"..."},"notes":"..."}}
 // Example (replace):

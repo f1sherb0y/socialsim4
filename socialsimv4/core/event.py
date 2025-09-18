@@ -13,7 +13,7 @@ class MessageEvent(Event):
 
     def to_string(self, time=None):
         time_str = f"[{time}:00] " if time is not None else ""
-        return f"{time_str}Message: Sender={self.sender} | {self.message}"
+        return f"{time_str}[Message] {self.sender}: {self.message}"
 
     def get_sender(self):
         return self.sender
@@ -26,6 +26,15 @@ class PublicEvent(Event):
     def to_string(self, time=None):
         time_str = f"[{time}:00] " if time is not None else ""
         return f"{time_str}Public Event: {self.content}"
+
+
+class NewsEvent(Event):
+    def __init__(self, content):
+        self.content = content
+
+    def to_string(self, time=None):
+        time_str = f"[{time}:00] " if time is not None else ""
+        return f"{time_str}[NEWS] {self.content}"
 
 
 class StatusEvent(Event):

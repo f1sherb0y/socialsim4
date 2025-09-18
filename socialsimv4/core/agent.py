@@ -50,7 +50,12 @@ class Agent:
         def _fmt_list(items):
             if not items:
                 return "- (none)"
-            return "\n".join([f"- {item}" if isinstance(item, str) else f"- {item}" for item in items])
+            return "\n".join(
+                [
+                    f"- {item}" if isinstance(item, str) else f"- {item}"
+                    for item in items
+                ]
+            )
 
         def _fmt_goals(goals):
             if not goals:
@@ -78,19 +83,37 @@ class Agent:
         plan_state_block = f"""
 Current Plan State (read-only; propose updates via Plan Update):
 Goals:
-{_fmt_goals(self.plan_state.get('goals'))}
+{_fmt_goals(self.plan_state.get("goals"))}
 
 Milestones:
-{_fmt_milestones(self.plan_state.get('milestones'))}
+{_fmt_milestones(self.plan_state.get("milestones"))}
 
 Current Focus:
-{self.plan_state.get('current_focus', {})}
+{self.plan_state.get("current_focus", {})}
 
 Strategy:
-{self.plan_state.get('strategy', '')}
+{self.plan_state.get("strategy", "")}
 
 Notes:
-{self.plan_state.get('notes', '')}
+{self.plan_state.get("notes", "")}
+"""
+
+        # If plan_state is empty, explicitly ask the model to initialize it
+        if not self.plan_state or (
+            not self.plan_state.get("goals")
+            and not self.plan_state.get("milestones")
+            and not self.plan_state.get("current_focus")
+        ):
+            plan_state_block += (
+                "\nPlan State is currently empty. In this turn, include a '--- Plan Update ---' section with a JSON object using 'replace' to initialize goals, milestones (based on your Plan steps), current_focus, and a brief strategy. Keep it concise.\n"
+            )
+
+        planning_guidelines = """
+General Planning Principles:
+- Goals are stable; modify only when genuinely necessary.
+- Use milestones to track observable progress.
+- Keep a single Current Focus and align your Action to it.
+- Prefer minimal coherent changes; when adapting, preserve unaffected goals and milestones and state what remains unchanged.
 """
 
         base = f"""
@@ -102,6 +125,8 @@ You speak in a {self.style} style.
 {self.role_prompt}
 
 {plan_state_block}
+
+{planning_guidelines}
 
 {scenario.get_scenario_description() if scenario else ""}
 
@@ -125,14 +150,15 @@ Initial instruction:
 
     def call_llm(self, clients, messages, client_name="chat"):
         print(f"LLM call for {self.name} (client: {client_name})...")
-        print(f"Messages = {messages}")
         client = clients.get(client_name)
         if not client:
             raise ValueError(f"LLM client '{client_name}' not found.")
 
         try:
             result = client.chat(messages)
-            print(f"LLM API succeeded for {self.name}, response length: {len(result)}\n{result}")
+            print(
+                f"LLM API succeeded for {self.name}, response length: {len(result)}\n{result}"
+            )
             return result
         except Exception as e:
             print(f"LLM API failed for {self.name}: {e}")
@@ -266,6 +292,53 @@ History:
             return True
         return False
 
+    def _infer_initial_plan_from_plan_text(self, plan_text: str):
+        """Infer a minimal initial plan_state from the textual Plan when no Plan Update
+        was provided and the plan_state is empty."""
+        lines = [l.strip() for l in plan_text.splitlines() if l.strip()]
+        steps = []
+        current_idx = None
+        for l in lines:
+            m = re.match(r"\d+\.\s*(.*)", l)
+            if m:
+                text = m.group(1)
+                if "[CURRENT]" in text:
+                    text = text.replace("[CURRENT]", "").strip()
+                    if current_idx is None:
+                        current_idx = len(steps)
+                steps.append(text)
+        if not steps:
+            return False
+        milestones = [
+            {"id": f"m{i+1}", "desc": s, "status": "pending"}
+            for i, s in enumerate(steps)
+        ]
+        focus_step = steps[current_idx] if current_idx is not None else steps[0]
+        self.plan_state = {
+            "goals": [
+                {
+                    "id": "g1",
+                    "desc": "Execute the current multi-step plan",
+                    "priority": "normal",
+                    "status": "current",
+                }
+            ],
+            "milestones": milestones,
+            "current_focus": {"goal_id": "g1", "step": focus_step},
+            "strategy": "",
+            "notes": "",
+        }
+        if self.log_event:
+            self.log_event(
+                "plan_update_inferred",
+                {
+                    "agent": self.name,
+                    "source": "plan_text",
+                    "milestones": len(milestones),
+                },
+            )
+        return True
+
     def _parse_actions(self, action_block):
         """Parses the action block which should contain a JSON object or a list of JSON objects."""
         action_block = action_block.strip()
@@ -314,20 +387,29 @@ History:
         # Get history from memory
         ctx = self.short_memory.searilize(dialect="default")
         ctx.insert(0, {"role": "system", "content": system_prompt})
-        print(f"{self.name} will send {len(ctx)} messages to LLM, max_repeat={self.max_repeat}")
+        print(
+            f"{self.name} will send {len(ctx)} messages to LLM, max_repeat={self.max_repeat}"
+        )
 
         action_data = None
         for attempt in range(self.max_repeat):
             try:
                 llm_output = self.call_llm(clients, ctx)
-                thoughts, plan, action_block, plan_update_block = self._parse_full_response(
-                    llm_output
+                thoughts, plan, action_block, plan_update_block = (
+                    self._parse_full_response(llm_output)
                 )
                 action_data = self._parse_actions(action_block)
                 # Try applying plan update if present
                 plan_update = self._parse_plan_update(plan_update_block)
                 if plan_update:
                     self._apply_plan_update(plan_update)
+                elif (
+                    (not self.plan_state or (
+                        not self.plan_state.get("goals") and not self.plan_state.get("milestones") and not self.plan_state.get("current_focus")
+                    )) and plan
+                ):
+                    # Initialize from textual Plan as a fallback
+                    self._infer_initial_plan_from_plan_text(plan)
 
                 if not action_data:
                     raise ValueError("No valid action found in LLM output")

@@ -3,6 +3,7 @@ from socialsimv4.core.scene import Scene
 
 class SimpleChatScene(Scene):
     TYPE = "simple_chat_scene"
+
     def get_scenario_description(self):
         return """
 You are in a chat system with other people. You act like a real person: you only speak when you want to. You decide based on the conversation if it's worth responding.
@@ -22,7 +23,6 @@ Act like a real person in the chat:
 
 - You can choose not to send a message.
 - If a message is not relevant, not addressed to you, or boring, you might ignore it.
-- Input: Public events are prefixed with 'Public Event: '. Chat messages are prefixed with 'Message: Sender=[name]'. Summaries are prefixed with 'Summary: '.
 """
 
     def get_examples(self):
