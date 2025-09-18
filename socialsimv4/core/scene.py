@@ -18,15 +18,15 @@ class Scene:
 
     def get_output_format(self):
         return """
-Your entire response MUST follow the format specified below. You must generate each of the three sections: Thoughts, Plan, and Action, in every turn.
+Your entire response MUST follow the format specified below. Generate the three sections: Thoughts, Plan, and Action in every turn. Optionally include a Plan Update when you decide the plan should change.
 
 --- Thoughts ---
-// Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have. This section MUST include two parts:
-// 1. Re-evaluation: Analyze the latest messages in the conversation. Is your current Plan still relevant? Does it need to be modified? Should you add, remove, or reorder steps? Should you jump to a different step instead of proceeding sequentially? Explicitly state your conclusion about the plan.
-// 2. Strategy for This Turn: Based on your re-evaluation, decide on the immediate goal for your current turn.
+// Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
+// Re-evaluation: Compare new events with your current plan. Prefer continuity; change only when new information materially affects outcomes. If changing, state what remains unchanged and why the change improves results.
+// Strategy for This Turn: Based on your re-evaluation, decide the immediate goal for this turn.
 
 --- Plan ---
-// This is your living strategic document, not a rigid script. It must be updated in every turn based on your `Re-evaluation`. Mark your immediate focus with `[CURRENT]`.
+// This is your living strategic document, not a rigid script. Update it every turn as needed based on your Re-evaluation. Mark your immediate focus with `[CURRENT]`.
 1. [Step 1]
 2. [Step 2] [CURRENT]
 3. [Step 3]
@@ -34,6 +34,16 @@ Your entire response MUST follow the format specified below. You must generate e
 --- Action ---
 // Execute the single action that corresponds to the [CURRENT] step of your plan. This section must contain exactly one action chosen from the Action Space below.
 [Formatted action from the Action Space]
+
+--- Plan Update ---
+// Optional. Include this section ONLY if you decide the plan should change.
+// Output either:
+// - no change
+// - or a JSON object with either a full `replace` or partial `patch`, and an optional natural-language `justification`.
+// Example (patch):
+// {"justification":"...","patch":{"current_focus":{"goal_id":"g1","step":"..."},"notes":"..."}}
+// Example (replace):
+// {"justification":"...","replace":{"goals":[...],"milestones":[...],"current_focus":{...},"strategy":"...","notes":"..."}}
 """
 
     def get_examples(self):

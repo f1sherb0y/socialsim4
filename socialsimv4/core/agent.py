@@ -36,7 +36,63 @@ class Agent:
         self.properties = kwargs
         self.log_event = event_handler
 
+        # Lightweight, scene-agnostic plan state persisted across turns
+        self.plan_state = {
+            "goals": [],
+            "milestones": [],
+            "current_focus": {},
+            "strategy": "",
+            "notes": "",
+        }
+
     def system_prompt(self, scenario=None):
+        # Render plan state for inclusion in system prompt
+        def _fmt_list(items):
+            if not items:
+                return "- (none)"
+            return "\n".join([f"- {item}" if isinstance(item, str) else f"- {item}" for item in items])
+
+        def _fmt_goals(goals):
+            if not goals:
+                return "- (none)"
+            lines = []
+            for g in goals:
+                gid = g.get("id", "?")
+                desc = g.get("desc", "")
+                pr = g.get("priority", "")
+                st = g.get("status", "pending")
+                lines.append(f"- [{gid}] {desc} (priority: {pr}, status: {st})")
+            return "\n".join(lines)
+
+        def _fmt_milestones(milestones):
+            if not milestones:
+                return "- (none)"
+            lines = []
+            for m in milestones:
+                mid = m.get("id", "?")
+                desc = m.get("desc", "")
+                st = m.get("status", "pending")
+                lines.append(f"- [{mid}] {desc} (status: {st})")
+            return "\n".join(lines)
+
+        plan_state_block = f"""
+Current Plan State (read-only; propose updates via Plan Update):
+Goals:
+{_fmt_goals(self.plan_state.get('goals'))}
+
+Milestones:
+{_fmt_milestones(self.plan_state.get('milestones'))}
+
+Current Focus:
+{self.plan_state.get('current_focus', {})}
+
+Strategy:
+{self.plan_state.get('strategy', '')}
+
+Notes:
+{self.plan_state.get('notes', '')}
+"""
+
         base = f"""
 You are {self.name}.
 You speak in a {self.style} style.
@@ -44,6 +100,8 @@ You speak in a {self.style} style.
 {self.user_profile}
 
 {self.role_prompt}
+
+{plan_state_block}
 
 {scenario.get_scenario_description() if scenario else ""}
 
@@ -109,20 +167,104 @@ History:
         print(f"{self.name} summarized history.")
 
     def _parse_full_response(self, full_response):
-        """Extracts thoughts, plan, and the full action block from the response."""
+        """Extracts thoughts, plan, action block, and optional plan update from the response."""
         thoughts_match = re.search(
             r"--- Thoughts ---\s*(.*?)\s*--- Plan ---", full_response, re.DOTALL
         )
         plan_match = re.search(
             r"--- Plan ---\s*(.*?)\s*--- Action ---", full_response, re.DOTALL
         )
-        action_match = re.search(r"--- Action ---\s*(.*)", full_response, re.DOTALL)
+        action_match = re.search(
+            r"--- Action ---\s*(.*?)(?:\n--- Plan Update ---|\Z)",
+            full_response,
+            re.DOTALL,
+        )
+        plan_update_match = re.search(
+            r"--- Plan Update ---\s*(.*)$", full_response, re.DOTALL
+        )
 
         thoughts = thoughts_match.group(1).strip() if thoughts_match else ""
         plan = plan_match.group(1).strip() if plan_match else ""
         action = action_match.group(1).strip() if action_match else ""
+        plan_update_block = (
+            plan_update_match.group(1).strip() if plan_update_match else ""
+        )
 
-        return thoughts, plan, action
+        return thoughts, plan, action, plan_update_block
+
+    def _parse_plan_update(self, block):
+        """Parse Plan Update block; returns dict with 'replace' or 'patch', and optional 'justification'.
+        Accepts 'no change' (case-insensitive) or JSON optionally wrapped in fences.
+        """
+        if not block:
+            return None
+        text = block.strip()
+        if text.lower().startswith("no change"):
+            return None
+        # Strip common code fences
+        if text.startswith("```"):
+            # remove first fence line and trailing fence
+            text = re.sub(r"^```[a-zA-Z0-9_-]*\n", "", text)
+            text = re.sub(r"\n```\s*$", "", text)
+        # Try to locate JSON
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        if not m:
+            return None
+        try:
+            data = json.loads(m.group(0))
+            if not isinstance(data, dict):
+                return None
+            # only accept if 'patch' or 'replace' present
+            if "replace" in data or "patch" in data:
+                return data
+            return None
+        except json.JSONDecodeError:
+            return None
+
+    def _apply_plan_update(self, update):
+        """Apply plan update: either full replace or shallow patch with list replacement."""
+        if not update:
+            return False
+        justification = update.get("justification", "")
+        if "replace" in update and isinstance(update["replace"], dict):
+            self.plan_state = update["replace"]
+            if self.log_event:
+                self.log_event(
+                    "plan_update_applied",
+                    {
+                        "agent": self.name,
+                        "kind": "replace",
+                        "justification": justification,
+                    },
+                )
+            return True
+        if "patch" in update and isinstance(update["patch"], dict):
+            patch = update["patch"]
+            for k, v in patch.items():
+                # lists replace entirely; dicts shallow-merge; scalars replace
+                if isinstance(v, list):
+                    self.plan_state[k] = v
+                elif isinstance(v, dict):
+                    base = self.plan_state.get(k, {})
+                    if isinstance(base, dict):
+                        merged = base.copy()
+                        merged.update(v)
+                        self.plan_state[k] = merged
+                    else:
+                        self.plan_state[k] = v
+                else:
+                    self.plan_state[k] = v
+            if self.log_event:
+                self.log_event(
+                    "plan_update_applied",
+                    {
+                        "agent": self.name,
+                        "kind": "patch",
+                        "justification": justification,
+                    },
+                )
+            return True
+        return False
 
     def _parse_actions(self, action_block):
         """Parses the action block which should contain a JSON object or a list of JSON objects."""
@@ -178,8 +320,14 @@ History:
         for attempt in range(self.max_repeat):
             try:
                 llm_output = self.call_llm(clients, ctx)
-                thoughts, plan, action_block = self._parse_full_response(llm_output)
+                thoughts, plan, action_block, plan_update_block = self._parse_full_response(
+                    llm_output
+                )
                 action_data = self._parse_actions(action_block)
+                # Try applying plan update if present
+                plan_update = self._parse_plan_update(plan_update_block)
+                if plan_update:
+                    self._apply_plan_update(plan_update)
 
                 if not action_data:
                     raise ValueError("No valid action found in LLM output")
@@ -216,6 +364,7 @@ History:
             "last_history_length": self.last_history_length,
             "max_repeat": self.max_repeat,
             "properties": self.properties,
+            "plan_state": self.plan_state,
         }
 
     @classmethod
@@ -237,4 +386,14 @@ History:
         )
         agent.short_memory.history = data.get("short_memory", [])
         agent.last_history_length = data.get("last_history_length", 0)
+        agent.plan_state = data.get(
+            "plan_state",
+            {
+                "goals": [],
+                "milestones": [],
+                "current_focus": {},
+                "strategy": "",
+                "notes": "",
+            },
+        )
         return agent
