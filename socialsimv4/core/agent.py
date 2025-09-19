@@ -112,6 +112,7 @@ General Planning Principles:
 - Use milestones to track observable progress.
 - Keep a single Current Focus and align your Action to it.
 - Prefer minimal coherent changes; when adapting, preserve unaffected goals and milestones and state what remains unchanged.
+- Privacy: Treat Goals, Milestones, Current Focus, Strategy, and Notes as private working notes.
 
 Plan State JSON Schema (reference):
 {
