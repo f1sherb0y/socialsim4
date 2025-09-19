@@ -4,6 +4,7 @@ from socialsimv4.core.event import PublicEvent
 
 class MoveToLocationAction(Action):
     NAME = "move_to_location"
+    DESC = "Move to a named location or coordinates."
     INSTRUCTION = """- To move to a location: {"action": "move_to_location", "location": "[location_name]"}
 - Or move to coordinates: {"action": "move_to_location", "x": 12, "y": 34}"""
 
@@ -111,6 +112,7 @@ class MoveToLocationAction(Action):
 
 class LookAroundAction(Action):
     NAME = "look_around"
+    DESC = "Survey nearby tiles, locations, and agents."
     INSTRUCTION = """- To look around and see nearby locations and agents: {"action": "look_around", "radius": 5}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -176,6 +178,7 @@ class LookAroundAction(Action):
 
 class GatherResourceAction(Action):
     NAME = "gather_resource"
+    DESC = "Collect a resource at current tile/location."
     INSTRUCTION = """- To gather resources: {"action": "gather_resource", "resource": "[resource_name]", "amount": [number]}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -235,6 +238,7 @@ class GatherResourceAction(Action):
 
 class RestAction(Action):
     NAME = "rest"
+    DESC = "Recover energy; more in buildings."
     INSTRUCTION = """- To rest and recover energy: {"action": "rest"}"""
 
     def handle(self, action_data, agent, simulator, scene):

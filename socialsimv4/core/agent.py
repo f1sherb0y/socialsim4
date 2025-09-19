@@ -135,6 +135,17 @@ Plan Update JSON Format (you emit this ONLY if changing the plan):
 - Missing fields mean no change. Unknown keys are ignored. Output valid JSON only (no comments).
 """
 
+        # Build action catalog and usage
+        action_catalog = "\n".join(
+            [
+                f"- {getattr(action, 'NAME', '')}: {getattr(action, 'DESC', '')}".strip()
+                for action in self.action_space
+            ]
+        )
+        action_instructions = "".join(
+            getattr(action, "INSTRUCTION", "") for action in self.action_space
+        )
+
         base = f"""
 You are {self.name}.
 You speak in a {self.style} style.
@@ -155,7 +166,11 @@ You speak in a {self.style} style.
 
 Action Space:
 
-{"".join(action.INSTRUCTION for action in self.action_space)}
+Available Actions:
+{action_catalog}
+
+Usage:
+{action_instructions}
 
 
 Here are some examples:

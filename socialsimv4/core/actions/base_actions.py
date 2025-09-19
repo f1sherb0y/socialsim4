@@ -4,6 +4,7 @@ from socialsimv4.core.event import MessageEvent, SpeakEvent
 
 class SendMessageAction(Action):
     NAME = "send_message"
+    DESC = "Post a message to all participants."
     INSTRUCTION = """- To send a message: {"action": "send_message", "message": "[your_message]"}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -18,6 +19,7 @@ class SendMessageAction(Action):
 
 class SkipReplyAction(Action):
     NAME = "skip_reply"
+    DESC = "Do nothing this turn."
     INSTRUCTION = """- To skip a reply: {"action": "skip_reply"}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -27,6 +29,7 @@ class SkipReplyAction(Action):
 
 class SpeakAction(Action):
     NAME = "speak"
+    DESC = "Say something in local/proximal chat."
     INSTRUCTION = (
         """- To speak locally: {"action": "speak", "message": "[your_message]"}"""
     )

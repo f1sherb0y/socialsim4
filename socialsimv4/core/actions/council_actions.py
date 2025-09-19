@@ -4,6 +4,7 @@ from socialsimv4.core.event import MessageEvent, PublicEvent
 
 class StartVotingAction(Action):
     NAME = "start_voting"
+    DESC = "Host starts a voting round."
     INSTRUCTION = """- To start voting: {"action": "start_voting"}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -20,6 +21,7 @@ class StartVotingAction(Action):
 
 class GetVotingResultAction(Action):
     NAME = "get_voting_result"
+    DESC = "Host checks and announces vote result."
     INSTRUCTION = """- To get voting result: {"action": "get_voting_result"}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -52,6 +54,7 @@ class GetVotingResultAction(Action):
 
 class GetRoundsAction(Action):
     NAME = "get_rounds"
+    DESC = "Get the current round number."
     INSTRUCTION = """- To get the current round number: {"action": "get_rounds"}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -60,8 +63,77 @@ class GetRoundsAction(Action):
         return True
 
 
+class GetMaterialAction(Action):
+    NAME = "get_material"
+    DESC = "Host fetches briefing material via LLM."
+    INSTRUCTION = (
+        """
+- To fetch material (host only): {"action": "get_material", "desc": "[what material is needed]"}
+"""
+    )
+
+    def handle(self, action_data, agent, simulator, scene):
+        # Only the host can fetch materials
+        if getattr(agent, "name", "") != "Host":
+            agent.append_env_message("Only the Host can use get_material.")
+            return False
+
+        desc = action_data.get("desc") if isinstance(action_data, dict) else None
+        if not desc or not isinstance(desc, str):
+            agent.append_env_message(
+                'Missing parameter: "desc" (description of material to retrieve).'
+            )
+            return False
+
+        # Prepare a concise LLM prompt for generating briefing material
+        system_prompt = (
+            "You are a policy analyst assisting a legislative council debate. "
+            "Generate neutral, factual, concise briefing material to unblock discussion. "
+            "Output plain text only (no plans, no JSON, no role tags)."
+        )
+        user_prompt = (
+            "Provide 4-7 concise bullets with concrete facts, examples, or historical precedents "
+            "relevant to the following need. Include brief numbers if helpful and clearly label estimates.\n"
+            f"Need: {desc}\n"
+        )
+
+        material = None
+        try:
+            # Try using the configured LLM
+            material = agent.call_llm(
+                simulator.clients,
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            if not isinstance(material, str):
+                material = ""
+        except Exception:
+            material = ""
+
+        if not material.strip():
+            # Fallback if LLM unavailable or returned empty
+            material = (
+                f"- Background context for: {desc}\n"
+                "- Key stakeholders and likely positions\n"
+                "- Benefits and trade-offs\n"
+                "- Practical constraints (cost, enforcement, timeline)\n"
+                "- Open questions for further discussion"
+            )
+
+        content = (
+            f"Host provides additional material on '{desc}':\n{material.strip()}"
+        )
+        event = PublicEvent(content)
+        simulator.broadcast(event)
+        scene.log(f"{agent.name} fetched material for: {desc}")
+        return True
+
+
 class VoteAction(Action):
     NAME = "vote"
+    DESC = "Member casts a vote with optional comment."
     INSTRUCTION = """- To vote (only after voting has started): {"action": "vote", "vote": "yes" or "no" or "abstain", "comment": "[your comment here (optional)]"}"""
 
     def handle(self, action_data, agent, simulator, scene):
