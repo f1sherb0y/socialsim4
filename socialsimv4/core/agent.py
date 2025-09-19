@@ -205,8 +205,11 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 3. [Step 3]
 
 --- Action ---
-// Output exactly one JSON action from the Action Space. No extra text.
-{"action": "...", ...}
+// Output exactly one JSON action OR a list of actions. No extra text.
+// Each action MUST include a boolean "finish": true|false indicating whether your turn ends after that action.
+// Examples:
+// {"action": "send_message", "message": "Hi everyone!", "finish": true}
+// [{"action": "look_around", "radius": 5, "finish": false}, {"action": "move_to_location", "location": "farm", "finish": true}]
 
 --- Plan Update ---
 // Optional. Include ONLY if you are changing the plan.
@@ -414,7 +417,9 @@ History:
         return True
 
     def _parse_actions(self, action_block):
-        """Parses the action block which should contain a JSON object or a list of JSON objects."""
+        """Parses the action block containing a JSON object or list of JSON objects.
+        Ensures each action has a boolean 'finish' field (defaults to True if missing).
+        """
         action_block = action_block.strip()
         if action_block.startswith("```json"):
             action_block = action_block[7:-3].strip()
@@ -424,12 +429,29 @@ History:
         try:
             data = json.loads(action_block)
             if isinstance(data, dict):
-                return [data]  # It's a single action
+                actions = [data]
             elif isinstance(data, list):
-                return data  # It's a list of actions
+                actions = data
             else:
                 # Parsed but not a dict or list, not a valid action structure
                 return []
+            # Normalize/validate 'finish'
+            norm = []
+            for a in actions:
+                if not isinstance(a, dict):
+                    continue
+                f = a.get("finish")
+                if isinstance(f, bool):
+                    pass
+                elif isinstance(f, str) and f.lower() in ("true", "false"):
+                    a["finish"] = f.lower() == "true"
+                elif isinstance(f, (int, float)):
+                    a["finish"] = bool(f)
+                else:
+                    # Default to True if unspecified/invalid to avoid infinite loops
+                    a["finish"] = True
+                norm.append(a)
+            return norm
         except json.JSONDecodeError:
             # Fallback for malformed JSON. Try to find JSON within the string.
             match = re.search(r"\[.*\]|\{.*\}", action_block, re.DOTALL)
@@ -437,9 +459,27 @@ History:
                 try:
                     data = json.loads(match.group(0))
                     if isinstance(data, dict):
-                        return [data]
+                        actions = [data]
                     elif isinstance(data, list):
-                        return data
+                        actions = data
+                    else:
+                        return []
+                    # Normalize/validate 'finish'
+                    norm = []
+                    for a in actions:
+                        if not isinstance(a, dict):
+                            continue
+                        f = a.get("finish")
+                        if isinstance(f, bool):
+                            pass
+                        elif isinstance(f, str) and f.lower() in ("true", "false"):
+                            a["finish"] = f.lower() == "true"
+                        elif isinstance(f, (int, float)):
+                            a["finish"] = bool(f)
+                        else:
+                            a["finish"] = True
+                        norm.append(a)
+                    return norm
                 except json.JSONDecodeError:
                     pass  # JSON found but still couldn't parse
             return []

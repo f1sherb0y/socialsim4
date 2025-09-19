@@ -189,58 +189,58 @@ class _MockModel:
         if scene == "council":
             if agent_name.lower() == "host":
                 if call_n == 1:
-                    action = {"action": "start_voting"}
+                    action = {"action": "start_voting", "finish": False}
                     thought = "Kick off the voting round as host."
                     plan = "1. Start voting.\n2. Collect votes.\n3. Announce result."
                 else:
-                    action = {"action": "get_voting_result"}
+                    action = {"action": "get_voting_result", "finish": True}
                     thought = "Check if all votes are in and announce the result."
                     plan = "1. Monitor votes. [CURRENT]\n2. Announce result.\n3. Close session."
             else:
-                action = {"action": "vote", "vote": "yes"}
+                action = {"action": "vote", "vote": "yes", "finish": True}
                 thought = "Participate by voting yes."
                 plan = "1. Cast vote. [CURRENT]\n2. Provide short rationale."
             plan_update = "no change"
 
         elif scene == "map":
             if call_n == 1:
-                action = {"action": "look_around"}
+                action = {"action": "look_around", "finish": False}
                 thought = "Scout surroundings before moving."
                 plan = "1. Look around. [CURRENT]\n2. Move to a resource location.\n3. Gather resources.\n4. Rest if needed."
             elif call_n == 2:
-                action = {"action": "move_to_location", "location": "farm"}
+                action = {"action": "move_to_location", "location": "farm", "finish": True}
                 thought = "Head to the farm for food."
                 plan = (
                     "1. Move to farm. [CURRENT]\n2. Gather apples.\n3. Rest if tired."
                 )
             elif call_n == 3:
-                action = {"action": "gather_resource", "resource": "apple", "amount": 2}
+                action = {"action": "gather_resource", "resource": "apple", "amount": 2, "finish": True}
                 thought = "Collect some apples to reduce hunger."
                 plan = "1. Gather apples. [CURRENT]\n2. Rest if needed."
             else:
-                action = {"action": "rest"}
+                action = {"action": "rest", "finish": True}
                 thought = "Recover energy for future tasks."
                 plan = "1. Rest. [CURRENT]"
             plan_update = "no change"
 
         elif scene == "village":
             if call_n == 1:
-                action = {"action": "send_message", "message": "Good morning everyone!"}
+                action = {"action": "send_message", "message": "Good morning everyone!", "finish": True}
                 thought = "Greet others in the village."
                 plan = "1. Greet. [CURRENT]\n2. Check needs."
             else:
-                action = {"action": "skip_reply"}
+                action = {"action": "skip_reply", "finish": True}
                 thought = "No need to say more now."
                 plan = "1. Observe. [CURRENT]"
             plan_update = "no change"
 
         else:  # simple chat
             if call_n == 1:
-                action = {"action": "send_message", "message": f"Hi, I'm {agent_name}."}
+                action = {"action": "send_message", "message": f"Hi, I'm {agent_name}.", "finish": True}
                 thought = "Introduce myself briefly."
                 plan = "1. Say hello. [CURRENT]"
             else:
-                action = {"action": "skip_reply"}
+                action = {"action": "skip_reply", "finish": True}
                 thought = "Conversation is stable; skip."
                 plan = "1. Skip. [CURRENT]"
             plan_update = "no change"

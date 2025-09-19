@@ -5,7 +5,7 @@ from socialsimv4.core.event import MessageEvent, PublicEvent
 class StartVotingAction(Action):
     NAME = "start_voting"
     DESC = "Host starts a voting round."
-    INSTRUCTION = """- To start voting: {"action": "start_voting"}"""
+    INSTRUCTION = """- To start voting: {"action": "start_voting", "finish": true|false}"""
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):
@@ -22,7 +22,7 @@ class StartVotingAction(Action):
 class GetVotingResultAction(Action):
     NAME = "get_voting_result"
     DESC = "Host checks and announces vote result."
-    INSTRUCTION = """- To get voting result: {"action": "get_voting_result"}"""
+    INSTRUCTION = """- To get voting result: {"action": "get_voting_result", "finish": true|false}"""
 
     def handle(self, action_data, agent, simulator, scene):
         if scene.state.get("voting_started", False):
@@ -55,7 +55,7 @@ class GetVotingResultAction(Action):
 class GetRoundsAction(Action):
     NAME = "get_rounds"
     DESC = "Get the current round number."
-    INSTRUCTION = """- To get the current round number: {"action": "get_rounds"}"""
+    INSTRUCTION = """- To get the current round number: {"action": "get_rounds", "finish": true|false}"""
 
     def handle(self, action_data, agent, simulator, scene):
         rounds = simulator.round_num
@@ -67,7 +67,7 @@ class GetMaterialAction(Action):
     NAME = "get_material"
     DESC = "Host fetches concise briefing via LLM."
     INSTRUCTION = """
-- To fetch material (host only): {"action": "get_material", "desc": "[what material is needed]"}
+- To fetch material (host only): {"action": "get_material", "desc": "[what material is needed]", "finish": true|false}
 """
 
     def handle(self, action_data, agent, simulator, scene):
@@ -132,7 +132,7 @@ class GetMaterialAction(Action):
 class VoteAction(Action):
     NAME = "vote"
     DESC = "Member casts a vote with optional comment."
-    INSTRUCTION = """- To vote (only after voting has started): {"action": "vote", "vote": "yes" or "no" or "abstain", "comment": "[your comment here (optional)]"}"""
+    INSTRUCTION = """- To vote (only after voting has started): {"action": "vote", "vote": "yes" or "no" or "abstain", "comment": "[optional]", "finish": true|false}"""
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):

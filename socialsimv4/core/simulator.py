@@ -12,6 +12,7 @@ class Simulator:
         clients,
         broadcast_initial=True,
         status_update_interval=1,
+        max_steps_per_turn=3,
         event_handler=None,
     ):
         self.log_event = event_handler
@@ -25,6 +26,7 @@ class Simulator:
         self.round_num = 0
         self.event_log = []  # chronological list of events (dict records)
         self.status_update_interval = status_update_interval
+        self.max_steps_per_turn = max_steps_per_turn
 
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
@@ -82,6 +84,7 @@ class Simulator:
             "scene": self.scene.to_dict(),
             "round_num": self.round_num,
             "status_update_interval": self.status_update_interval,
+            "max_steps_per_turn": self.max_steps_per_turn,
             "event_log": self.event_log,
         }
 
@@ -111,7 +114,8 @@ class Simulator:
             scene=scene,
             clients=clients,
             broadcast_initial=False,  # Don't rebroadcast initial event
-            status_update_interval=data["status_update_interval"],
+            status_update_interval=data.get("status_update_interval", 1),
+            max_steps_per_turn=data.get("max_steps_per_turn", 3),
         )
         simulator.round_num = data["round_num"]
         simulator.event_log = data.get("event_log", [])
@@ -151,17 +155,31 @@ class Simulator:
                         )
                         self.record_event(evt, recipients=[agent.name])
 
-                # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
-                self.log_event("agent_process_start", {"agent": agent.name})
-                action_datas = agent.process(
-                    self.clients, initiative=is_initiative, scene=self.scene
-                )
-                self.log_event(
-                    "agent_process_end", {"agent": agent.name, "actions": action_datas}
-                )
+                # Multi-step per-turn loop
+                steps = 0
+                first_step = True
+                continue_turn = True
+                while continue_turn and steps < self.max_steps_per_turn:
+                    # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
+                    self.log_event("agent_process_start", {"agent": agent.name, "step": steps + 1})
+                    action_datas = agent.process(
+                        self.clients,
+                        initiative=(is_initiative or not first_step),
+                        scene=self.scene,
+                    )
+                    self.log_event(
+                        "agent_process_end",
+                        {"agent": agent.name, "step": steps + 1, "actions": action_datas},
+                    )
 
-                for action_data in action_datas:
-                    if action_data:
+                    if not action_datas:
+                        break
+
+                    finished = False
+                    any_handled = False
+                    for action_data in action_datas:
+                        if not action_data:
+                            continue
                         self.log_event(
                             "action_start", {"agent": agent.name, "action": action_data}
                         )
@@ -169,6 +187,19 @@ class Simulator:
                         self.log_event(
                             "action_end", {"agent": agent.name, "action": action_data}
                         )
+                        any_handled = True
+                        # Check finish flag (default True if missing)
+                        finish = action_data.get("finish")
+                        if not isinstance(finish, bool):
+                            finish = True
+                        if finish:
+                            finished = True
+                            break
+
+                    steps += 1
+                    first_step = False
+                    if finished or not any_handled:
+                        continue_turn = False
 
             self.scene.post_round(self)
 
