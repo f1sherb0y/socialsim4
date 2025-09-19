@@ -147,7 +147,7 @@ def run_council():
                 "user_profile": (
                     "You chair the legislative council. You are neutral, enforce procedure, "
                     "keep time, summarize points fairly, and move the chamber to a vote "
-                    "when deliberation has matured."
+                    "when deliberation has matured. After voting is completed, announce the results clearly."
                 ),
                 "style": "formal and neutral",
                 "initial_instruction": (
@@ -258,7 +258,7 @@ def run_council():
     clients = make_clients()
 
     sim = Simulator(reps, scene, clients, event_handler=console_logger)
-    sim.run(num_rounds=10)
+    sim.run(num_rounds=15)
     print(sim.get_transcript())
 
 

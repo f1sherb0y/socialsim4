@@ -6,6 +6,7 @@ from socialsimv4.core.actions.council_actions import (
 )
 from socialsimv4.core.agent import Agent
 from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
+from socialsimv4.core.event import PublicEvent
 
 
 class CouncilScene(SimpleChatScene):
@@ -15,6 +16,7 @@ class CouncilScene(SimpleChatScene):
         super().__init__(name, initial_event)
         self.state["votes"] = {}
         self.state["voting_started"] = False
+        self.state["voting_completed_announced"] = False
         self.complete = False
 
     def get_scene_actions(self, agent: Agent):
@@ -36,3 +38,22 @@ class CouncilScene(SimpleChatScene):
 
     def is_complete(self):
         return self.complete
+
+    def post_round(self, simulator):
+        # After each full round (all agents had a turn), if voting started and
+        # all non-host members have voted, broadcast completion once.
+        if not self.state.get("voting_started", False):
+            return
+        if self.state.get("voting_completed_announced", False):
+            return
+
+        num_members = sum(1 for a in simulator.agents.values() if a.name != "Host")
+        votes = self.state.get("votes", {})
+        if len(votes) >= num_members and num_members > 0:
+            simulator.broadcast(
+                PublicEvent(
+                    "All votes are in. Voting has completed. Host should announce the results."
+                )
+            )
+            self.state["voting_completed_announced"] = True
+            self.log("Voting completion announced after round.")

@@ -65,7 +65,10 @@ class GetRoundsAction(Action):
 
 class GetMaterialAction(Action):
     NAME = "get_material"
-    DESC = "Host fetches concise briefing via LLM."
+    DESC = (
+        "Host: fetch concise briefing via LLM when debate stalls or facts are missing; "
+        "provide a clear 'desc'."
+    )
     INSTRUCTION = """
 - To fetch material (host only): {"action": "get_material", "desc": "[what material is needed]", "finish": true|false}
 """
