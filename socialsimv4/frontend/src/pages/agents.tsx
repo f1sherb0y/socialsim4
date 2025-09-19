@@ -263,8 +263,8 @@ export const AgentsPage = () => {
         }
         setIsGenerating(true);
         try {
-            const scenario = ctx.data.currentTemplate?.meta.name || "a social simulation";
-            const plan = await apis.generateProfilesPlan(scenario, request, agentCountToGenerate);
+            const scene = ctx.data.currentTemplate?.meta.name || "a social simulation";
+            const plan = await apis.generateProfilesPlan(scene, request, agentCountToGenerate);
             setGenerationPlan(plan);
         } catch (error) {
             console.error("Error generating plan:", error);

@@ -66,7 +66,7 @@ class Provider(ProviderBase):
 
 
 class ProfilePlanReq(BaseModel):
-    scenario: str
+    scene: str
     request: str
     agent_count: int
 

@@ -350,7 +350,7 @@ export namespace apis {
     };
 
 
-    export const generateProfilesPlan = async (scenario: string, request: string, agent_count: number): Promise<any> => {
+    export const generateProfilesPlan = async (scene: string, request: string, agent_count: number): Promise<any> => {
         console.warn("generateProfilesPlan is deprecated and does nothing.");
         return Promise.resolve({ plan: "This is a mock plan." });
     }

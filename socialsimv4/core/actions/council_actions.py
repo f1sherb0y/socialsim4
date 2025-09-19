@@ -31,7 +31,10 @@ class GetVotingResultAction(Action):
                 abstain = num_members - yes - no
                 result = "passed" if yes > num_members / 2 else "failed"
                 event_content = f"Voting on the draft has concluded. It {result} with {yes} yes, {no} no, and {abstain} abstain."
-                simulator.broadcast(PublicEvent(event_content))
+
+                # simulator.broadcast(PublicEvent(event_content))
+                agent.append_env_message(event_content)
+
                 scene.complete = True
                 scene.state["votes"] = {}
                 scene.log("Voting has concluded.")
@@ -45,6 +48,16 @@ class GetVotingResultAction(Action):
                 simulator.record_event(info, recipients=[agent.name])
                 return True
         return False
+
+
+class GetRoundsAction(Action):
+    NAME = "get_rounds"
+    INSTRUCTION = """- To get the current round number: {"action": "get_rounds"}"""
+
+    def handle(self, action_data, agent, simulator, scene):
+        rounds = simulator.round_num
+        agent.append_env_message(f"Current round: {rounds}")
+        return True
 
 
 class VoteAction(Action):

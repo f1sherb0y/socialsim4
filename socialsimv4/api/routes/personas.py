@@ -13,7 +13,7 @@ async def generate_profiles_plan_endpoint(
 ):
     # This is a placeholder. In a real application, you would call your
     # profile generation logic here.
-    return {"plan": f"Plan for {req.agent_count} agents in a {req.scenario} scenario."}
+    return {"plan": f"Plan for {req.agent_count} agents in a {req.scene} scene."}
 
 
 @router.post("/generate_profiles")

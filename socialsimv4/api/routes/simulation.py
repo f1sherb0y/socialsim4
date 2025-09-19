@@ -40,17 +40,17 @@ async def start_simulation(
 
     agents = [Agent.from_dict(agent_data) for agent_data in template_data["agents"]]
 
-    scene_type = template_data["scenario"]["type"]
+    scene_type = template_data["scene"]["type"]
     scene_class = SCENE_MAP.get(scene_type)
     if not scene_class:
         raise HTTPException(status_code=400, detail=f"Unknown scene type: {scene_type}")
-    scenario = scene_class.from_dict(template_data["scenario"])
+    scene = scene_class.from_dict(template_data["scene"])
 
     # Create a dictionary of clients, keyed by provider name
     clients = {provider.name: create_llm_client(provider) for provider in req.providers}
 
     if not simulation_manager.start_simulation(
-        req.sim_code, agents, scenario, clients, initial_rounds=req.initial_rounds
+        req.sim_code, agents, scene, clients, initial_rounds=req.initial_rounds
     ):
         raise HTTPException(status_code=400, detail="Simulation already running")
 

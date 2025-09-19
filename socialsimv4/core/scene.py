@@ -5,6 +5,7 @@ from socialsimv4.core.simulator import Simulator
 
 class Scene:
     TYPE = "scene"
+
     def __init__(self, name, initial_event):
         self.name = name
         self.initial_event = PublicEvent(initial_event)
@@ -57,6 +58,12 @@ class Scene:
     def initialize_agent(self, agent: Agent):
         """Initializes an agent with scene-specific properties."""
         pass
+
+    def get_scene_actions(self, agent: Agent):
+        """Return a list of Action instances this scene enables for the agent.
+        Default: no additional actions.
+        """
+        return []
 
     def to_dict(self):
         return {

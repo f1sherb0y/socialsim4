@@ -8,7 +8,7 @@ class Simulator:
     def __init__(
         self,
         agents,
-        scenario,
+        scene,
         clients,
         broadcast_initial=True,
         status_update_interval=1,
@@ -21,7 +21,7 @@ class Simulator:
 
         self.agents = {agent.name: agent for agent in agents}  # 用dict便于查找
         self.clients = clients  # Dictionary of LLM clients
-        self.scenario = scenario
+        self.scene = scene
         self.round_num = 0
         self.event_log = []  # chronological list of events (dict records)
         self.status_update_interval = status_update_interval
@@ -29,17 +29,24 @@ class Simulator:
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
             for agent in agents:
-                self.scenario.initialize_agent(agent)
+                self.scene.initialize_agent(agent)
+                # Append scene-specific actions without modifying base action spaces here
+                scene_actions = self.scene.get_scene_actions(agent) or []
+                existing = {getattr(a, "NAME", None) for a in agent.action_space}
+                for act in scene_actions:
+                    name = getattr(act, "NAME", None)
+                    if name and name not in existing:
+                        agent.action_space.append(act)
 
         # 初始化所有agent的personal_history：添加初始事件作为user role if flag is True
         if broadcast_initial:
-            self.broadcast(self.scenario.initial_event)
+            self.broadcast(self.scene.initial_event)
 
     def record_event(self, event: Event, recipients=None):
         """Record an event with time, type, text, sender, recipients.
         recipients: list of agent names or None (means broadcast to all except sender).
         """
-        time = self.scenario.state.get("time")
+        time = self.scene.state.get("time")
         try:
             text = event.to_string(time)
         except Exception:
@@ -57,7 +64,7 @@ class Simulator:
 
     def broadcast(self, event: Event):
         sender = event.get_sender()
-        time = self.scenario.state.get("time")
+        time = self.scene.state.get("time")
         formatted = event.to_string(time)
 
         recipients = []
@@ -72,7 +79,7 @@ class Simulator:
     def to_dict(self):
         return {
             "agents": {name: agent.to_dict() for name, agent in self.agents.items()},
-            "scenario": self.scenario.to_dict(),
+            "scene": self.scene.to_dict(),
             "round_num": self.round_num,
             "status_update_interval": self.status_update_interval,
             "event_log": self.event_log,
@@ -81,16 +88,16 @@ class Simulator:
     @classmethod
     def from_dict(cls, data, clients):
         # Note: clients are not serialized and must be passed in.
-        scenario_data = data["scenario"]
+        scenario_data = data["scene"]
         # This is a simplified example. In a real application, you would
         # have a factory function to create the correct scene type.
         from socialsimv4.core.registry import SCENE_MAP
 
-        scene_type = scenario_data.get("type", "map_scene")
+        scene_type = scenario_data["type"]
         scene_class = SCENE_MAP.get(scene_type)
         if not scene_class:
             raise ValueError(f"Unknown scene type: {scene_type}")
-        scenario = scene_class.from_dict(scenario_data)
+        scene = scene_class.from_dict(scenario_data)
 
         agents = [
             Agent.from_dict(
@@ -101,7 +108,7 @@ class Simulator:
 
         simulator = cls(
             agents=agents,
-            scenario=scenario,
+            scene=scene,
             clients=clients,
             broadcast_initial=False,  # Don't rebroadcast initial event
             status_update_interval=data["status_update_interval"],
@@ -135,17 +142,19 @@ class Simulator:
                     self.round_num > 0
                     and self.round_num % self.status_update_interval == 0
                 ):
-                    status_prompt = self.scenario.get_agent_status_prompt(agent)
+                    status_prompt = self.scene.get_agent_status_prompt(agent)
                     if status_prompt:
                         # Wrap as a status event for logging
                         evt = StatusEvent(status_prompt)
-                        agent.append_env_message(evt.to_string(self.scenario.state.get("time")))
+                        agent.append_env_message(
+                            evt.to_string(self.scene.state.get("time"))
+                        )
                         self.record_event(evt, recipients=[agent.name])
 
                 # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
                 self.log_event("agent_process_start", {"agent": agent.name})
                 action_datas = agent.process(
-                    self.clients, initiative=is_initiative, scenario=self.scenario
+                    self.clients, initiative=is_initiative, scene=self.scene
                 )
                 self.log_event(
                     "agent_process_end", {"agent": agent.name, "actions": action_datas}
@@ -156,14 +165,14 @@ class Simulator:
                         self.log_event(
                             "action_start", {"agent": agent.name, "action": action_data}
                         )
-                        self.scenario.parse_and_handle_action(action_data, agent, self)
+                        self.scene.parse_and_handle_action(action_data, agent, self)
                         self.log_event(
                             "action_end", {"agent": agent.name, "action": action_data}
                         )
 
-            self.scenario.post_round(self)
+            self.scene.post_round(self)
 
-            if self.scenario.is_complete():
+            if self.scene.is_complete():
                 print("Scenario complete. Simulation ends.")
                 break
 

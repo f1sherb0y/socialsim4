@@ -1,18 +1,17 @@
-from socialsimv4.core.event import MessageEvent, SpeakEvent
 from socialsimv4.core.action import Action
+from socialsimv4.core.event import MessageEvent, SpeakEvent
 
 
 class SendMessageAction(Action):
     NAME = "send_message"
     INSTRUCTION = """- To send a message: {"action": "send_message", "message": "[your_message]"}"""
 
-    def handle(self, action_data, agent, simulator, scenario):
+    def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
         if message:
             agent.log_event("send_message", {"agent": agent.name, "message": message})
             event = MessageEvent(agent.name, message)
-            scenario.deliver_message(event, agent, simulator)
-            scenario.log(f"<{agent.name}> {message}")
+            scene.deliver_message(event, agent, simulator)
             return True
         return False
 
@@ -21,22 +20,22 @@ class SkipReplyAction(Action):
     NAME = "skip_reply"
     INSTRUCTION = """- To skip a reply: {"action": "skip_reply"}"""
 
-    def handle(self, action_data, agent, simulator, scenario):
+    def handle(self, action_data, agent, simulator, scene):
         agent.log_event("skip_reply", {"agent": agent.name})
-        scenario.log(f"{agent.name} decided to skip a reply.")
         return True
 
 
 class SpeakAction(Action):
     NAME = "speak"
-    INSTRUCTION = """- To speak locally: {"action": "speak", "message": "[your_message]"}"""
+    INSTRUCTION = (
+        """- To speak locally: {"action": "speak", "message": "[your_message]"}"""
+    )
 
-    def handle(self, action_data, agent, simulator, scenario):
+    def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
         if message:
             agent.log_event("speak", {"agent": agent.name, "message": message})
             event = SpeakEvent(agent.name, message)
-            scenario.deliver_message(event, agent, simulator)
-            scenario.log(f"<{agent.name}> {message}")
+            scene.deliver_message(event, agent, simulator)
             return True
         return False

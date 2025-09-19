@@ -85,12 +85,12 @@ class SimulationManager:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.lock = threading.Lock()
 
-    def start_simulation(self, sim_code, agents, scenario, clients, initial_rounds=1):
+    def start_simulation(self, sim_code, agents, scene, clients, initial_rounds=1):
         with self.lock:
             if sim_code in self.simulations:
                 return False  # Simulation already running
 
-            simulator = Simulator(agents, scenario, clients)
+            simulator = Simulator(agents, scene, clients)
             instance = SimulationInstance(simulator)
             self.simulations[sim_code] = instance
 

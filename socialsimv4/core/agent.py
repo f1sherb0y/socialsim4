@@ -45,7 +45,7 @@ class Agent:
             "notes": "",
         }
 
-    def system_prompt(self, scenario=None):
+    def system_prompt(self, scene=None):
         # Render plan state for inclusion in system prompt
         def _fmt_list(items):
             if not items:
@@ -104,9 +104,7 @@ Notes:
             and not self.plan_state.get("milestones")
             and not self.plan_state.get("current_focus")
         ):
-            plan_state_block += (
-                "\nPlan State is currently empty. In this turn, include a '--- Plan Update ---' section with a JSON object using 'replace' to initialize goals, milestones (based on your Plan steps), current_focus, and a brief strategy. Keep it concise.\n"
-            )
+            plan_state_block += "\nPlan State is currently empty. In this turn, include a '--- Plan Update ---' section with a JSON object using 'replace' to initialize goals, milestones (based on your Plan steps), current_focus, and a brief strategy. Keep it concise.\n"
 
         planning_guidelines = """
 General Planning Principles:
@@ -149,9 +147,9 @@ You speak in a {self.style} style.
 
 {planning_guidelines}
 
-{scenario.get_scenario_description() if scenario else ""}
+{scene.get_scenario_description() if scene else ""}
 
-{scenario.get_behavior_guidelines() if scenario else ""}
+{scene.get_behavior_guidelines() if scene else ""}
 
 {self.get_output_format()}
 
@@ -161,7 +159,7 @@ Action Space:
 
 
 Here are some examples:
-{scenario.get_examples() if scenario else ""}
+{scene.get_examples() if scene else ""}
 
 
 Initial instruction:
@@ -214,16 +212,12 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 """
 
     def call_llm(self, clients, messages, client_name="chat"):
-        print(f"LLM call for {self.name} (client: {client_name})...")
         client = clients.get(client_name)
         if not client:
             raise ValueError(f"LLM client '{client_name}' not found.")
 
         try:
             result = client.chat(messages)
-            print(
-                f"LLM API succeeded for {self.name}, response length: {len(result)}\n{result}"
-            )
             return result
         except Exception as e:
             print(f"LLM API failed for {self.name}: {e}")
@@ -375,7 +369,7 @@ History:
         if not steps:
             return False
         milestones = [
-            {"id": f"m{i+1}", "desc": s, "status": "pending"}
+            {"id": f"m{i + 1}", "desc": s, "status": "pending"}
             for i, s in enumerate(steps)
         ]
         focus_step = steps[current_idx] if current_idx is not None else steps[0]
@@ -435,26 +429,20 @@ History:
                     pass  # JSON found but still couldn't parse
             return []
 
-    def process(self, clients, initiative=False, scenario=None):
-        print(f"Processing {self.name} (initiative={initiative})")
+    def process(self, clients, initiative=False, scene=None):
         current_length = len(self.short_memory)
         if current_length == self.last_history_length and not initiative:
             # 没有新事件，无反应
             print(f"No new messages for {self.name}, skipping")
             return {}
 
-        print(f"{self.name} has {current_length} messages to process")
-
         # 检查并总结如果需要
 
-        system_prompt = self.system_prompt(scenario)
+        system_prompt = self.system_prompt(scene)
 
         # Get history from memory
         ctx = self.short_memory.searilize(dialect="default")
         ctx.insert(0, {"role": "system", "content": system_prompt})
-        print(
-            f"{self.name} will send {len(ctx)} messages to LLM, max_repeat={self.max_repeat}"
-        )
 
         action_data = None
         for attempt in range(self.max_repeat):
@@ -469,10 +457,13 @@ History:
                 if plan_update:
                     self._apply_plan_update(plan_update)
                 elif (
-                    (not self.plan_state or (
-                        not self.plan_state.get("goals") and not self.plan_state.get("milestones") and not self.plan_state.get("current_focus")
-                    )) and plan
-                ):
+                    not self.plan_state
+                    or (
+                        not self.plan_state.get("goals")
+                        and not self.plan_state.get("milestones")
+                        and not self.plan_state.get("current_focus")
+                    )
+                ) and plan:
                     # Initialize from textual Plan as a fallback
                     self._infer_initial_plan_from_plan_text(plan)
 

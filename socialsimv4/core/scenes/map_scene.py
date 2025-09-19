@@ -1,14 +1,14 @@
 import heapq
 import math
-from typing import Dict, List, Optional, Tuple, Iterable
+from typing import Dict, Iterable, List, Optional, Tuple
 
+from socialsimv4.core.actions.base_actions import SpeakAction
 from socialsimv4.core.actions.map_actions import (
     GatherResourceAction,
     LookAroundAction,
     MoveToLocationAction,
     RestAction,
 )
-from socialsimv4.core.actions.base_actions import SpeakAction
 from socialsimv4.core.agent import Agent
 from socialsimv4.core.event import PublicEvent, StatusEvent
 from socialsimv4.core.scene import Scene
@@ -110,7 +110,9 @@ class GameMap:
         # Residences
         self.add_location("house_1", 8, 8, "building", "Farmer's house", capacity=2)
         self.add_location("house_2", 12, 8, "building", "Merchant's house", capacity=2)
-        self.add_location("house_3", 8, 12, "building", "Blacksmith's house", capacity=2)
+        self.add_location(
+            "house_3", 8, 12, "building", "Blacksmith's house", capacity=2
+        )
 
         # Workplaces
         self.add_location(
@@ -121,12 +123,21 @@ class GameMap:
             "Farm where crops can be grown and harvested",
             resources={"apple": 10, "wheat": 15},
         )
-        self.add_location("market", 15, 10, "building", "Market for trading", capacity=10)
-        self.add_location("blacksmith", 10, 15, "building", "Blacksmith shop", capacity=3)
+        self.add_location(
+            "market", 15, 10, "building", "Market for trading", capacity=10
+        )
+        self.add_location(
+            "blacksmith", 10, 15, "building", "Blacksmith shop", capacity=3
+        )
 
         # Natural resources
         self.add_location(
-            "forest", 3, 5, "resource", "Forest for gathering wood", resources={"wood": 20}
+            "forest",
+            3,
+            5,
+            "resource",
+            "Forest for gathering wood",
+            resources={"wood": 20},
         )
         self.add_location(
             "lake", 17, 5, "resource", "Lake for fishing", resources={"fish": 8}
@@ -387,15 +398,16 @@ There are people nearby; I'll greet them.
             cx, cy = self.game_map.width // 2, self.game_map.height // 2
             agent.properties["map_xy"] = [cx, cy]
             agent.properties["map_position"] = f"{cx},{cy}"
-        agent.action_space.extend(
-            [
-                SpeakAction(),
-                MoveToLocationAction(),
-                LookAroundAction(),
-                GatherResourceAction(),
-                RestAction(),
-            ]
-        )
+
+    def get_scene_actions(self, agent: Agent):
+        """Return actions available in the map scene for this agent."""
+        return [
+            SpeakAction(),
+            MoveToLocationAction(),
+            LookAroundAction(),
+            GatherResourceAction(),
+            RestAction(),
+        ]
 
     def post_round(self, simulator: Simulator):
         """每轮结束后的处理"""
@@ -422,29 +434,21 @@ There are people nearby; I'll greet them.
 
             # Status warnings (English, plain)
             if agent.properties["hunger"] >= 70:
-                status = (
-                    f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
-                )
+                status = f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
                 evt = StatusEvent(status)
-                agent.append_env_message(
-                    evt.to_string(self.state.get("time"))
-                )
+                agent.append_env_message(evt.to_string(self.state.get("time")))
                 simulator.record_event(evt, recipients=[agent.name])
 
             if agent.properties["energy"] <= 30:
                 status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
                 evt = StatusEvent(status)
-                agent.append_env_message(
-                    evt.to_string(self.state.get("time"))
-                )
+                agent.append_env_message(evt.to_string(self.state.get("time")))
                 simulator.record_event(evt, recipients=[agent.name])
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
         time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"
         xy = agent.properties.get("map_xy") or [None, None]
-        loc = (
-            self.game_map.get_location_at(xy[0], xy[1]) if xy[0] is not None else None
-        )
+        loc = self.game_map.get_location_at(xy[0], xy[1]) if xy[0] is not None else None
         loc_name = loc.name if loc else agent.properties.get("map_position", "?")
         return f"""
 --- Status ---
@@ -517,7 +521,14 @@ Current time: {self.state.get("time", 0)} hours ({time_of_day})
         width = map_cfg.get("width", 20)
         height = map_cfg.get("height", 20)
 
-        scene = cls(name, initial_event, map_width=width, map_height=height, movement_cost=movement_cost, chat_range=chat_range)
+        scene = cls(
+            name,
+            initial_event,
+            map_width=width,
+            map_height=height,
+            movement_cost=movement_cost,
+            chat_range=chat_range,
+        )
         scene.state = data.get("state", {"time": 0})
 
         # Tiles

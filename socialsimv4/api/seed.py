@@ -53,7 +53,7 @@ simple_chat_template = {
                     "properties": {},
                 },
             ],
-            "scenario": {
+            "scene": {
                 "type": "simple_chat_scene",
                 "name": "Simple Chat",
                 "initial_event": "The chat room is now open.",
@@ -111,7 +111,7 @@ map_scene_template = {
                     },
                 },
             ],
-            "scenario": {
+            "scene": {
                 "type": "map_scene",
                 "name": "Virtual Village",
                 "initial_event": "A new day has begun in the village.",
@@ -156,7 +156,7 @@ council_scene_template = {
                     "properties": {},
                 },
             ],
-            "scenario": {
+            "scene": {
                 "type": "council_scene",
                 "name": "Town Council Meeting",
                 "initial_event": "The town council meeting has been called to order to discuss the proposal for a new factory.",

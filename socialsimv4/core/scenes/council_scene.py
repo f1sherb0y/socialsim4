@@ -9,21 +9,16 @@ from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
 
 class CouncilScene(SimpleChatScene):
     TYPE = "council_scene"
+
     def __init__(self, name, initial_event):
         super().__init__(name, initial_event)
         self.state["votes"] = {}
         self.state["voting_started"] = False
         self.complete = False
 
-    def initialize_agent(self, agent: Agent):
-        super().initialize_agent(agent)
-        agent.action_space.extend(
-            [
-                VoteAction(),
-                StartVotingAction(),
-                GetVotingResultAction(),
-            ]
-        )
+    def get_scene_actions(self, agent: Agent):
+        actions = super().get_scene_actions(agent)
+        return actions
 
     def get_behavior_guidelines(self):
         base = super().get_behavior_guidelines()
