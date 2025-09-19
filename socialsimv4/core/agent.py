@@ -205,11 +205,10 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 3. [Step 3]
 
 --- Action ---
-// Output exactly one JSON action OR a list of actions. No extra text.
-// Each action MUST include a boolean "finish": true|false indicating whether your turn ends after that action.
-// Examples:
+// Output exactly one JSON action. No extra text.
+// The action MUST include a boolean "finish": true|false indicating whether your turn ends after that action.
+// Example:
 // {"action": "send_message", "message": "Hi everyone!", "finish": true}
-// [{"action": "look_around", "radius": 5, "finish": false}, {"action": "move_to_location", "location": "farm", "finish": true}]
 
 --- Plan Update ---
 // Optional. Include ONLY if you are changing the plan.
@@ -417,8 +416,10 @@ History:
         return True
 
     def _parse_actions(self, action_block):
-        """Parses the action block containing a JSON object or list of JSON objects.
-        Ensures each action has a boolean 'finish' field (defaults to True if missing).
+        """Parses the action block containing a single JSON action object.
+        Lists are invalid. Ensures the action has a boolean 'finish' field
+        (defaults to True if missing). Returns a list with exactly one action
+        dict, or an empty list on failure.
         """
         action_block = action_block.strip()
         if action_block.startswith("```json"):
@@ -428,58 +429,39 @@ History:
 
         try:
             data = json.loads(action_block)
-            if isinstance(data, dict):
-                actions = [data]
-            elif isinstance(data, list):
-                actions = data
-            else:
-                # Parsed but not a dict or list, not a valid action structure
+            if not isinstance(data, dict):
+                # Only a single dict is valid; lists or other types are rejected
                 return []
-            # Normalize/validate 'finish'
-            norm = []
-            for a in actions:
-                if not isinstance(a, dict):
-                    continue
-                f = a.get("finish")
-                if isinstance(f, bool):
-                    pass
-                elif isinstance(f, str) and f.lower() in ("true", "false"):
-                    a["finish"] = f.lower() == "true"
-                elif isinstance(f, (int, float)):
-                    a["finish"] = bool(f)
-                else:
-                    # Default to True if unspecified/invalid to avoid infinite loops
-                    a["finish"] = True
-                norm.append(a)
-            return norm
+            # Normalize/validate 'finish' on the single action
+            f = data.get("finish")
+            if isinstance(f, bool):
+                pass
+            elif isinstance(f, str) and f.lower() in ("true", "false"):
+                data["finish"] = f.lower() == "true"
+            elif isinstance(f, (int, float)):
+                data["finish"] = bool(f)
+            else:
+                data["finish"] = True
+            return [data]
         except json.JSONDecodeError:
             # Fallback for malformed JSON. Try to find JSON within the string.
             match = re.search(r"\[.*\]|\{.*\}", action_block, re.DOTALL)
             if match:
                 try:
                     data = json.loads(match.group(0))
-                    if isinstance(data, dict):
-                        actions = [data]
-                    elif isinstance(data, list):
-                        actions = data
-                    else:
+                    if not isinstance(data, dict):
                         return []
-                    # Normalize/validate 'finish'
-                    norm = []
-                    for a in actions:
-                        if not isinstance(a, dict):
-                            continue
-                        f = a.get("finish")
-                        if isinstance(f, bool):
-                            pass
-                        elif isinstance(f, str) and f.lower() in ("true", "false"):
-                            a["finish"] = f.lower() == "true"
-                        elif isinstance(f, (int, float)):
-                            a["finish"] = bool(f)
-                        else:
-                            a["finish"] = True
-                        norm.append(a)
-                    return norm
+                    # Normalize/validate 'finish' on the single action
+                    f = data.get("finish")
+                    if isinstance(f, bool):
+                        pass
+                    elif isinstance(f, str) and f.lower() in ("true", "false"):
+                        data["finish"] = f.lower() == "true"
+                    elif isinstance(f, (int, float)):
+                        data["finish"] = bool(f)
+                    else:
+                        data["finish"] = True
+                    return [data]
                 except json.JSONDecodeError:
                     pass  # JSON found but still couldn't parse
             return []
