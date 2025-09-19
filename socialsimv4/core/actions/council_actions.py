@@ -65,12 +65,10 @@ class GetRoundsAction(Action):
 
 class GetMaterialAction(Action):
     NAME = "get_material"
-    DESC = "Host fetches briefing material via LLM."
-    INSTRUCTION = (
-        """
+    DESC = "Host fetches concise briefing via LLM."
+    INSTRUCTION = """
 - To fetch material (host only): {"action": "get_material", "desc": "[what material is needed]"}
 """
-    )
 
     def handle(self, action_data, agent, simulator, scene):
         # Only the host can fetch materials
@@ -85,15 +83,15 @@ class GetMaterialAction(Action):
             )
             return False
 
-        # Prepare a concise LLM prompt for generating briefing material
+        # Prepare a concise LLM prompt for a short, actionable briefing
         system_prompt = (
             "You are a policy analyst assisting a legislative council debate. "
-            "Generate neutral, factual, concise briefing material to unblock discussion. "
-            "Output plain text only (no plans, no JSON, no role tags)."
+            "Generate a neutral, factual, concise briefing to unblock discussion. "
+            "Output plain text only (no JSON, no role tags)."
         )
         user_prompt = (
-            "Provide 4-7 concise bullets with concrete facts, examples, or historical precedents "
-            "relevant to the following need. Include brief numbers if helpful and clearly label estimates.\n"
+            "Provide 5–7 crisp bullets with concrete facts, examples, or precedents. "
+            "Include numbers if helpful and clearly label estimates. Keep under ~180 words.\n"
             f"Need: {desc}\n"
         )
 
@@ -113,18 +111,18 @@ class GetMaterialAction(Action):
             material = ""
 
         if not material.strip():
-            # Fallback if LLM unavailable or returned empty
+            # Fallback: short list of prompts to guide discussion
             material = (
-                f"- Background context for: {desc}\n"
-                "- Key stakeholders and likely positions\n"
-                "- Benefits and trade-offs\n"
-                "- Practical constraints (cost, enforcement, timeline)\n"
-                "- Open questions for further discussion"
+                f"- Scope: {desc}\n"
+                "- Key fact/definition\n"
+                "- Comparable example (outcome)\n"
+                "- Stakeholders: who benefits / pays\n"
+                "- Rough cost or impact (estimate)\n"
+                "- Top risk and mitigation\n"
+                "- Open question for the chamber"
             )
 
-        content = (
-            f"Host provides additional material on '{desc}':\n{material.strip()}"
-        )
+        content = f"Host provides additional material on '{desc}':\n{material.strip()}"
         event = PublicEvent(content)
         simulator.broadcast(event)
         scene.log(f"{agent.name} fetched material for: {desc}")
