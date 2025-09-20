@@ -205,6 +205,12 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 2. [Step 2] [CURRENT]
 3. [Step 3]
 
+Turn Flow:
+- You may take multiple actions during your turn, one at a time.
+- You will not receive acknowledgments between your own actions.
+- If the next step is clear, take it immediately; when finished, yield the floor with {"action": "yield"}.
+- Speaking multiple times in one turn is allowed; keep chains brief and purposeful.
+
 --- Action ---
 // Output exactly one JSON action. No extra text.
 // You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output {"action": "yield"}.
@@ -466,14 +472,7 @@ History:
             if len(ctx) > 1:
                 last_role = ctx[-1].get("role")
             if initiative or last_role == "assistant":
-                ctx.append(
-                    {
-                        "role": "user",
-                        "parts": [
-                            "Return exactly one JSON action from your Available Actions. No extra text."
-                        ],
-                    }
-                )
+                ctx.append({"role": "user", "parts": ["Continue."]})
         except Exception:
             pass
 
