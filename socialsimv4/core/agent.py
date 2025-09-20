@@ -21,6 +21,7 @@ class Agent:
         initial_instruction="",
         role_prompt="",
         action_space=[],
+        language="en",
         max_repeat=MAX_REPEAT,
         event_handler=None,
         **kwargs,
@@ -31,6 +32,7 @@ class Agent:
         self.initial_instruction = initial_instruction
         self.role_prompt = role_prompt
         self.action_space = action_space
+        self.language = language or "en"
         self.short_memory = ShortTermMemory()
         self.last_history_length = 0
         self.max_repeat = max_repeat
@@ -160,6 +162,12 @@ You speak in a {self.style} style.
 
 {planning_guidelines}
 
+Language Policy:
+- Output all public messages in {self.language}.
+- Keep Action XML element and attribute names in English; localize only values (e.g., <message>…</message>).
+- Plan Update JSON keys remain English; values may be written in {self.language}.
+- Do not switch languages unless explicitly asked.
+
 {scene.get_scenario_description() if scene else ""}
 
 {scene.get_behavior_guidelines() if scene else ""}
@@ -221,6 +229,7 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 // Output exactly one Action XML element. No extra text.
 // Do not wrap the Action XML in code fences or other decorations.
 // Never include more than one Action element in a single response.
+// Language: Keep element and attribute names in English; localize only values.
 // You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output <Action name="yield" />.
 // Example:
 // <Action name="send_message"><message>Hi everyone!</message></Action>
@@ -574,6 +583,7 @@ History:
             "style": self.style,
             "initial_instruction": self.initial_instruction,
             "role_prompt": self.role_prompt,
+            "language": self.language,
             "action_space": [action.NAME for action in self.action_space],
             "short_memory": self.short_memory.get_all(),
             "last_history_length": self.last_history_length,
@@ -592,6 +602,7 @@ History:
             style=data["style"],
             initial_instruction=data["initial_instruction"],
             role_prompt=data["role_prompt"],
+            language=data.get("language", "en"),
             action_space=[
                 ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]
             ],
