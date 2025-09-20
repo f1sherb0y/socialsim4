@@ -1,8 +1,8 @@
 import re
 
 from socialsimv4.core.action import Action
-from socialsimv4.core.tools.web import web_search as tool_web_search
 from socialsimv4.core.tools.web import view_page as tool_view_page
+from socialsimv4.core.tools.web import web_search as tool_web_search
 
 
 class WebSearchAction(Action):
@@ -45,8 +45,10 @@ class WebSearchAction(Action):
             if snippet:
                 lines.append(f"   {snippet}")
         agent.append_env_message("\n".join(lines))
-        if agent.log_event:
-            agent.log_event("web_search", {"agent": agent.name, "query": query, "count": len(results)})
+        simulator.log_event(
+            "web_search",
+            {"agent": agent.name, "query": query, "count": len(results)},
+        )
         return True
 
 
@@ -79,14 +81,13 @@ class ViewPageAction(Action):
         text = data.get("text", "")
         header = f"Page content preview: {title}" if title else "Page content preview:"
         agent.append_env_message(f"{header}\nURL: {url}\n\n{text}")
-        if agent.log_event:
-            agent.log_event(
-                "view_page",
-                {
-                    "agent": agent.name,
-                    "url": url,
-                    "length": len(text),
-                    "truncated": bool(data.get("truncated")),
-                },
-            )
+        simulator.log_event(
+            "view_page",
+            {
+                "agent": agent.name,
+                "url": url,
+                "length": len(text),
+                "truncated": bool(data.get("truncated")),
+            },
+        )
         return True

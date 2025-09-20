@@ -15,7 +15,13 @@ from socialsimv4.core.simulator import Simulator
 
 
 def console_logger(event_type: str, data):
-    if event_type == "action_start" or event_type == "send_message":
+    if (
+        # event_type == "action_start"
+        event_type == "send_message"
+        or event_type == "view_page"
+        or event_type == "web_search"
+        or event_type == "yield"
+    ):
         try:
             print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
         except Exception:

@@ -12,7 +12,7 @@ class Simulator:
         clients,
         broadcast_initial=True,
         status_update_interval=1,
-        max_steps_per_turn=3,
+        max_steps_per_turn=5,
         event_handler=None,
     ):
         self.log_event = event_handler
@@ -115,7 +115,7 @@ class Simulator:
             clients=clients,
             broadcast_initial=False,  # Don't rebroadcast initial event
             status_update_interval=data.get("status_update_interval", 1),
-            max_steps_per_turn=data.get("max_steps_per_turn", 3),
+            max_steps_per_turn=data.get("max_steps_per_turn", 5),
         )
         simulator.round_num = data["round_num"]
         simulator.event_log = data.get("event_log", [])

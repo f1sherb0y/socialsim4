@@ -12,7 +12,9 @@ class SendMessageAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
         if message:
-            # agent.log_event("send_message", {"agent": agent.name, "message": message})
+            simulator.log_event(
+                "send_message", {"agent": agent.name, "message": message}
+            )
             event = MessageEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
             return True
@@ -27,7 +29,7 @@ class YieldAction(Action):
 """
 
     def handle(self, action_data, agent, simulator, scene):
-        agent.log_event("yield", {"agent": agent.name})
+        simulator.log_event("yield", {"agent": agent.name})
         return True
 
 
