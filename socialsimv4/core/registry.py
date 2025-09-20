@@ -1,4 +1,4 @@
-from .actions.base_actions import SendMessageAction, SpeakAction, YieldAction
+from .actions.base_actions import SendMessageAction, TalkToAction, YieldAction
 from .actions.council_actions import (
     GetRoundsAction,
     RequestBriefAction,
@@ -20,7 +20,8 @@ from .scenes.village_scene import VillageScene
 
 ACTION_SPACE_MAP = {
     "send_message": SendMessageAction(),
-    "speak": SpeakAction(),
+    # "speak": removed in favor of targeted talk_to
+    "talk_to": TalkToAction(),
     "yield": YieldAction(),
     "move_to_location": MoveToLocationAction(),
     "look_around": LookAroundAction(),

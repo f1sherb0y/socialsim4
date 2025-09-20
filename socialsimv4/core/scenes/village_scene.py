@@ -2,7 +2,7 @@ import heapq
 import math
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from socialsimv4.core.actions.base_actions import SpeakAction
+from socialsimv4.core.actions.base_actions import TalkToAction
 from socialsimv4.core.actions.map_actions import (
     GatherResourceAction,
     LookAroundAction,
@@ -363,17 +363,17 @@ I'm getting hungry. I should go to the farm to get some food.
 
 --- Action ---
 --- Move To Location ---
-{"action": "move_to_location", "location": "farm"}
+<Action name="move_to_location"><location>farm</location></Action>
 
 --- Thoughts ---
 There are people nearby; I'll greet them.
 
 --- Plan ---
 1. Look around.
-2. Speak to nearby agents.
+2. Talk to a nearby agent.
 
 --- Action ---
-{"action": "speak", "message": "Hi everyone nearby!"}
+<Action name="talk_to"><to>Lyra</to><message>Hi there!</message></Action>
 """
 
     def initialize_agent(self, agent: Agent):
@@ -396,7 +396,7 @@ There are people nearby; I'll greet them.
     def get_scene_actions(self, agent: Agent):
         """Return actions available in the village (map) scene for this agent."""
         return [
-            SpeakAction(),
+            TalkToAction(),
             MoveToLocationAction(),
             LookAroundAction(),
             GatherResourceAction(),
@@ -457,6 +457,8 @@ Current time: {self.state.get("time", 0)} hours ({time_of_day})
         """Limit chat delivery to agents within chat_range (Manhattan distance)."""
         time = self.state.get("time")
         formatted = event.to_string(time)
+        # Ensure sender also retains their own speech in memory
+        sender.append_env_message(formatted)
         sxy = sender.properties.get("map_xy")
         recipients = []
         for a in simulator.agents.values():

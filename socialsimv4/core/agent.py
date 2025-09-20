@@ -495,13 +495,17 @@ History:
         ctx = self.short_memory.searilize(dialect="default")
         ctx.insert(0, {"role": "system", "content": system_prompt})
 
-        # Ephemeral action-only nudge for intra-turn calls or when last was assistant
+        # Non-ephemeral action-only nudge for intra-turn calls or when last was assistant
         try:
             last_role = None
             if len(ctx) > 1:
                 last_role = ctx[-1].get("role")
             if initiative or last_role == "assistant":
-                ctx.append({"role": "user", "parts": ["Action only. One XML Action; no code fences."]})
+                hint = "Action only. One XML Action; no code fences."
+                # Persist the hint so the agent's view reflects separate turns
+                self.short_memory.append("user", hint)
+                # Also include it in the immediate request context
+                ctx.append({"role": "user", "parts": [hint]})
         except Exception:
             pass
 

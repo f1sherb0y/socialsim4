@@ -31,18 +31,45 @@ class YieldAction(Action):
         return True
 
 
-class SpeakAction(Action):
-    NAME = "speak"
-    DESC = "Say something in local/proximal chat."
-    INSTRUCTION = """- To speak locally:
-<Action name=\"speak\"><message>[your_message]</message></Action>
+class TalkToAction(Action):
+    NAME = "talk_to"
+    DESC = "Say something to a nearby person by name."
+    INSTRUCTION = """- To talk to someone nearby (by name):
+<Action name=\"talk_to\"><to>[recipient_name]</to><message>[your_message]</message></Action>
 """
 
     def handle(self, action_data, agent, simulator, scene):
+        to_name = action_data.get("to")
         message = action_data.get("message")
-        if message:
-            agent.log_event("speak", {"agent": agent.name, "message": message})
-            event = SpeakEvent(agent.name, message)
-            scene.deliver_message(event, agent, simulator)
-            return True
-        return False
+        if not to_name or not message:
+            agent.append_env_message("Provide 'to' (name) and 'message'.")
+            return False
+
+        target = simulator.agents.get(to_name)
+        if not target:
+            agent.append_env_message(f"No such person: {to_name}.")
+            return False
+
+        # Range check for scenes with spatial chat
+        in_range = True
+        try:
+            sxy = agent.properties.get("map_xy")
+            txy = target.properties.get("map_xy")
+            chat_range = getattr(scene, "chat_range", None)
+            if sxy and txy and chat_range is not None:
+                dist = abs(sxy[0] - txy[0]) + abs(sxy[1] - txy[1])
+                in_range = dist <= chat_range
+        except Exception:
+            in_range = True
+
+        if not in_range:
+            agent.append_env_message(f"{to_name} is too far to talk to.")
+            return False
+
+        event = SpeakEvent(agent.name, message)
+        # Sender always sees their own speech
+        agent.append_env_message(event.to_string(scene.state.get("time")))
+        # Deliver only to the target
+        target.append_env_message(event.to_string(scene.state.get("time")))
+        simulator.record_event(event, recipients=[to_name])
+        return True

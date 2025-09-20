@@ -299,7 +299,7 @@ def run_village():
                 "role_prompt": "Your focus is on research and investigation. Use your knowledge to guide your actions.",
                 "action_space": [
                     "send_message",
-                    "speak",
+                    "talk_to",
                     "yield",
                     "move_to_location",
                     "look_around",
@@ -318,7 +318,7 @@ def run_village():
                 "role_prompt": "Your actions should be guided by your connection to nature and your desire to maintain harmony.",
                 "action_space": [
                     "send_message",
-                    "speak",
+                    "talk_to",
                     "yield",
                     "move_to_location",
                     "look_around",
@@ -337,7 +337,7 @@ def run_village():
                 "role_prompt": "You are a problem-solver. Focus on practical tasks and the needs of the village.",
                 "action_space": [
                     "send_message",
-                    "speak",
+                    "talk_to",
                     "yield",
                     "move_to_location",
                     "look_around",
@@ -356,7 +356,7 @@ def run_village():
                 "role_prompt": "Your primary drive is exploration and discovery. Document your findings and interact with others to gather information.",
                 "action_space": [
                     "send_message",
-                    "speak",
+                    "talk_to",
                     "yield",
                     "move_to_location",
                     "look_around",
