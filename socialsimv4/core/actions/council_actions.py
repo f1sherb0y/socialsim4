@@ -5,7 +5,9 @@ from socialsimv4.core.event import MessageEvent, PublicEvent
 class StartVotingAction(Action):
     NAME = "start_voting"
     DESC = "Host starts a voting round."
-    INSTRUCTION = """- To start voting: {"action": "start_voting", "finish": true|false}"""
+    INSTRUCTION = (
+        """- To start voting: {"action": "start_voting", "finish": true|false}"""
+    )
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):
@@ -43,11 +45,9 @@ class GetVotingResultAction(Action):
                 return True
             else:
                 pending = num_members - len(scene.state.get("votes", {}))
-                info = PublicEvent(
-                    f"Not all votes are in yet. {pending} votes pending."
-                )
+                info = f"Not all votes are in yet. {pending} votes pending."
                 agent.append_env_message(info.to_string())
-                simulator.record_event(info, recipients=[agent.name])
+                # simulator.record_event(info, recipients=[agent.name])
                 return True
         return False
 

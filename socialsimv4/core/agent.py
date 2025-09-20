@@ -207,6 +207,8 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 
 --- Action ---
 // Output exactly one JSON action. No extra text.
+// You may perform multiple actions within the same turn by returning one action at a time:
+// set "finish": false to continue acting this turn, or set "finish": true to yield your turn.
 // The action MUST include a boolean "finish": true|false indicating whether your turn ends after that action.
 // Example:
 // {"action": "send_message", "message": "Hi everyone!", "finish": true}
