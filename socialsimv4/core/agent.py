@@ -206,7 +206,7 @@ Turn Flow:
 - Output exactly one Thoughts/Plan/Action block per response (single block).
 - You may take multiple actions during your turn, one at a time.
 - Some actions may return immediate results (e.g., briefs, searches). Incorporate them and proceed;
-- If the next step is clear, take it; when finished, yield the floor with <Action name="yield" />.
+- If the next step is clear, take it; when finished, yield the floor with <Action name="yield"></Action>.
 
 Your entire response MUST follow the format below. 
 For your first action in each turn, always include Thoughts, Plan, and Action. 
@@ -230,7 +230,7 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 // Do not wrap the Action XML in code fences or other decorations.
 // Never include more than one Action element in a single response.
 // Language: Keep element and attribute names in English; localize only values.
-// You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output <Action name="yield" />.
+// You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output <Action name="yield"></Action>.
 // Example:
 // <Action name="send_message"><message>Hi everyone!</message></Action>
 
@@ -443,7 +443,7 @@ History:
         """Parses the Action XML block and returns a single action dict.
         Expected format:
           <Action name="send_message"><message>Hi</message></Action>
-          <Action name="yield" />
+          <Action name="yield"></Action>
         Returns [dict] with keys: 'action' and child tags as top-level fields.
         """
         if not action_block:
@@ -558,10 +558,10 @@ History:
                 if attempt == self.max_repeat - 1:
                     # On final failure, if intra-turn, yield the floor to avoid stalls
                     if initiative:
-                        llm_output = '<Action name="yield" />'
+                        llm_output = '<Action name="yield"></Action>'
                         action_data = [{"action": "yield"}]
                     else:
-                        llm_output = '<Action name="yield" />'  # safe default
+                        llm_output = '<Action name="yield"></Action>'  # safe default
                         action_data = [{"action": "yield"}]
 
         # 原封不动地记录发送的LLM消息到自己的history (即使为空或无效)

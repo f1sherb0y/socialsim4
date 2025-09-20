@@ -6,7 +6,7 @@ from .actions.council_actions import (
     VoteAction,
     VotingStatusAction,
 )
-from .actions.map_actions import (
+from .actions.village_actions import (
     # ExploreAction,
     GatherResourceAction,
     LookAroundAction,
@@ -14,6 +14,7 @@ from .actions.map_actions import (
     # QuickMoveAction,
     RestAction,
 )
+from .actions.web_actions import WebSearchAction, ViewPageAction
 from .scenes.council_scene import CouncilScene
 from .scenes.simple_chat_scene import SimpleChatScene
 from .scenes.village_scene import VillageScene
@@ -34,6 +35,9 @@ ACTION_SPACE_MAP = {
     "request_brief": RequestBriefAction(),
     "voting_status": VotingStatusAction(),
     "vote": VoteAction(),
+    # Web actions
+    "web_search": WebSearchAction(),
+    "view_page": ViewPageAction(),
 }
 
 SCENE_MAP = {

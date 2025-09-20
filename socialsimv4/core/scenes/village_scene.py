@@ -3,7 +3,7 @@ import math
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from socialsimv4.core.actions.base_actions import TalkToAction
-from socialsimv4.core.actions.map_actions import (
+from socialsimv4.core.actions.village_actions import (
     GatherResourceAction,
     LookAroundAction,
     MoveToLocationAction,

@@ -122,8 +122,6 @@ def run_simple_chat():
     scene = SimpleChatScene("room", "Welcome to the chat room.")
     clients = make_clients()
 
-    from core.simulator import Simulator
-
     sim = Simulator(agents, scene, clients, event_handler=console_logger)
 
     # Broadcast a public announcement before starting the simulation
@@ -392,6 +390,6 @@ def run_village():
 
 
 if __name__ == "__main__":
-    # run_simple_chat()
-    run_council()
+    run_simple_chat()
+    # run_council()
     # run_village()

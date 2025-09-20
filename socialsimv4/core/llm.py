@@ -258,7 +258,7 @@ class _MockModel:
 def action_to_xml(a):
     # Convert a simple dict action to XML string for the mock model
     if not isinstance(a, dict):
-        return '<Action name="yield" />'
+        return '<Action name="yield"></Action>'
     name = a.get("action") or a.get("name") or "yield"
     params = [k for k in a.keys() if k not in ("action", "name")]
     if not params:

@@ -1,4 +1,5 @@
 from socialsimv4.core.actions.base_actions import SendMessageAction, YieldAction
+from socialsimv4.core.actions.web_actions import WebSearchAction, ViewPageAction
 from socialsimv4.core.scene import Scene
 
 
@@ -36,8 +37,26 @@ I think I'll say hello to everyone.
 
 --- Action ---
 <Action name="send_message"><message>Hi everyone!</message></Action>
+
+--- Thoughts ---
+I want to quickly check recent news about electric cars.
+
+--- Plan ---
+1. Search the web for electric car news.
+2. Open one promising result to skim content.
+
+--- Action ---
+<Action name="web_search"><query>latest news electric cars 2025</query><max_results>3</max_results></Action>
+
+--- Action ---
+<Action name="view_page"><url>https://example.com/some-article</url><max_chars>2000</max_chars></Action>
 """
 
     def get_scene_actions(self, agent):
-        """Simple chat supports sending a message or skipping a reply."""
-        return [SendMessageAction(), YieldAction()]
+        """Simple chat supports messaging, yielding, and basic web browsing helpers."""
+        return [
+            SendMessageAction(),
+            YieldAction(),
+            WebSearchAction(),
+            ViewPageAction(),
+        ]
