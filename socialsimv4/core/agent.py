@@ -1,5 +1,6 @@
 import json
 import re
+import xml.etree.ElementTree as ET
 
 import openai
 
@@ -192,11 +193,11 @@ Planning guidelines:
 - Strategy: a brief approach for achieving the goals over time.
 - Prefer continuity: preserve unaffected goals/milestones; make the smallest coherent change when adapting to new information. State what stays the same.
 
-Action Flow:
-- Output exactly one Thoughts/Plan/Action block per response.
-- You should only perform exactly one action per response.
-- If you need further actions after this turn, do not yield the floor; continue planning and acting in subsequent turns.
-- If the next step is clear, take it immediately; when finished, yield the floor with {"action": "yield"}.
+Turn Flow:
+- Output exactly one Thoughts/Plan/Action block per response (single block).
+- You may take multiple actions during your turn, one at a time.
+- You will not receive acknowledgments between your own actions.
+- If the next step is clear, take it; when finished, yield the floor with <Action name="yield" />.
 
 Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
 
@@ -213,10 +214,10 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 
 
 --- Action ---
-// Output exactly one JSON action. No extra text.
-// You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output {"action": "yield"}.
+// Output exactly one Action XML element. No extra text.
+// You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output <Action name="yield" />.
 // Example:
-// {"action": "send_message", "message": "Hi everyone!"}
+// <Action name="send_message"><message>Hi everyone!</message></Action>
 
 --- Plan Update ---
 // Optional. Include ONLY if you are changing the plan.
@@ -424,33 +425,52 @@ History:
         return True
 
     def _parse_actions(self, action_block):
-        """Parses the action block containing a single JSON action object.
-        Lists are invalid. Returns a list with exactly one action dict, or an empty list on failure.
+        """Parses the Action XML block and returns a single action dict.
+        Expected format:
+          <Action name="send_message"><message>Hi</message></Action>
+          <Action name="yield" />
+        Returns [dict] with keys: 'action' and child tags as top-level fields.
         """
-        action_block = action_block.strip()
-        if action_block.startswith("```json"):
-            action_block = action_block[7:-3].strip()
-        elif action_block.startswith("`"):
-            action_block = action_block.strip("`")
-
-        try:
-            data = json.loads(action_block)
-            if not isinstance(data, dict):
-                # Only a single dict is valid; lists or other types are rejected
-                return []
-            return [data]
-        except json.JSONDecodeError:
-            # Fallback for malformed JSON. Try to find JSON within the string.
-            match = re.search(r"\[.*\]|\{.*\}", action_block, re.DOTALL)
-            if match:
-                try:
-                    data = json.loads(match.group(0))
-                    if not isinstance(data, dict):
-                        return []
-                    return [data]
-                except json.JSONDecodeError:
-                    pass  # JSON found but still couldn't parse
+        if not action_block:
             return []
+        text = action_block.strip()
+        # Strip code fences
+        if text.startswith("```xml") and text.endswith("```"):
+            text = text[6:-3].strip()
+        elif text.startswith("```") and text.endswith("```"):
+            text = text[3:-3].strip()
+        elif text.startswith("`") and text.endswith("`"):
+            text = text.strip("`")
+
+        # Try parsing whole block as XML first
+        xml_str = text
+        root = None
+        try:
+            root = ET.fromstring(xml_str)
+        except Exception:
+            # Try to locate the first <Action ...>...</Action> or self-closing variant
+            m = re.search(r"<Action\b[\s\S]*?</Action>|<Action\b[^>]*/>", text, re.IGNORECASE)
+            if not m:
+                return []
+            frag = m.group(0)
+            try:
+                root = ET.fromstring(frag)
+            except Exception:
+                return []
+
+        if root is None or root.tag.lower() != "action":
+            return []
+        name = root.attrib.get("name") or root.attrib.get("NAME")
+        if not name:
+            return []
+        result = {"action": name}
+        # Copy child elements as top-level params (simple text nodes)
+        for child in list(root):
+            tag = child.tag
+            val = (child.text or "").strip()
+            if tag and val is not None:
+                result[tag] = val
+        return [result]
 
     def process(self, clients, initiative=False, scene=None):
         current_length = len(self.short_memory)
@@ -513,11 +533,11 @@ History:
                 if attempt == self.max_repeat - 1:
                     # On final failure, if intra-turn, yield the floor to avoid stalls
                     if initiative:
-                        llm_output = '{"action": "yield"}'
+                        llm_output = '<Action name="yield" />'
                         action_data = [{"action": "yield"}]
                     else:
-                        llm_output = "{}"  # Default to empty JSON on final failure
-                        action_data = [{}]
+                        llm_output = "<Action name=\"yield\" />"  # safe default
+                        action_data = [{"action": "yield"}]
 
         # 原封不动地记录发送的LLM消息到自己的history (即使为空或无效)
         self.short_memory.append("assistant", llm_output)

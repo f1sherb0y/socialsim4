@@ -240,17 +240,22 @@ class _MockModel:
                 plan = "1. Yield. [CURRENT]"
             plan_update = "no change"
 
-        # Compose full response
+        # Compose full response with XML Action
         return (
             f"--- Thoughts ---\n{thought}\n\n"
             f"--- Plan ---\n{plan}\n\n"
-            f"--- Action ---\n{json_dumps(action)}\n\n"
+            f"--- Action ---\n{action_to_xml(action)}\n\n"
             f"--- Plan Update ---\n{plan_update}\n"
         )
 
 
-def json_dumps(obj):
-    # Minimal JSON dumps to avoid importing json here separately from module-global
-    import json as _json
-
-    return _json.dumps(obj, ensure_ascii=False)
+def action_to_xml(a):
+    # Convert a simple dict action to XML string for the mock model
+    if not isinstance(a, dict):
+        return '<Action name="yield" />'
+    name = a.get("action") or a.get("name") or "yield"
+    params = [k for k in a.keys() if k not in ("action", "name")]
+    if not params:
+        return f'<Action name="{name}" />'
+    parts = "".join([f"<{k}>{a[k]}</{k}>" for k in params])
+    return f'<Action name="{name}">{parts}</Action>'

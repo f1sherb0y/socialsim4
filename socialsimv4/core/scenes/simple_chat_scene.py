@@ -35,7 +35,7 @@ I think I'll say hello to everyone.
 1. Send a greeting message.
 
 --- Action ---
-{"action": "send_message", "message": "Hi everyone!"}
+<Action name="send_message"><message>Hi everyone!</message></Action>
 """
 
     def get_scene_actions(self, agent):

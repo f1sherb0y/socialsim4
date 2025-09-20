@@ -5,8 +5,11 @@ from socialsimv4.core.event import PublicEvent
 class MoveToLocationAction(Action):
     NAME = "move_to_location"
     DESC = "Move to a named location or coordinates."
-    INSTRUCTION = """- To move to a location: {"action": "move_to_location", "location": "[location_name]"}
-- Or move to coordinates: {"action": "move_to_location", "x": 12, "y": 34}"""
+    INSTRUCTION = """- To move to a location:
+<Action name=\"move_to_location\"><location>[location_name]</location></Action>
+- Or move to coordinates:
+<Action name=\"move_to_location\"><x>12</x><y>34</y></Action>
+"""
 
     def handle(self, action_data, agent, simulator, scene):
         """Move to a location or coordinates using grid pathfinding and terrain costs."""
@@ -113,7 +116,9 @@ class MoveToLocationAction(Action):
 class LookAroundAction(Action):
     NAME = "look_around"
     DESC = "Survey nearby tiles, locations, and agents."
-    INSTRUCTION = """- To look around and see nearby locations and agents: {"action": "look_around", "radius": 5}"""
+    INSTRUCTION = """- To look around and see nearby locations and agents:
+<Action name=\"look_around\"><radius>5</radius></Action>
+"""
 
     def handle(self, action_data, agent, simulator, scene):
         """Look around: list nearby locations, resources, and agents."""
@@ -179,7 +184,9 @@ class LookAroundAction(Action):
 class GatherResourceAction(Action):
     NAME = "gather_resource"
     DESC = "Collect a resource at current tile/location."
-    INSTRUCTION = """- To gather resources: {"action": "gather_resource", "resource": "[resource_name]", "amount": [number]}"""
+    INSTRUCTION = """- To gather resources:
+<Action name=\"gather_resource\"><resource>[resource_name]</resource><amount>[number]</amount></Action>
+"""
 
     def handle(self, action_data, agent, simulator, scene):
         """Gather resources, preferring tile resources at current position."""
@@ -239,7 +246,9 @@ class GatherResourceAction(Action):
 class RestAction(Action):
     NAME = "rest"
     DESC = "Recover energy; more in buildings."
-    INSTRUCTION = """- To rest and recover energy: {"action": "rest"}"""
+    INSTRUCTION = """- To rest and recover energy:
+<Action name=\"rest\" />
+"""
 
     def handle(self, action_data, agent, simulator, scene):
         """Rest to regain energy."""
