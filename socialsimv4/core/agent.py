@@ -109,10 +109,10 @@ Notes:
         planning_guidelines = """
 General Planning Principles:
 - Goals are stable; modify only when genuinely necessary.
-- Use milestones to track observable progress.
+- Use your own milestones to track observable progress.
 - Keep a single Current Focus and align your Action to it.
 - Prefer minimal coherent changes; when adapting, preserve unaffected goals and milestones and state what remains unchanged.
-- Privacy: Treat Goals, Milestones, Current Focus, Strategy, and Notes as private working notes.
+- Privacy: Goals, Milestones, Current Focus, Strategy, and Notes as private working notes.
 
 Plan State JSON Schema (reference):
 {
@@ -185,14 +185,20 @@ Initial instruction:
 
     def get_output_format(self):
         return """
-Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
-
-Planning guidelines (read carefully):
+Planning guidelines:
 - Goals: stable end-states. Rarely change; name and describe them briefly.
 - Milestones: observable sub-results that indicate progress toward goals.
 - Current Focus: the single step you are executing now. Align Action with this.
 - Strategy: a brief approach for achieving the goals over time.
 - Prefer continuity: preserve unaffected goals/milestones; make the smallest coherent change when adapting to new information. State what stays the same.
+
+Action Flow:
+- Output exactly one Thoughts/Plan/Action block per response.
+- You should only perform exactly one action per response.
+- If you need further actions after this turn, do not yield the floor; continue planning and acting in subsequent turns.
+- If the next step is clear, take it immediately; when finished, yield the floor with {"action": "yield"}.
+
+Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
 
 --- Thoughts ---
 Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
@@ -205,11 +211,6 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 2. [Step 2] [CURRENT]
 3. [Step 3]
 
-Turn Flow:
-- You may take multiple actions during your turn, one at a time.
-- You will not receive acknowledgments between your own actions.
-- If the next step is clear, take it immediately; when finished, yield the floor with {"action": "yield"}.
-- Speaking multiple times in one turn is allowed; keep chains brief and purposeful.
 
 --- Action ---
 // Output exactly one JSON action. No extra text.

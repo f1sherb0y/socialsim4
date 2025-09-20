@@ -5,7 +5,7 @@ from socialsimv4.core.event import MessageEvent, PublicEvent
 class StartVotingAction(Action):
     NAME = "start_voting"
     DESC = "Host should use start_voting action to initiate the voting round."
-    INSTRUCTION = ("""- To start voting: {"action": "start_voting"}""")
+    INSTRUCTION = """- To start voting: {"action": "start_voting"}"""
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):
@@ -22,7 +22,7 @@ class StartVotingAction(Action):
 class VotingStatusAction(Action):
     NAME = "voting_status"
     DESC = "Show current voting progress: counts and pending voters."
-    INSTRUCTION = ("""- To check voting status: {"action": "voting_status"}""")
+    INSTRUCTION = """- To check voting status: {"action": "voting_status"}"""
 
     def handle(self, action_data, agent, simulator, scene):
         started = scene.state.get("voting_started", False)
@@ -36,14 +36,17 @@ class VotingStatusAction(Action):
         no = sum(v == "no" for v in votes.values())
         abstain = sum(v == "abstain" for v in votes.values())
         pending_names = [
-            name for name in simulator.agents.keys() if name != "Host" and name not in votes
+            name
+            for name in simulator.agents.keys()
+            if name != "Host" and name not in votes
         ]
         pending = len(pending_names)
         lines = [
             "Voting status:",
             f"- Members: {num_members}",
             f"- Yes: {yes}, No: {no}, Abstain: {abstain}",
-            f"- Pending: {pending}" + (f" ({', '.join(pending_names)})" if pending_names else ""),
+            f"- Pending: {pending}"
+            + (f" ({', '.join(pending_names)})" if pending_names else ""),
         ]
         agent.append_env_message("\n".join(lines))
         return True
@@ -125,8 +128,6 @@ class RequestBriefAction(Action):
         content = f"Brief (private) on '{desc}':\n{material.strip()}"
         # Deliver privately to host and record the event (private)
         agent.append_env_message(content)
-        event = PublicEvent(content)
-        simulator.record_event(event, recipients=[agent.name])
         scene.log(f"{agent.name} requested brief for: {desc} (private)")
         return True
 
