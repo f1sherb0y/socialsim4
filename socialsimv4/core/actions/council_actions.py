@@ -5,9 +5,7 @@ from socialsimv4.core.event import MessageEvent, PublicEvent
 class StartVotingAction(Action):
     NAME = "start_voting"
     DESC = "Host should use start_voting action to initiate the voting round."
-    INSTRUCTION = (
-        """- To start voting: {"action": "start_voting", "finish": true|false}"""
-    )
+    INSTRUCTION = ("""- To start voting: {"action": "start_voting"}""")
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):
@@ -24,9 +22,7 @@ class StartVotingAction(Action):
 class VotingStatusAction(Action):
     NAME = "voting_status"
     DESC = "Show current voting progress: counts and pending voters."
-    INSTRUCTION = (
-        """- To check voting status: {"action": "voting_status", "finish": true|false}"""
-    )
+    INSTRUCTION = ("""- To check voting status: {"action": "voting_status"}""")
 
     def handle(self, action_data, agent, simulator, scene):
         started = scene.state.get("voting_started", False)
@@ -56,7 +52,7 @@ class VotingStatusAction(Action):
 class GetRoundsAction(Action):
     NAME = "get_rounds"
     DESC = "Get the current round number."
-    INSTRUCTION = """- To get the current round number: {"action": "get_rounds", "finish": true|false}"""
+    INSTRUCTION = """- To get the current round number: {"action": "get_rounds"}"""
 
     def handle(self, action_data, agent, simulator, scene):
         rounds = simulator.round_num
@@ -71,7 +67,7 @@ class RequestBriefAction(Action):
         "or members request data; provide a clear 'desc' (topic + focus)."
     )
     INSTRUCTION = """
-- To request a brief (host only): {"action": "request_brief", "desc": "[topic + focus]", "finish": true|false}
+- To request a brief (host only): {"action": "request_brief", "desc": "[topic + focus]"}
 """
 
     def handle(self, action_data, agent, simulator, scene):
@@ -126,17 +122,19 @@ class RequestBriefAction(Action):
                 "- Open question for the chamber"
             )
 
-        content = f"Host provides a brief on '{desc}':\n{material.strip()}"
+        content = f"Brief (private) on '{desc}':\n{material.strip()}"
+        # Deliver privately to host and record the event (private)
+        agent.append_env_message(content)
         event = PublicEvent(content)
-        simulator.broadcast(event)
-        scene.log(f"{agent.name} requested brief for: {desc}")
+        simulator.record_event(event, recipients=[agent.name])
+        scene.log(f"{agent.name} requested brief for: {desc} (private)")
         return True
 
 
 class VoteAction(Action):
     NAME = "vote"
     DESC = "Member casts a vote with optional comment."
-    INSTRUCTION = """- To vote (only after voting has started): {"action": "vote", "vote": "yes" or "no" or "abstain", "comment": "[optional]", "finish": true|false}"""
+    INSTRUCTION = """- To vote (only after voting has started): {"action": "vote", "vote": "yes" or "no" or "abstain", "comment": "[optional]"}"""
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):

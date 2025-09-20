@@ -207,11 +207,9 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 
 --- Action ---
 // Output exactly one JSON action. No extra text.
-// You may perform multiple actions within the same turn by returning one action at a time:
-// set "finish": false to continue acting this turn, or set "finish": true to yield your turn.
-// The action MUST include a boolean "finish": true|false indicating whether your turn ends after that action.
+// You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output {"action": "yield"}.
 // Example:
-// {"action": "send_message", "message": "Hi everyone!", "finish": true}
+// {"action": "send_message", "message": "Hi everyone!"}
 
 --- Plan Update ---
 // Optional. Include ONLY if you are changing the plan.
@@ -420,9 +418,7 @@ History:
 
     def _parse_actions(self, action_block):
         """Parses the action block containing a single JSON action object.
-        Lists are invalid. Ensures the action has a boolean 'finish' field
-        (defaults to True if missing). Returns a list with exactly one action
-        dict, or an empty list on failure.
+        Lists are invalid. Returns a list with exactly one action dict, or an empty list on failure.
         """
         action_block = action_block.strip()
         if action_block.startswith("```json"):
@@ -435,16 +431,6 @@ History:
             if not isinstance(data, dict):
                 # Only a single dict is valid; lists or other types are rejected
                 return []
-            # Normalize/validate 'finish' on the single action
-            f = data.get("finish")
-            if isinstance(f, bool):
-                pass
-            elif isinstance(f, str) and f.lower() in ("true", "false"):
-                data["finish"] = f.lower() == "true"
-            elif isinstance(f, (int, float)):
-                data["finish"] = bool(f)
-            else:
-                data["finish"] = True
             return [data]
         except json.JSONDecodeError:
             # Fallback for malformed JSON. Try to find JSON within the string.
@@ -454,16 +440,6 @@ History:
                     data = json.loads(match.group(0))
                     if not isinstance(data, dict):
                         return []
-                    # Normalize/validate 'finish' on the single action
-                    f = data.get("finish")
-                    if isinstance(f, bool):
-                        pass
-                    elif isinstance(f, str) and f.lower() in ("true", "false"):
-                        data["finish"] = f.lower() == "true"
-                    elif isinstance(f, (int, float)):
-                        data["finish"] = bool(f)
-                    else:
-                        data["finish"] = True
                     return [data]
                 except json.JSONDecodeError:
                     pass  # JSON found but still couldn't parse
@@ -484,10 +460,30 @@ History:
         ctx = self.short_memory.searilize(dialect="default")
         ctx.insert(0, {"role": "system", "content": system_prompt})
 
+        # Ephemeral action-only nudge for intra-turn calls or when last was assistant
+        try:
+            last_role = None
+            if len(ctx) > 1:
+                last_role = ctx[-1].get("role")
+            if initiative or last_role == "assistant":
+                ctx.append(
+                    {
+                        "role": "user",
+                        "parts": [
+                            "Return exactly one JSON action from your Available Actions. No extra text."
+                        ],
+                    }
+                )
+        except Exception:
+            pass
+
         action_data = None
         for attempt in range(self.max_repeat):
             try:
                 llm_output = self.call_llm(clients, ctx)
+                print(
+                    f"LLM output for {self.name} (attempt {attempt + 1}):\n{llm_output}\n"
+                )
                 thoughts, plan, action_block, plan_update_block = (
                     self._parse_full_response(llm_output)
                 )
@@ -515,8 +511,13 @@ History:
             except (json.JSONDecodeError, ValueError, openai.APIError) as e:
                 print(f"Attempt {attempt + 1} failed for {self.name}: {e}")
                 if attempt == self.max_repeat - 1:
-                    llm_output = "{}"  # Default to empty JSON on final failure
-                    action_data = [{}]
+                    # On final failure, if intra-turn, yield the floor to avoid stalls
+                    if initiative:
+                        llm_output = '{"action": "yield"}'
+                        action_data = [{"action": "yield"}]
+                    else:
+                        llm_output = "{}"  # Default to empty JSON on final failure
+                        action_data = [{}]
 
         # 原封不动地记录发送的LLM消息到自己的history (即使为空或无效)
         self.short_memory.append("assistant", llm_output)

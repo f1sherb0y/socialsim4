@@ -155,7 +155,7 @@ class Simulator:
                         )
                         self.record_event(evt, recipients=[agent.name])
 
-                # Multi-step per-turn loop
+                # Multi-step per-turn loop (agent may act multiple times until yield)
                 steps = 0
                 first_step = True
                 continue_turn = True
@@ -175,7 +175,7 @@ class Simulator:
                     if not action_datas:
                         break
 
-                    finished = False
+                    yielded = False
                     any_handled = False
                     for action_data in action_datas:
                         if not action_data:
@@ -188,17 +188,14 @@ class Simulator:
                             "action_end", {"agent": agent.name, "action": action_data}
                         )
                         any_handled = True
-                        # Check finish flag (default True if missing)
-                        finish = action_data.get("finish")
-                        if not isinstance(finish, bool):
-                            finish = True
-                        if finish:
-                            finished = True
+                        # Stop if agent yields the floor
+                        if action_data.get("action") == "yield":
+                            yielded = True
                             break
 
                     steps += 1
                     first_step = False
-                    if finished or not any_handled:
+                    if yielded or not any_handled:
                         continue_turn = False
 
             self.scene.post_round(self)

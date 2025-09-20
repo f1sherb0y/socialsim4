@@ -1,4 +1,4 @@
-from socialsimv4.core.actions.base_actions import SendMessageAction, SkipReplyAction
+from socialsimv4.core.actions.base_actions import SendMessageAction, YieldAction
 from socialsimv4.core.scene import Scene
 
 
@@ -35,9 +35,9 @@ I think I'll say hello to everyone.
 1. Send a greeting message.
 
 --- Action ---
-{"action": "send_message", "message": "Hi everyone!", "finish": true}
+{"action": "send_message", "message": "Hi everyone!"}
 """
 
     def get_scene_actions(self, agent):
         """Simple chat supports sending a message or skipping a reply."""
-        return [SendMessageAction(), SkipReplyAction()]
+        return [SendMessageAction(), YieldAction()]

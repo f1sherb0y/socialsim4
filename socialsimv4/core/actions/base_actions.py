@@ -5,7 +5,7 @@ from socialsimv4.core.event import MessageEvent, SpeakEvent
 class SendMessageAction(Action):
     NAME = "send_message"
     DESC = "Post a message to all participants."
-    INSTRUCTION = """- To send a message: {"action": "send_message", "message": "[your_message]", "finish": true|false}"""
+    INSTRUCTION = """- To send a message: {"action": "send_message", "message": "[your_message]"}"""
 
     def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
@@ -17,13 +17,13 @@ class SendMessageAction(Action):
         return False
 
 
-class SkipReplyAction(Action):
-    NAME = "skip_reply"
-    DESC = "Do nothing this turn."
-    INSTRUCTION = """- To skip a reply: {"action": "skip_reply", "finish": true}"""
+class YieldAction(Action):
+    NAME = "yield"
+    DESC = "Yield the floor and end your turn."
+    INSTRUCTION = """- To yield the floor: {"action": "yield"}"""
 
     def handle(self, action_data, agent, simulator, scene):
-        agent.log_event("skip_reply", {"agent": agent.name})
+        agent.log_event("yield", {"agent": agent.name})
         return True
 
 
@@ -31,7 +31,7 @@ class SpeakAction(Action):
     NAME = "speak"
     DESC = "Say something in local/proximal chat."
     INSTRUCTION = (
-        """- To speak locally: {"action": "speak", "message": "[your_message]", "finish": true|false}"""
+        """- To speak locally: {"action": "speak", "message": "[your_message]"}"""
     )
 
     def handle(self, action_data, agent, simulator, scene):

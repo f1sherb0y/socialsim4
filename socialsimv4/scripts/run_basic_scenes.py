@@ -82,14 +82,14 @@ def make_clients() -> Dict[str, object]:
 
 def run_simple_chat():
     print("=== SimpleChatScene ===")
-    # agents = make_agents(["Host", "Alice", "Bob"], ["send_message", "skip_reply"])
+    # agents = make_agents(["Host", "Alice", "Bob"], ["send_message", "yield"])
     agents = [
         Agent.from_dict(
             {
                 "name": "Host",
                 "user_profile": "You are the host of a chat room. Your role is to facilitate conversation, introduce topics, and ensure everyone has a chance to speak. You are neutral and objective.",
                 "style": "welcoming and clear",
-                "action_space": ["send_message", "skip_reply"],
+                "action_space": ["send_message", "yield"],
                 "initial_instruction": "",
                 "role_prompt": "",
                 "properties": {},
@@ -100,7 +100,7 @@ def run_simple_chat():
                 "name": "Alice",
                 "user_profile": "You are Alice. You are an optimist, full of energy, and always curious about new technologies and their potential to change the world for the better.",
                 "style": "enthusiastic and inquisitive",
-                "action_space": ["send_message", "skip_reply"],
+                "action_space": ["send_message", "yield"],
                 "initial_instruction": "",
                 "role_prompt": "",
                 "properties": {},
@@ -111,7 +111,7 @@ def run_simple_chat():
                 "name": "Bob",
                 "user_profile": "You are Bob. You are a pragmatist and a bit of a skeptic. You are cautious about new technologies and tend to focus on the potential downsides and practical challenges.",
                 "style": "cynical and questioning",
-                "action_space": ["send_message", "skip_reply"],
+                "action_space": ["send_message", "yield"],
                 "initial_instruction": "",
                 "role_prompt": "",
                 "properties": {},
@@ -157,7 +157,7 @@ def run_council():
                 "role_prompt": "",
                 "action_space": [
                     "send_message",
-                    "skip_reply",
+                    "yield",
                     "start_voting",
                     "request_brief",
                     "voting_status",
@@ -176,7 +176,7 @@ def run_council():
                 "style": "measured and data-driven",
                 "initial_instruction": "",
                 "role_prompt": "You support pragmatic compromises that balance budgets and benefits.",
-                "action_space": ["send_message", "skip_reply", "vote", "voting_status", "get_rounds"],
+                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
                 
                 "properties": {},
             }
@@ -191,7 +191,7 @@ def run_council():
                 "style": "principled and empathetic",
                 "initial_instruction": "",
                 "role_prompt": "Press for strong environmental standards and equity measures.",
-                "action_space": ["send_message", "skip_reply", "vote", "voting_status", "get_rounds"],
+                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
                 "properties": {},
             }
         ),
@@ -205,7 +205,7 @@ def run_council():
                 "style": "direct and skeptical",
                 "initial_instruction": "",
                 "role_prompt": "Highlight risks to small business and unintended consequences.",
-                "action_space": ["send_message", "skip_reply", "vote", "voting_status", "get_rounds"],
+                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
                 "properties": {},
             }
         ),
@@ -219,7 +219,7 @@ def run_council():
                 "style": "pragmatic and concise",
                 "initial_instruction": "",
                 "role_prompt": "Seek exemptions/discounts to protect small merchants and logistics.",
-                "action_space": ["send_message", "skip_reply", "vote", "voting_status", "get_rounds"],
+                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
                 "properties": {},
             }
         ),
@@ -233,7 +233,7 @@ def run_council():
                 "style": "assertive and analytical",
                 "initial_instruction": "",
                 "role_prompt": "Push for strong air-quality targets and transparent reporting.",
-                "action_space": ["send_message", "skip_reply", "vote", "get_rounds"],
+                "action_space": ["send_message", "yield", "vote", "get_rounds"],
                 "properties": {},
             }
         ),
@@ -277,7 +277,7 @@ def run_village():
                 "action_space": [
                     "send_message",
                     "speak",
-                    "skip_reply",
+                    "yield",
                     "move_to_location",
                     "look_around",
                     "gather_resource",
@@ -296,7 +296,7 @@ def run_village():
                 "action_space": [
                     "send_message",
                     "speak",
-                    "skip_reply",
+                    "yield",
                     "move_to_location",
                     "look_around",
                     "gather_resource",
@@ -315,7 +315,7 @@ def run_village():
                 "action_space": [
                     "send_message",
                     "speak",
-                    "skip_reply",
+                    "yield",
                     "move_to_location",
                     "look_around",
                     "gather_resource",
@@ -334,7 +334,7 @@ def run_village():
                 "action_space": [
                     "send_message",
                     "speak",
-                    "skip_reply",
+                    "yield",
                     "move_to_location",
                     "look_around",
                     "gather_resource",
