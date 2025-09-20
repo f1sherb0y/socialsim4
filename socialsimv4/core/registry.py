@@ -1,4 +1,4 @@
-from .actions.base_actions import SendMessageAction, YieldAction, SpeakAction
+from .actions.base_actions import SendMessageAction, SpeakAction, YieldAction
 from .actions.council_actions import (
     GetRoundsAction,
     RequestBriefAction,

@@ -16,6 +16,8 @@ class StartVotingAction(Action):
                 "The Host has initiated the voting round. Please cast your votes now."
             )
             simulator.broadcast(event)
+            # Record a private confirmation for the host
+            agent.append_env_message("You started the voting.")
             scene.log(f"{agent.name} has started the voting.")
             return True
         return False
@@ -163,7 +165,8 @@ class VoteAction(Action):
             if comment:
                 vote_message += f" Comment: {comment}"
             event = MessageEvent(agent.name, vote_message)
-            simulator.broadcast(event)
+            # Route through scene delivery so voter also retains their own message
+            scene.deliver_message(event, agent, simulator)
             scene.log(
                 f"{agent.name} votes {vote}"
                 + (f" with comment: {comment}" if comment else "")

@@ -176,8 +176,13 @@ def run_council():
                 "style": "measured and data-driven",
                 "initial_instruction": "",
                 "role_prompt": "You support pragmatic compromises that balance budgets and benefits.",
-                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
-                
+                "action_space": [
+                    "send_message",
+                    "yield",
+                    "vote",
+                    "voting_status",
+                    "get_rounds",
+                ],
                 "properties": {},
             }
         ),
@@ -191,7 +196,13 @@ def run_council():
                 "style": "principled and empathetic",
                 "initial_instruction": "",
                 "role_prompt": "Press for strong environmental standards and equity measures.",
-                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
+                "action_space": [
+                    "send_message",
+                    "yield",
+                    "vote",
+                    "voting_status",
+                    "get_rounds",
+                ],
                 "properties": {},
             }
         ),
@@ -205,7 +216,13 @@ def run_council():
                 "style": "direct and skeptical",
                 "initial_instruction": "",
                 "role_prompt": "Highlight risks to small business and unintended consequences.",
-                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
+                "action_space": [
+                    "send_message",
+                    "yield",
+                    "vote",
+                    "voting_status",
+                    "get_rounds",
+                ],
                 "properties": {},
             }
         ),
@@ -219,7 +236,13 @@ def run_council():
                 "style": "pragmatic and concise",
                 "initial_instruction": "",
                 "role_prompt": "Seek exemptions/discounts to protect small merchants and logistics.",
-                "action_space": ["send_message", "yield", "vote", "voting_status", "get_rounds"],
+                "action_space": [
+                    "send_message",
+                    "yield",
+                    "vote",
+                    "voting_status",
+                    "get_rounds",
+                ],
                 "properties": {},
             }
         ),

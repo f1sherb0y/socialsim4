@@ -39,6 +39,13 @@ class Scene:
         to all agents except the sender. Scenes can override to restrict scope
         (e.g., proximity-based chat in map scenes).
         """
+        # Ensure the sender also retains what they said in their own context
+        try:
+            formatted = event.to_string(self.state.get("time"))
+            sender.append_env_message(formatted)
+        except Exception:
+            pass
+        # Broadcast to everyone else and record the event
         simulator.broadcast(event)
 
     def post_round(self, simulator):

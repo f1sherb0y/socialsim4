@@ -161,7 +161,9 @@ class Simulator:
                 continue_turn = True
                 while continue_turn and steps < self.max_steps_per_turn:
                     # 调用process. agent内部的逻辑会判断是否有新消息，决定是否调用LLM
-                    self.log_event("agent_process_start", {"agent": agent.name, "step": steps + 1})
+                    self.log_event(
+                        "agent_process_start", {"agent": agent.name, "step": steps + 1}
+                    )
                     action_datas = agent.process(
                         self.clients,
                         initiative=(is_initiative or not first_step),
@@ -169,7 +171,11 @@ class Simulator:
                     )
                     self.log_event(
                         "agent_process_end",
-                        {"agent": agent.name, "step": steps + 1, "actions": action_datas},
+                        {
+                            "agent": agent.name,
+                            "step": steps + 1,
+                            "actions": action_datas,
+                        },
                     )
 
                     if not action_datas:

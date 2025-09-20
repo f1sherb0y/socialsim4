@@ -82,20 +82,20 @@ class Agent:
             return "\n".join(lines)
 
         plan_state_block = f"""
-Current Plan State (read-only; propose updates via Plan Update):
-Goals:
+Internal Plan State (private, behavioral; propose updates via Plan Update):
+Internal Goals:
 {_fmt_goals(self.plan_state.get("goals"))}
 
-Milestones:
+Internal Milestones:
 {_fmt_milestones(self.plan_state.get("milestones"))}
 
-Current Focus:
+Internal Current Focus:
 {self.plan_state.get("current_focus", {})}
 
-Strategy:
+Internal Strategy:
 {self.plan_state.get("strategy", "")}
 
-Notes:
+Internal Notes:
 {self.plan_state.get("notes", "")}
 """
 
@@ -108,12 +108,12 @@ Notes:
             plan_state_block += "\nPlan State is currently empty. In this turn, include a '--- Plan Update ---' section with a JSON object using 'replace' to initialize goals, milestones (based on your Plan steps), current_focus, and a brief strategy. Keep it concise.\n"
 
         planning_guidelines = """
-General Planning Principles:
+Internal Planning Principles (behavioral/private):
+- Internal vs Scene: These Goals, Milestones, Current Focus, Strategy, and Notes are your internal behavioral guides. They are distinct from scene objectives and public plans; use them to steer your Actions rather than stating them as external commitments.
 - Goals are stable; modify only when genuinely necessary.
 - Use your own milestones to track observable progress.
 - Keep a single Current Focus and align your Action to it.
 - Prefer minimal coherent changes; when adapting, preserve unaffected goals and milestones and state what remains unchanged.
-- Privacy: Goals, Milestones, Current Focus, Strategy, and Notes as private working notes.
 
 Plan State JSON Schema (reference):
 {
@@ -186,7 +186,8 @@ Initial instruction:
 
     def get_output_format(self):
         return """
-Planning guidelines:
+Planning guidelines (internal/private):
+- Internal vs Scene: The Goals, Milestones, Plan, and Current Focus you author here are internal behavioral guides, not scene-wide commitments. Use them to decide Actions; communicate only scene-appropriate content publicly.
 - Goals: stable end-states. Rarely change; name and describe them briefly.
 - Milestones: observable sub-results that indicate progress toward goals.
 - Current Focus: the single step you are executing now. Align Action with this.
@@ -196,10 +197,13 @@ Planning guidelines:
 Turn Flow:
 - Output exactly one Thoughts/Plan/Action block per response (single block).
 - You may take multiple actions during your turn, one at a time.
-- You will not receive acknowledgments between your own actions.
+- Some actions may return immediate results (e.g., briefs, searches). Incorporate them and proceed;
 - If the next step is clear, take it; when finished, yield the floor with <Action name="yield" />.
 
-Your entire response MUST follow the format below. Always include Thoughts, Plan, and Action. Include Plan Update only when you decide to modify the plan.
+Your entire response MUST follow the format below. 
+For your first action in each turn, always include Thoughts, Plan, and Action. 
+For subsequent actions in the same turn , output only the Action element. omit Thoughts, Plan, and Plan Update.
+Include Plan Update only when you decide to modify the plan.
 
 --- Thoughts ---
 Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
@@ -215,6 +219,8 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 
 --- Action ---
 // Output exactly one Action XML element. No extra text.
+// Do not wrap the Action XML in code fences or other decorations.
+// Never include more than one Action element in a single response.
 // You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output <Action name="yield" />.
 // Example:
 // <Action name="send_message"><message>Hi everyone!</message></Action>
@@ -449,7 +455,9 @@ History:
             root = ET.fromstring(xml_str)
         except Exception:
             # Try to locate the first <Action ...>...</Action> or self-closing variant
-            m = re.search(r"<Action\b[\s\S]*?</Action>|<Action\b[^>]*/>", text, re.IGNORECASE)
+            m = re.search(
+                r"<Action\b[\s\S]*?</Action>|<Action\b[^>]*/>", text, re.IGNORECASE
+            )
             if not m:
                 return []
             frag = m.group(0)
@@ -493,7 +501,7 @@ History:
             if len(ctx) > 1:
                 last_role = ctx[-1].get("role")
             if initiative or last_role == "assistant":
-                ctx.append({"role": "user", "parts": ["Continue."]})
+                ctx.append({"role": "user", "parts": ["Action only. One XML Action; no code fences."]})
         except Exception:
             pass
 
@@ -507,7 +515,11 @@ History:
                 thoughts, plan, action_block, plan_update_block = (
                     self._parse_full_response(llm_output)
                 )
+                # Prefer the explicit Action block; if absent (Action-only output),
+                # fall back to parsing the entire response for an <Action> fragment.
                 action_data = self._parse_actions(action_block)
+                if not action_data:
+                    action_data = self._parse_actions(llm_output)
                 # Try applying plan update if present
                 plan_update = self._parse_plan_update(plan_update_block)
                 if plan_update:
@@ -536,7 +548,7 @@ History:
                         llm_output = '<Action name="yield" />'
                         action_data = [{"action": "yield"}]
                     else:
-                        llm_output = "<Action name=\"yield\" />"  # safe default
+                        llm_output = '<Action name="yield" />'  # safe default
                         action_data = [{"action": "yield"}]
 
         # 原封不动地记录发送的LLM消息到自己的history (即使为空或无效)

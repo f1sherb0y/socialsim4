@@ -189,7 +189,10 @@ class _MockModel:
         if scene == "council":
             if agent_name.lower() == "host":
                 if call_n == 1:
-                    action = {"action": "send_message", "message": "Good morning, council."}
+                    action = {
+                        "action": "send_message",
+                        "message": "Good morning, council.",
+                    }
                     thought = "Open the session briefly."
                     plan = "1. Greet. [CURRENT]"
                 else:
@@ -198,7 +201,10 @@ class _MockModel:
                     plan = "1. Yield. [CURRENT]"
             else:
                 if call_n == 1:
-                    action = {"action": "send_message", "message": "I support moving forward."}
+                    action = {
+                        "action": "send_message",
+                        "message": "I support moving forward.",
+                    }
                     thought = "Make a brief opening remark."
                     plan = "1. Remark. [CURRENT]"
                 else:

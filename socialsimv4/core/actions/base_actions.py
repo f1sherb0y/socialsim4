@@ -12,7 +12,7 @@ class SendMessageAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
         if message:
-            agent.log_event("send_message", {"agent": agent.name, "message": message})
+            # agent.log_event("send_message", {"agent": agent.name, "message": message})
             event = MessageEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
             return True
@@ -34,11 +34,9 @@ class YieldAction(Action):
 class SpeakAction(Action):
     NAME = "speak"
     DESC = "Say something in local/proximal chat."
-    INSTRUCTION = (
-        """- To speak locally:
+    INSTRUCTION = """- To speak locally:
 <Action name=\"speak\"><message>[your_message]</message></Action>
 """
-    )
 
     def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
