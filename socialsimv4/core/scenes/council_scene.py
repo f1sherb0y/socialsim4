@@ -1,6 +1,6 @@
 from socialsimv4.core.actions.council_actions import (
     GetVotingResultAction,
-    GetMaterialAction,
+    RequestBriefAction,
     StartVotingAction,
     VoteAction,
 )
@@ -23,7 +23,7 @@ class CouncilScene(SimpleChatScene):
         actions = super().get_scene_actions(agent)
         # Provide host-only utility to fetch additional materials
         if getattr(agent, "name", "") == "Host":
-            actions.append(GetMaterialAction())
+            actions.append(RequestBriefAction())
         return actions
 
     def get_behavior_guidelines(self):

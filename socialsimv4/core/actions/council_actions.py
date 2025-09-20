@@ -4,7 +4,7 @@ from socialsimv4.core.event import MessageEvent, PublicEvent
 
 class StartVotingAction(Action):
     NAME = "start_voting"
-    DESC = "Host starts a voting round."
+    DESC = "Host should use start_voting action to initiate the voting round."
     INSTRUCTION = (
         """- To start voting: {"action": "start_voting", "finish": true|false}"""
     )
@@ -23,7 +23,7 @@ class StartVotingAction(Action):
 
 class GetVotingResultAction(Action):
     NAME = "get_voting_result"
-    DESC = "Host checks and announces vote result."
+    DESC = "Host should use this tool to check vote result."
     INSTRUCTION = """- To get voting result: {"action": "get_voting_result", "finish": true|false}"""
 
     def handle(self, action_data, agent, simulator, scene):
@@ -46,7 +46,7 @@ class GetVotingResultAction(Action):
             else:
                 pending = num_members - len(scene.state.get("votes", {}))
                 info = f"Not all votes are in yet. {pending} votes pending."
-                agent.append_env_message(info.to_string())
+                agent.append_env_message(info)
                 # simulator.record_event(info, recipients=[agent.name])
                 return True
         return False
@@ -63,20 +63,20 @@ class GetRoundsAction(Action):
         return True
 
 
-class GetMaterialAction(Action):
-    NAME = "get_material"
+class RequestBriefAction(Action):
+    NAME = "request_brief"
     DESC = (
-        "Host: fetch concise briefing via LLM when debate stalls or facts are missing; "
-        "provide a clear 'desc'."
+        "Host: fetch a concise, neutral brief via LLM when debate stalls, facts are missing, "
+        "or members request data; provide a clear 'desc' (topic + focus)."
     )
     INSTRUCTION = """
-- To fetch material (host only): {"action": "get_material", "desc": "[what material is needed]", "finish": true|false}
+- To request a brief (host only): {"action": "request_brief", "desc": "[topic + focus]", "finish": true|false}
 """
 
     def handle(self, action_data, agent, simulator, scene):
-        # Only the host can fetch materials
+        # Only the host can fetch briefs
         if getattr(agent, "name", "") != "Host":
-            agent.append_env_message("Only the Host can use get_material.")
+            agent.append_env_message("Only the Host can use request_brief.")
             return False
 
         desc = action_data.get("desc") if isinstance(action_data, dict) else None
@@ -125,10 +125,10 @@ class GetMaterialAction(Action):
                 "- Open question for the chamber"
             )
 
-        content = f"Host provides additional material on '{desc}':\n{material.strip()}"
+        content = f"Host provides a brief on '{desc}':\n{material.strip()}"
         event = PublicEvent(content)
         simulator.broadcast(event)
-        scene.log(f"{agent.name} fetched material for: {desc}")
+        scene.log(f"{agent.name} requested brief for: {desc}")
         return True
 
 

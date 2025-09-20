@@ -2,7 +2,7 @@ from .actions.base_actions import SendMessageAction, SkipReplyAction, SpeakActio
 from .actions.council_actions import (
     GetRoundsAction,
     GetVotingResultAction,
-    GetMaterialAction,
+    RequestBriefAction,
     StartVotingAction,
     VoteAction,
 )
@@ -31,7 +31,7 @@ ACTION_SPACE_MAP = {
     "start_voting": StartVotingAction(),
     "get_voting_result": GetVotingResultAction(),
     "get_rounds": GetRoundsAction(),
-    "get_material": GetMaterialAction(),
+    "request_brief": RequestBriefAction(),
     "vote": VoteAction(),
 }
 
