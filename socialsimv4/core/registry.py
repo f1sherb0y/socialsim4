@@ -1,10 +1,10 @@
 from .actions.base_actions import SendMessageAction, SkipReplyAction, SpeakAction
 from .actions.council_actions import (
     GetRoundsAction,
-    GetVotingResultAction,
     RequestBriefAction,
     StartVotingAction,
     VoteAction,
+    VotingStatusAction,
 )
 from .actions.map_actions import (
     # ExploreAction,
@@ -29,9 +29,9 @@ ACTION_SPACE_MAP = {
     # "quick_move": QuickMoveAction(),
     # "explore": ExploreAction(),
     "start_voting": StartVotingAction(),
-    "get_voting_result": GetVotingResultAction(),
     "get_rounds": GetRoundsAction(),
     "request_brief": RequestBriefAction(),
+    "voting_status": VotingStatusAction(),
     "vote": VoteAction(),
 }
 

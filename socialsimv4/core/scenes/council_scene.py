@@ -1,9 +1,5 @@
-from socialsimv4.core.actions.council_actions import (
-    GetVotingResultAction,
-    RequestBriefAction,
-    StartVotingAction,
-    VoteAction,
-)
+from socialsimv4.core.actions.council_actions import StartVotingAction, VoteAction
+from socialsimv4.core.actions.council_actions import GetRoundsAction
 from socialsimv4.core.agent import Agent
 from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
 from socialsimv4.core.event import PublicEvent
@@ -21,9 +17,8 @@ class CouncilScene(SimpleChatScene):
 
     def get_scene_actions(self, agent: Agent):
         actions = super().get_scene_actions(agent)
-        # Provide host-only utility to fetch additional materials
-        if getattr(agent, "name", "") == "Host":
-            actions.append(RequestBriefAction())
+        # Common council actions for all agents
+        actions.append(GetRoundsAction())
         return actions
 
     def get_behavior_guidelines(self):
@@ -50,10 +45,15 @@ class CouncilScene(SimpleChatScene):
         num_members = sum(1 for a in simulator.agents.values() if a.name != "Host")
         votes = self.state.get("votes", {})
         if len(votes) >= num_members and num_members > 0:
+            yes = sum(v == "yes" for v in votes.values())
+            no = sum(v == "no" for v in votes.values())
+            abstain = sum(v == "abstain" for v in votes.values())
+            result = "passed" if yes > num_members / 2 else "failed"
             simulator.broadcast(
                 PublicEvent(
-                    "All votes are in. Voting has completed. Host should announce the results."
+                    f"Voting on the draft has concluded. It {result} with {yes} yes, {no} no, and {abstain} abstain."
                 )
             )
             self.state["voting_completed_announced"] = True
-            self.log("Voting completion announced after round.")
+            self.complete = True
+            self.log("Voting result announced automatically after round.")

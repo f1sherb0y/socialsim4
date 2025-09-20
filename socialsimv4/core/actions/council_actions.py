@@ -21,35 +21,36 @@ class StartVotingAction(Action):
         return False
 
 
-class GetVotingResultAction(Action):
-    NAME = "get_voting_result"
-    DESC = "Host should use this tool to check vote result."
-    INSTRUCTION = """- To get voting result: {"action": "get_voting_result", "finish": true|false}"""
+class VotingStatusAction(Action):
+    NAME = "voting_status"
+    DESC = "Show current voting progress: counts and pending voters."
+    INSTRUCTION = (
+        """- To check voting status: {"action": "voting_status", "finish": true|false}"""
+    )
 
     def handle(self, action_data, agent, simulator, scene):
-        if scene.state.get("voting_started", False):
-            num_members = sum(1 for a in simulator.agents.values() if a.name != "Host")
-            if len(scene.state.get("votes", {})) >= num_members:
-                yes = sum(v == "yes" for v in scene.state["votes"].values())
-                no = sum(v == "no" for v in scene.state["votes"].values())
-                abstain = num_members - yes - no
-                result = "passed" if yes > num_members / 2 else "failed"
-                event_content = f"Voting on the draft has concluded. It {result} with {yes} yes, {no} no, and {abstain} abstain."
+        started = scene.state.get("voting_started", False)
+        votes = scene.state.get("votes", {})
+        num_members = sum(1 for a in simulator.agents.values() if a.name != "Host")
+        if not started:
+            agent.append_env_message("Voting has not started.")
+            return True
 
-                # simulator.broadcast(PublicEvent(event_content))
-                agent.append_env_message(event_content)
-
-                scene.complete = True
-                scene.state["votes"] = {}
-                scene.log("Voting has concluded.")
-                return True
-            else:
-                pending = num_members - len(scene.state.get("votes", {}))
-                info = f"Not all votes are in yet. {pending} votes pending."
-                agent.append_env_message(info)
-                # simulator.record_event(info, recipients=[agent.name])
-                return True
-        return False
+        yes = sum(v == "yes" for v in votes.values())
+        no = sum(v == "no" for v in votes.values())
+        abstain = sum(v == "abstain" for v in votes.values())
+        pending_names = [
+            name for name in simulator.agents.keys() if name != "Host" and name not in votes
+        ]
+        pending = len(pending_names)
+        lines = [
+            "Voting status:",
+            f"- Members: {num_members}",
+            f"- Yes: {yes}, No: {no}, Abstain: {abstain}",
+            f"- Pending: {pending}" + (f" ({', '.join(pending_names)})" if pending_names else ""),
+        ]
+        agent.append_env_message("\n".join(lines))
+        return True
 
 
 class GetRoundsAction(Action):
