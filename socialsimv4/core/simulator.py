@@ -64,6 +64,21 @@ class Simulator:
         if self.log_event:
             self.log_event("event_recorded", record)
 
+    def record_log(self, text: str, sender: str = None, recipients=None, kind: str = "log"):
+        """Record a non-world, informational transcript line without using Event.
+        Intended for private notes like web searches or page views.
+        """
+        record = {
+            "time": self.scene.state.get("time"),
+            "type": kind,
+            "sender": sender,
+            "recipients": recipients,
+            "text": text,
+        }
+        self.event_log.append(record)
+        if self.log_event:
+            self.log_event("log_recorded", record)
+
     def broadcast(self, event: Event):
         sender = event.get_sender()
         time = self.scene.state.get("time")

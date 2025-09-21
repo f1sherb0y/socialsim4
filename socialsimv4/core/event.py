@@ -60,27 +60,7 @@ class SpeakEvent(Event):
         return self.sender
 
 
-class WebSearchEvent(Event):
-    def __init__(self, sender, query):
-        self.sender = sender
-        self.query = query
-
-    def to_string(self, time=None):
-        time_str = f"[{time}:00] " if time is not None else ""
-        return f"{time_str}{self.sender} searched: {self.query}"
-
-    def get_sender(self):
-        return self.sender
-
-
-class ViewPageEvent(Event):
-    def __init__(self, sender, url):
-        self.sender = sender
-        self.url = url
-
-    def to_string(self, time=None):
-        time_str = f"[{time}:00] " if time is not None else ""
-        return f"{time_str}{self.sender} viewed web page: {self.url}"
-
-    def get_sender(self):
-        return self.sender
+"""
+Note: Web search or page view activities are not modeled as world Events.
+They are logged via Simulator.record_log as transcript notes.
+"""

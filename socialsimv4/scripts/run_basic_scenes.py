@@ -19,6 +19,7 @@ def console_logger(event_type: str, data):
 
     - action_start/action_end, agent_process_start/agent_process_end: JSON payload
     - event_recorded: plain transcript of events (Public/Status/Speak)
+    - log_recorded: plain transcript of notes (e.g., web_search/view_page)
     - send_message/web_search/view_page/yield: JSON payload
     """
     try:
@@ -33,9 +34,10 @@ def console_logger(event_type: str, data):
             "yield",
         ):
             print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
-        elif event_type == "event_recorded":
+        elif event_type in ("event_recorded", "log_recorded"):
             text = data.get("text", "") if isinstance(data, dict) else str(data)
-            print(f"[event] {text}")
+            tag = "event" if event_type == "event_recorded" else "note"
+            print(f"[{tag}] {text}")
         else:
             print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
     except Exception:
