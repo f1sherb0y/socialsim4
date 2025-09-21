@@ -1,8 +1,12 @@
-from socialsimv4.core.actions.council_actions import StartVotingAction, VoteAction
-from socialsimv4.core.actions.council_actions import GetRoundsAction
+from socialsimv4.core.actions.council_actions import (
+    GetRoundsAction,
+    StartVotingAction,
+    VoteAction,
+    VotingStatusAction,
+)
 from socialsimv4.core.agent import Agent
-from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
 from socialsimv4.core.event import PublicEvent
+from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
 
 
 class CouncilScene(SimpleChatScene):
@@ -18,7 +22,7 @@ class CouncilScene(SimpleChatScene):
     def get_scene_actions(self, agent: Agent):
         actions = super().get_scene_actions(agent)
         # Common council actions for all agents
-        actions.append(GetRoundsAction())
+        actions.append(GetRoundsAction(), VotingStatusAction)
         return actions
 
     def get_behavior_guidelines(self):

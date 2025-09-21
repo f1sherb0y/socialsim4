@@ -290,10 +290,7 @@ class GameMap:
                     xy = agent.properties.get("map_xy")
                     if xy and (location.x, location.y) == tuple(xy):
                         agents_here.append(agent_name)
-                    elif (
-                        hasattr(agent, "map_position")
-                        and agent.properties.get("map_position") == location.name
-                    ):
+                    elif agent.properties.get("map_position") == location.name:
                         agents_here.append(agent_name)
 
             agent_info = f" ({', '.join(agents_here)})" if agents_here else ""
@@ -305,6 +302,8 @@ class GameMap:
                 resources_str = ", ".join(
                     [f"{k}:{v}" for k, v in location.resources.items()]
                 )
+            else:
+                resources_str = "(none)"
             map_display.append(f"   Resources: {resources_str}")
             map_display.append("")
 
@@ -333,7 +332,7 @@ class VillageScene(Scene):
         return f"""
 You live in a grid-based virtual village (size: {self.game_map.width}x{self.game_map.height}).
 You have coordinates, needs (hunger, energy), and an inventory. You can move across the map, gather resources, and interact with other agents.
-- Use move_to to reach coordinates or named locations; movement cost depends on terrain and is multiplied by {self.movement_cost}.
+- Use move_to_location to reach coordinates or named locations; movement cost depends on terrain and is multiplied by {self.movement_cost}.
 - Use look_around to see nearby locations, resources, and agents; speaking range is {self.chat_range}.
 """
 
@@ -354,23 +353,25 @@ Movement strategy:
 
     def get_examples(self):
         return """
+Example 1:
 --- Thoughts ---
 I'm getting hungry. I should go to the farm to get some food.
 
 --- Plan ---
-1. Move to the farm.
+1. Move to the farm.[CURRENT]
 2. Gather some apples.
 
 --- Action ---
---- Move To Location ---
 <Action name="move_to_location"><location>farm</location></Action>
 
+
+Example 2:
 --- Thoughts ---
 There are people nearby; I'll greet them.
 
 --- Plan ---
 1. Look around.
-2. Talk to a nearby agent.
+2. Talk to a nearby agent.[CURRENT]
 
 --- Action ---
 <Action name="talk_to"><to>Lyra</to><message>Hi there!</message></Action>
@@ -453,7 +454,7 @@ Inventory: {agent.properties["inventory"]}
 Current time: {self.state.get("time", 0)} hours ({time_of_day})
 """
 
-    def deliver_message(self, event: PublicEvent, sender: Agent, simulator: Simulator):
+    def deliver_message(self, event, sender: Agent, simulator: Simulator):
         """Limit chat delivery to agents within chat_range (Manhattan distance)."""
         time = self.state.get("time")
         formatted = event.to_string(time)

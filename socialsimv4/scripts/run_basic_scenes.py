@@ -160,12 +160,8 @@ def run_council():
                 ),
                 "role_prompt": "",
                 "action_space": [
-                    "send_message",
-                    "yield",
                     "start_voting",
                     "request_brief",
-                    "voting_status",
-                    "get_rounds",
                 ],
                 "properties": {},
             }
@@ -181,11 +177,7 @@ def run_council():
                 "initial_instruction": "",
                 "role_prompt": "You support pragmatic compromises that balance budgets and benefits.",
                 "action_space": [
-                    "send_message",
-                    "yield",
                     "vote",
-                    "voting_status",
-                    "get_rounds",
                 ],
                 "properties": {},
             }
@@ -201,11 +193,7 @@ def run_council():
                 "initial_instruction": "",
                 "role_prompt": "Press for strong environmental standards and equity measures.",
                 "action_space": [
-                    "send_message",
-                    "yield",
                     "vote",
-                    "voting_status",
-                    "get_rounds",
                 ],
                 "properties": {},
             }
@@ -221,11 +209,7 @@ def run_council():
                 "initial_instruction": "",
                 "role_prompt": "Highlight risks to small business and unintended consequences.",
                 "action_space": [
-                    "send_message",
-                    "yield",
                     "vote",
-                    "voting_status",
-                    "get_rounds",
                 ],
                 "properties": {},
             }
@@ -241,11 +225,7 @@ def run_council():
                 "initial_instruction": "",
                 "role_prompt": "Seek exemptions/discounts to protect small merchants and logistics.",
                 "action_space": [
-                    "send_message",
-                    "yield",
                     "vote",
-                    "voting_status",
-                    "get_rounds",
                 ],
                 "properties": {},
             }
@@ -310,7 +290,7 @@ def run_village():
                     "gather_resource",
                     "rest",
                 ],
-                "properties": {"location": (3, 3)},
+                "properties": {"map_xy": [3, 3]},
             }
         ),
         Agent.from_dict(
@@ -329,7 +309,7 @@ def run_village():
                     "gather_resource",
                     "rest",
                 ],
-                "properties": {"location": (18, 12)},
+                "properties": {"map_xy": [18, 12]},
             }
         ),
         Agent.from_dict(
@@ -348,7 +328,7 @@ def run_village():
                     "gather_resource",
                     "rest",
                 ],
-                "properties": {"location": (10, 8)},
+                "properties": {"map_xy": [10, 8]},
             }
         ),
         Agent.from_dict(
@@ -367,7 +347,7 @@ def run_village():
                     "gather_resource",
                     "rest",
                 ],
-                "properties": {"location": (15, 15)},
+                "properties": {"map_xy": [15, 15]},
             }
         ),
     ]
