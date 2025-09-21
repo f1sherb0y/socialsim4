@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 
 import openai
 
-from socialsimv4.api.config import MAX_REPEAT
-from socialsimv4.core.memory import ShortTermMemory
+from socialsim4.api.config import MAX_REPEAT
+from socialsim4.core.memory import ShortTermMemory
 
 # 假设的最大上下文字符长度（可调整，根据模型实际上下文窗口）
 MAX_CONTEXT_CHARS = 100000000

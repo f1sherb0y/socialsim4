@@ -3,7 +3,7 @@ import re
 import google.generativeai as genai
 from openai import OpenAI
 
-from socialsimv4.api.schemas import LLMConfig
+from socialsim4.api.schemas import LLMConfig
 
 
 class LLMClient:

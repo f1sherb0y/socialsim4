@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Env config for running socialsimv4 with Google Gemini.
+# Env config for running socialsim4 with Google Gemini.
 # Usage:
 #   export GEMINI_API_KEY="<YOUR_GOOGLE_AI_STUDIO_API_KEY>"   # REQUIRED
 #   # Optionally override defaults below before sourcing
@@ -9,8 +9,8 @@
 #   # export GEMINI_TOP_P="1.0"
 #   #
 #   # Then source and run:
-#   #   source socialsimv4/scripts/env.gemini.sh
-#   #   python3 -m socialsimv4.scripts.run_basic_scenes
+#   #   source socialsim4/scripts/env.gemini.sh
+#   #   python3 -m socialsim4.scripts.run_basic_scenes
 #
 # Notes:
 # - Set GEMINI_API_KEY in your shell (do not hardcode secrets in this file).
@@ -31,4 +31,4 @@ if [ -z "${GEMINI_API_KEY:-}" ]; then
 fi
 
 echo "[env.gemini] Configured for Gemini (model=${GEMINI_MODEL}). Ready to run:"
-echo "  python3 -m socialsimv4.scripts.run_basic_scenes"
+echo "  python3 -m socialsim4.scripts.run_basic_scenes"

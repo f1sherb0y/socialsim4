@@ -2,17 +2,17 @@ import heapq
 import math
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from socialsimv4.core.actions.base_actions import TalkToAction
-from socialsimv4.core.actions.village_actions import (
+from socialsim4.core.actions.base_actions import TalkToAction
+from socialsim4.core.actions.village_actions import (
     GatherResourceAction,
     LookAroundAction,
     MoveToLocationAction,
     RestAction,
 )
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.event import PublicEvent, StatusEvent
-from socialsimv4.core.scene import Scene
-from socialsimv4.core.simulator import Simulator
+from socialsim4.core.agent import Agent
+from socialsim4.core.event import PublicEvent, StatusEvent
+from socialsim4.core.scene import Scene
+from socialsim4.core.simulator import Simulator
 
 
 class MapLocation:

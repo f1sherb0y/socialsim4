@@ -1,7 +1,7 @@
 import json
 
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.event import Event, StatusEvent
+from socialsim4.core.agent import Agent
+from socialsim4.core.event import Event, StatusEvent
 
 
 class Simulator:
@@ -46,7 +46,9 @@ class Simulator:
 
     # Removed: record_event (use record_log instead for transcript entries)
 
-    def record_log(self, text: str, sender: str = None, recipients=None, kind: str = "log"):
+    def record_log(
+        self, text: str, sender: str = None, recipients=None, kind: str = "log"
+    ):
         """Record a non-world, informational transcript line without using Event.
         Intended for private notes like web searches or page views.
         """
@@ -96,7 +98,7 @@ class Simulator:
         scenario_data = data["scene"]
         # This is a simplified example. In a real application, you would
         # have a factory function to create the correct scene type.
-        from socialsimv4.core.registry import SCENE_MAP
+        from socialsim4.core.registry import SCENE_MAP
 
         scene_type = scenario_data["type"]
         scene_class = SCENE_MAP.get(scene_type)
@@ -154,7 +156,12 @@ class Simulator:
                         evt = StatusEvent(status_prompt)
                         text = evt.to_string(self.scene.state.get("time"))
                         agent.append_env_message(text)
-                        self.record_log(text, sender=None, recipients=[agent.name], kind="StatusEvent")
+                        self.record_log(
+                            text,
+                            sender=None,
+                            recipients=[agent.name],
+                            kind="StatusEvent",
+                        )
 
                 # Multi-step per-turn loop (agent may act multiple times until yield)
                 steps = 0

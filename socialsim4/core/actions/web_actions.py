@@ -1,8 +1,8 @@
 import re
 
-from socialsimv4.core.action import Action
-from socialsimv4.core.tools.web import view_page as tool_view_page
-from socialsimv4.core.tools.web import web_search as tool_web_search
+from socialsim4.core.action import Action
+from socialsim4.core.tools.web import view_page as tool_view_page
+from socialsim4.core.tools.web import web_search as tool_web_search
 
 
 class WebSearchAction(Action):

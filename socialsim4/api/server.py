@@ -1,7 +1,7 @@
 from fastapi import APIRouter, FastAPI
 
-from socialsimv4.api import config
-from socialsimv4.api.routes import auth, feedback, personas, providers, simulation
+from socialsim4.api import config
+from socialsim4.api.routes import auth, feedback, personas, providers, simulation
 
 app = FastAPI()
 router = APIRouter(prefix=config.API_PREFIX)
@@ -15,7 +15,7 @@ router.include_router(feedback.router, tags=["feedback"])
 
 @router.get("/")
 async def root():
-    return {"message": "SocialSimv4 API"}
+    return {"message": "socialsim4 API"}
 
 
 app.include_router(router)

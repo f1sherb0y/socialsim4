@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from socialsimv4.api import auth, config, database, schemas
-from socialsimv4.api.simulation_manager import simulation_manager
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.llm import create_llm_client
-from socialsimv4.core.registry import SCENE_MAP
-from socialsimv4.core.simulator import Simulator
+from socialsim4.api import auth, config, database, schemas
+from socialsim4.api.simulation_manager import simulation_manager
+from socialsim4.core.agent import Agent
+from socialsim4.core.llm import create_llm_client
+from socialsim4.core.registry import SCENE_MAP
+from socialsim4.core.simulator import Simulator
 
 router = APIRouter()
 

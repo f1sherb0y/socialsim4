@@ -15,14 +15,14 @@
 
 // A generic event block (no "Public Event:" label)
 #let event-block = (content, colors: theme) => [
-  #text(fill: colors.public-event)[Event:]
+  #text(fill: colors.public-event)[[Event]]
   #h(8pt)
   #render-multiline(content, fill: colors.content)
 ]
 
 // A public event block with a colored label
 #let public-event-block = (content, colors: theme) => [
-  #text(fill: colors.public-event)[Public Event:]
+  #text(fill: colors.public-event)[[Public Event]]
   #h(8pt)
   #render-multiline(content, fill: colors.content)
 ]

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from socialsimv4.api import auth, schemas
-from socialsimv4.api.simulation_manager import simulation_manager
+from socialsim4.api import auth, schemas
+from socialsim4.api.simulation_manager import simulation_manager
 
 router = APIRouter()
 

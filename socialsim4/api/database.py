@@ -14,7 +14,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 
-from socialsimv4.api import config
+from socialsim4.api import config
 
 connect_args = {}
 if config.DATABASE_URL.startswith("sqlite"):

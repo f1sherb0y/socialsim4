@@ -30,12 +30,12 @@ echo "Setting up and starting backend..."
 # Create storage directory if it doesn't exist
 mkdir -p $STORAGE_PATH
 # Install dependencies
-# pip install -r socialsimv4/api/requirements.txt
+# pip install -r socialsim4/api/requirements.txt
 # Run database migrations/creations and seed the database
-python -c "import asyncio; from socialsimv4.api.database import create_db_and_tables; asyncio.run(create_db_and_tables())"
-python -m socialsimv4.api.seed
+python -c "import asyncio; from socialsim4.api.database import create_db_and_tables; asyncio.run(create_db_and_tables())"
+python -m socialsim4.api.seed
 # Start server in the background
-(uvicorn socialsimv4.api.server:app --host $LISTEN_ADDRESS --port $BACKEND_PORT --reload) &
+(uvicorn socialsim4.api.server:app --host $LISTEN_ADDRESS --port $BACKEND_PORT --reload) &
 BACKEND_PID=$!
 echo "Backend server started with PID $BACKEND_PID on port $BACKEND_PORT"
 
@@ -43,7 +43,7 @@ echo "Backend server started with PID $BACKEND_PID on port $BACKEND_PORT"
 # --- Frontend Setup ---
 echo "Setting up and starting frontend..."
 # Install dependencies and run dev server in the background
-(cd socialsimv4/frontend && bun install && bun run dev) &
+(cd socialsim4/frontend && bun install && bun run dev) &
 FRONTEND_PID=$!
 echo "Frontend server started with PID $FRONTEND_PID on port $LISTEN_PORT"
 

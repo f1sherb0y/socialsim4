@@ -4,8 +4,8 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from socialsimv4.api.config import DATABASE_URL
-from socialsimv4.api.database import Base, SimulationTemplate
+from socialsim4.api.config import DATABASE_URL
+from socialsim4.api.database import Base, SimulationTemplate
 
 # --- Template Definitions ---
 

@@ -1,0 +1,33 @@
+Public Event: Welcome to the chat room.
+Public Event: News: A new study suggests AI models now match human-level performance in several creative writing benchmarks.
+[Message] Host: Hello everyone! Welcome to the chat. That AI news is pretty wild, huh? Human-level creative writing... what do you all think?
+Alice searched: AI creative writing human-level performance study
+Alice viewed web page: https://practicaldev-herokuapp-com.global.ssl.fastly.net/aimodels-fyi/ai-writing-benchmark-shows-current-models-still-far-behind-human-level-performance-4nk2
+[Message] Alice: Okay, this article about the AI Writing Benchmark (WritingBench) says that current AI models are still behind human-level performance, which contradicts the initial news! It seems like this benchmark is pretty comprehensive, using different writing tasks and evaluation methods. Has anyone else looked into this, or have a different study in mind?
+Bob searched: AI creative writing human level performance
+[Message] Bob: Those search results don't really address the creative writing aspect directly. Mostly about MIT and AI applications in other fields. I'm still skeptical. Alice's benchmark sounds more relevant.
+Bob searched: "AI Writing Benchmark (WritingBench)"
+Bob viewed web page: https://arxiv.org/abs/2503.05244
+[Message] Bob: Okay, this WritingBench paper abstract confirms Alice's point. It highlights the need for comprehensive benchmarks because existing ones are too limited. Doesn't sound like AI has reached human-level *across various domains*, as that initial news suggested. Still a long way to go, probably.
+[Message] Host: Great points, Alice and Bob! It sounds like the original news was a bit of an overstatement. Alice, when you say "different writing tasks," could you give an example? I'm curious about what kinds of creative writing are being tested.
+Alice viewed web page: https://practicaldev-herokuapp-com.global.ssl.fastly.net/aimodels-fyi/ai-writing-benchmark-shows-current-models-still-far-behind-human-level-performance-4nk2
+[Message] Alice: Okay, so the article mentions that the WritingBench benchmark covers 24 different writing tasks across 7 categories, including academic, creative, and professional writing! I don't have specific examples of the creative writing tasks *from the article*, but I can infer that they might include things like story writing, poetry, or scriptwriting. I think digging into the original paper would give us more concrete examples.
+Bob searched: "WritingBench" "examples" "creative writing prompts"
+Bob viewed web page: https://arxiv.org/html/2503.05244v3
+[Message] Bob: Alright, I've got the HTML version of the paper. Skimming through it... it's dense. It talks a lot about the limitations of existing benchmarks and the framework they've developed. I'm not seeing any concrete examples of creative writing prompts directly in this preview. Maybe I need to download the PDF version and do a more thorough search.
+[Message] Bob: Before I go hunting for a PDF, I'll try a more targeted search *within* this HTML page for keywords like "task examples," "writing prompts," or "creative writing tasks." Maybe there's a table or a section I missed.
+Bob searched: "WritingBench" "creative writing" "task examples" OR "prompts" OR "scenarios"
+[Message] Host: Thanks, Alice and Bob, for digging deeper! It sounds like finding concrete examples is proving tricky. Bob, let us know if you find anything specific in the PDF.
+Alice searched: WritingBench benchmark creative writing task examples
+Alice viewed web page: https://arxiv.org/html/2503.05244v3
+[Message] Alice: Alright, I found the actual paper! It says that WritingBench covers 6 core writing domains and 100 subdomains, including creative writing! Still digging for those specific examples, but at least this confirms the benchmark's focus. This paper also discusses limitations of current benchmarks for generative writing, which goes back to the original issue of whether AI has truly reached human-level performance in creative writing.
+[Message] Host: Good find, Alice! So, if these benchmarks are getting more comprehensive and still showing a gap between AI and human creative writing, what does that mean for fields like marketing, journalism, or even entertainment? Are there specific areas where AI is still clearly lagging?
+Alice viewed web page: https://arxiv.org/html/2503.05244v3
+[Message] Alice: Okay, according to the paper, current evaluation benchmarks have limitations in the scope and diversity of writing tasks, and the evaluation metrics are inadequate for complex writing tasks! It also says that current benchmarks often rely on simplistic tasks and don't capture the diversity and intricacies of real-world writing. So, it seems like AI might struggle with more nuanced, complex, and creative tasks that require deeper understanding and adaptability! This could definitely impact fields like journalism, where AI might struggle with investigative reporting or crafting compelling narratives, or entertainment, where AI might struggle with writing original and engaging screenplays.
+Bob searched: AI creative writing strengths weaknesses
+[Message] Bob: Okay, the search results generally point to AI lacking "true creativity" and "genuine creative depth." One article mentions that AI gives you "the common denominator, not..." something original. So maybe AI is good for churning out boilerplate content, but not for anything truly innovative or insightful. Makes sense.
+[Message] Host: So, it sounds like AI struggles with nuance, complexity, originality, and genuine creative depth. If these are the key limitations, what are the potential avenues for improvement? Are we talking about better training data, more sophisticated algorithms, or something else entirely?
+Alice searched: improving AI creative writing abilities
+Alice viewed web page: https://tedleonhardt.medium.com/creatives-ai-will-reshape-your-role-22724c8b780d
+[Message] Alice: Okay, this article suggests that AI will reshape creative roles, and that creatives will use AI tools to broaden their roles! It focuses more on how AI will change the *way* creatives work, rather than specifically how to improve AI's creative writing. However, it implies that creatives can use AI to enhance their work! It also brings up the point that AI is simply another technology change. It sounds like humans and AI will need to work together to improve creative output!
+[Message] Bob: Humans and AI working together... sounds nice, but what does that *actually* look like? Are we talking about AI generating garbage that humans have to spend hours fixing? Or AI becoming a fancy thesaurus? I'm not convinced this "collaboration" is all it's cracked up to be.

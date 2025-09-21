@@ -1,5 +1,5 @@
-from socialsimv4.core.action import Action
-from socialsimv4.core.event import PublicEvent
+from socialsim4.core.action import Action
+from socialsim4.core.event import PublicEvent
 
 
 class MoveToLocationAction(Action):

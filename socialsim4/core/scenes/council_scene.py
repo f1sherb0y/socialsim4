@@ -1,12 +1,12 @@
-from socialsimv4.core.actions.council_actions import (
+from socialsim4.core.actions.council_actions import (
     GetRoundsAction,
     StartVotingAction,
     VoteAction,
     VotingStatusAction,
 )
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.event import PublicEvent
-from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
+from socialsim4.core.agent import Agent
+from socialsim4.core.event import PublicEvent
+from socialsim4.core.scenes.simple_chat_scene import SimpleChatScene
 
 
 class CouncilScene(SimpleChatScene):

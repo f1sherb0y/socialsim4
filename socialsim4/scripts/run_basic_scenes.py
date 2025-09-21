@@ -4,14 +4,14 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
-from socialsimv4.api.schemas import LLMConfig
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.event import PublicEvent
-from socialsimv4.core.llm import create_llm_client
-from socialsimv4.core.scenes.council_scene import CouncilScene
-from socialsimv4.core.scenes.simple_chat_scene import SimpleChatScene
-from socialsimv4.core.scenes.village_scene import GameMap, VillageScene
-from socialsimv4.core.simulator import Simulator
+from socialsim4.api.schemas import LLMConfig
+from socialsim4.core.agent import Agent
+from socialsim4.core.event import PublicEvent
+from socialsim4.core.llm import create_llm_client
+from socialsim4.core.scenes.council_scene import CouncilScene
+from socialsim4.core.scenes.simple_chat_scene import SimpleChatScene
+from socialsim4.core.scenes.village_scene import GameMap, VillageScene
+from socialsim4.core.simulator import Simulator
 
 
 def console_logger(event_type: str, data):

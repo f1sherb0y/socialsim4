@@ -1,6 +1,6 @@
-from socialsimv4.core.actions.base_actions import SendMessageAction, YieldAction
-from socialsimv4.core.actions.web_actions import ViewPageAction, WebSearchAction
-from socialsimv4.core.scene import Scene
+from socialsim4.core.actions.base_actions import SendMessageAction, YieldAction
+from socialsim4.core.actions.web_actions import ViewPageAction, WebSearchAction
+from socialsim4.core.scene import Scene
 
 
 class SimpleChatScene(Scene):

@@ -1,7 +1,7 @@
-from socialsimv4.core.agent import Agent
-from socialsimv4.core.event import PublicEvent
-from socialsimv4.core.simulator import Simulator
-from socialsimv4.core.actions.base_actions import YieldAction
+from socialsim4.core.actions.base_actions import YieldAction
+from socialsim4.core.agent import Agent
+from socialsim4.core.event import PublicEvent
+from socialsim4.core.simulator import Simulator
 
 
 class Scene:
