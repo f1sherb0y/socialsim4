@@ -402,6 +402,7 @@ There are people nearby; I'll greet them.
             LookAroundAction(),
             GatherResourceAction(),
             RestAction(),
+            *super().get_scene_actions(agent),
         ]
 
     def post_round(self, simulator: Simulator):

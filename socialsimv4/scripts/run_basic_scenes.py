@@ -296,7 +296,6 @@ def run_village():
                 "initial_instruction": "Villagers reported a faint humming near the ancient_ruins after dusk. Investigate the ruins for inscriptions or signs and share your findings.",
                 "role_prompt": "Focus on observation and careful inference; verify clues at nearby landmarks.",
                 "action_space": [
-                    "send_message",
                     "talk_to",
                     "yield",
                     "move_to_location",
@@ -315,7 +314,6 @@ def run_village():
                 "initial_instruction": "Plants at the forest edge seem to wilt. Forage a few samples and brew a simple diagnostic infusion to assess the cause.",
                 "role_prompt": "Act with care; gather sustainable amounts and observe the environment.",
                 "action_space": [
-                    "send_message",
                     "talk_to",
                     "yield",
                     "move_to_location",
@@ -334,7 +332,6 @@ def run_village():
                 "initial_instruction": "The public well at the village_center is weak. Gather iron from the mine to forge a sturdier pump coupling.",
                 "role_prompt": "Prioritize practical tasks that help the village; keep messages brief.",
                 "action_space": [
-                    "send_message",
                     "talk_to",
                     "yield",
                     "move_to_location",
@@ -353,7 +350,6 @@ def run_village():
                 "initial_instruction": "Update your map with nearby landmarks. Verify forest paths and locate the waterfall near the forest edge.",
                 "role_prompt": "Explore efficiently and share helpful wayfinding notes.",
                 "action_space": [
-                    "send_message",
                     "talk_to",
                     "yield",
                     "move_to_location",

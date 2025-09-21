@@ -1,6 +1,7 @@
 from socialsimv4.core.agent import Agent
 from socialsimv4.core.event import PublicEvent
 from socialsimv4.core.simulator import Simulator
+from socialsimv4.core.actions.base_actions import YieldAction
 
 
 class Scene:
@@ -68,9 +69,10 @@ class Scene:
 
     def get_scene_actions(self, agent: Agent):
         """Return a list of Action instances this scene enables for the agent.
-        Default: no additional actions.
+        Default: provide a basic yield action so agents can always end their turn.
+        Scenes may extend by calling super().get_scene_actions(agent).
         """
-        return []
+        return [YieldAction()]
 
     def to_dict(self):
         return {
