@@ -15,17 +15,31 @@ from socialsimv4.core.simulator import Simulator
 
 
 def console_logger(event_type: str, data):
-    if (
-        # event_type == "action_start"
-        event_type == "send_message"
-        or event_type == "view_page"
-        or event_type == "web_search"
-        or event_type == "yield"
-    ):
-        try:
+    """Compact console logger that prints key simulation events.
+
+    - action_start/action_end, agent_process_start/agent_process_end: JSON payload
+    - event_recorded: plain transcript of events (Public/Status/Speak)
+    - send_message/web_search/view_page/yield: JSON payload
+    """
+    try:
+        if event_type in (
+            "action_start",
+            "action_end",
+            "agent_process_start",
+            "agent_process_end",
+            "send_message",
+            "web_search",
+            "view_page",
+            "yield",
+        ):
             print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
-        except Exception:
-            print(f"[{event_type}] {data}")
+        elif event_type == "event_recorded":
+            text = data.get("text", "") if isinstance(data, dict) else str(data)
+            print(f"[event] {text}")
+        else:
+            print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
+    except Exception:
+        print(f"[{event_type}] {data}")
 
 
 def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
@@ -95,7 +109,7 @@ def run_simple_chat():
                 "name": "Host",
                 "user_profile": "You are the host of a chat room. Your role is to facilitate conversation, introduce topics, and ensure everyone has a chance to speak. You are neutral and objective.",
                 "style": "welcoming and clear",
-                "action_space": ["send_message", "yield"],
+                "action_space": ["web_search", "view_page"],
                 "initial_instruction": "",
                 "role_prompt": "",
                 "properties": {},
@@ -106,7 +120,7 @@ def run_simple_chat():
                 "name": "Alice",
                 "user_profile": "You are Alice. You are an optimist, full of energy, and always curious about new technologies and their potential to change the world for the better.",
                 "style": "enthusiastic and inquisitive",
-                "action_space": ["send_message", "yield"],
+                "action_space": ["web_search", "view_page"],
                 "initial_instruction": "",
                 "role_prompt": "",
                 "properties": {},
@@ -117,7 +131,7 @@ def run_simple_chat():
                 "name": "Bob",
                 "user_profile": "You are Bob. You are a pragmatist and a bit of a skeptic. You are cautious about new technologies and tend to focus on the potential downsides and practical challenges.",
                 "style": "cynical and questioning",
-                "action_space": ["send_message", "yield"],
+                "action_space": ["web_search", "view_page"],
                 "initial_instruction": "",
                 "role_prompt": "",
                 "properties": {},
@@ -279,8 +293,8 @@ def run_village():
                 "name": "Elias Thorne",
                 "user_profile": "You are Elias Thorne, a reclusive scholar living in a remote village. You are deeply knowledgeable about local history, folklore, and ancient ruins. You spend most of your time in your library, poring over old maps and texts. You are logical, reserved, and slightly suspicious of outsiders.",
                 "style": "academic and precise",
-                "initial_instruction": "You have just discovered a cryptic passage in an old manuscript that hints at a hidden artifact somewhere in the village. Your goal is to decipher the clue and find the artifact.",
-                "role_prompt": "Your focus is on research and investigation. Use your knowledge to guide your actions.",
+                "initial_instruction": "Villagers reported a faint humming near the ancient_ruins after dusk. Investigate the ruins for inscriptions or signs and share your findings.",
+                "role_prompt": "Focus on observation and careful inference; verify clues at nearby landmarks.",
                 "action_space": [
                     "send_message",
                     "talk_to",
@@ -298,8 +312,8 @@ def run_village():
                 "name": "Seraphina",
                 "user_profile": "You are Seraphina, the village herbalist. You have an intimate connection with the natural world and possess a deep understanding of plants and their properties. You are compassionate, intuitive, and respected by the villagers for your healing skills. You live in a small cottage near the forest.",
                 "style": "gentle and mystical",
-                "initial_instruction": "You've noticed a strange wilting of the silverleaf plants near the ancient ruins. You believe it's a sign of a magical imbalance. Your goal is to diagnose the cause and restore balance to the area.",
-                "role_prompt": "Your actions should be guided by your connection to nature and your desire to maintain harmony.",
+                "initial_instruction": "Plants at the forest edge seem to wilt. Forage a few samples and brew a simple diagnostic infusion to assess the cause.",
+                "role_prompt": "Act with care; gather sustainable amounts and observe the environment.",
                 "action_space": [
                     "send_message",
                     "talk_to",
@@ -317,8 +331,8 @@ def run_village():
                 "name": "Kaelen",
                 "user_profile": "You are Kaelen, the village blacksmith. You are a person of few words but immense skill. Your forge is the heart of the village, where you craft tools, weapons, and intricate metalwork. You are stoic, practical, and fiercely protective of your community.",
                 "style": "terse and direct",
-                "initial_instruction": "The village's well pump has broken, and you need a rare iron ore to forge a replacement part. The ore is said to be found in the caves to the north. Your goal is to retrieve the ore and repair the pump.",
-                "role_prompt": "You are a problem-solver. Focus on practical tasks and the needs of the village.",
+                "initial_instruction": "The public well at the village_center is weak. Gather iron from the mine to forge a sturdier pump coupling.",
+                "role_prompt": "Prioritize practical tasks that help the village; keep messages brief.",
                 "action_space": [
                     "send_message",
                     "talk_to",
@@ -336,8 +350,8 @@ def run_village():
                 "name": "Lyra",
                 "user_profile": "You are Lyra, a young and adventurous cartographer. You are new to the village, drawn by tales of its mysterious surroundings. You are curious, energetic, and eager to map the uncharted territories around the village.",
                 "style": "enthusiastic and inquisitive",
-                "initial_instruction": "You've heard rumors of a hidden waterfall deep in the forest. Your goal is to find it and add it to your map of the region.",
-                "role_prompt": "Your primary drive is exploration and discovery. Document your findings and interact with others to gather information.",
+                "initial_instruction": "Update your map with nearby landmarks. Verify forest paths and locate the waterfall near the forest edge.",
+                "role_prompt": "Explore efficiently and share helpful wayfinding notes.",
                 "action_space": [
                     "send_message",
                     "talk_to",
@@ -367,7 +381,7 @@ def run_village():
 
     sim.broadcast(
         PublicEvent(
-            "A traveler passing through the village square mentions a faint, melodic humming sound coming from the direction of the ancient ruins at night."
+            "At sunrise, word spreads in the village_center: the well's flow is weak, and a faint humming has been heard near the ancient_ruins after dusk."
         )
     )
 
@@ -376,6 +390,6 @@ def run_village():
 
 
 if __name__ == "__main__":
-    run_simple_chat()
+    # run_simple_chat()
     # run_council()
-    # run_village()
+    run_village()

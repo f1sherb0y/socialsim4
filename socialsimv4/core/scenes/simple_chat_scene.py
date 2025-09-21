@@ -54,6 +54,4 @@ I want to quickly check recent news about electric cars.
         return [
             SendMessageAction(),
             YieldAction(),
-            WebSearchAction(),
-            ViewPageAction(),
         ]

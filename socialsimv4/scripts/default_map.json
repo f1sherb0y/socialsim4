@@ -7,7 +7,7 @@
             "x": 10,
             "y": 10,
             "type": "landmark",
-            "description": "Village center where people gather"
+            "description": "Village center where people gather; a public well stands here."
         },
         {
             "name": "house_1",
@@ -90,6 +90,20 @@
                 "iron": 12,
                 "stone": 25
             }
+        },
+        {
+            "name": "ancient_ruins",
+            "x": 12,
+            "y": 16,
+            "type": "landmark",
+            "description": "Crumbling stone arches and carvings; villagers report a faint humming after dusk."
+        },
+        {
+            "name": "waterfall",
+            "x": 2,
+            "y": 4,
+            "type": "landmark",
+            "description": "A hidden waterfall behind thick brush, near the forest's edge."
         }
     ]
 }
