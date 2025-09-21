@@ -137,6 +137,16 @@ class RequestBriefAction(Action):
         content = f"Brief (private) on '{desc}':\n{material.strip()}"
         # Deliver privately to host and record the event (private)
         agent.append_env_message(content)
+        # Add a concise transcript note (non-world log)
+        try:
+            simulator.record_log(
+                f"{agent.name} requested brief: {desc}",
+                sender=agent.name,
+                recipients=[agent.name],
+                kind="request_brief",
+            )
+        except Exception:
+            pass
         scene.log(f"{agent.name} requested brief for: {desc} (private)")
         return True
 

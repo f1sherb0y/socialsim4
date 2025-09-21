@@ -388,6 +388,6 @@ def run_village():
 
 
 if __name__ == "__main__":
-    run_simple_chat()
-    # run_council()
+    # run_simple_chat()
+    run_council()
     # run_village()

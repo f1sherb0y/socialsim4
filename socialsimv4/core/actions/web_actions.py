@@ -1,7 +1,6 @@
 import re
 
 from socialsimv4.core.action import Action
-from socialsimv4.core.event import ViewPageEvent, WebSearchEvent
 from socialsimv4.core.tools.web import view_page as tool_view_page
 from socialsimv4.core.tools.web import web_search as tool_web_search
 
@@ -47,7 +46,12 @@ class WebSearchAction(Action):
                 lines.append(f"   {snippet}")
         agent.append_env_message("\n".join(lines))
         # Include in transcript as a private log line (not a world Event)
-        simulator.record_log(f"{agent.name} searched: {query}", sender=agent.name, recipients=[agent.name], kind="web_search")
+        simulator.record_log(
+            f"{agent.name} searched: {query}",
+            sender=agent.name,
+            recipients=[agent.name],
+            kind="web_search",
+        )
         simulator.log_event(
             "web_search",
             {"agent": agent.name, "query": query, "count": len(results)},

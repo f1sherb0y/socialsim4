@@ -22,7 +22,7 @@ class CouncilScene(SimpleChatScene):
     def get_scene_actions(self, agent: Agent):
         actions = super().get_scene_actions(agent)
         # Common council actions for all agents
-        actions.append(GetRoundsAction(), VotingStatusAction)
+        actions.append([GetRoundsAction(), VotingStatusAction()])
         return actions
 
     def get_behavior_guidelines(self):
