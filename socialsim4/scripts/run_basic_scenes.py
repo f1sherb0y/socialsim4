@@ -373,6 +373,7 @@ def run_village():
         "village",
         "The sun rises over the quiet village of Silverwood, nestled in a valley surrounded by ancient forests and mist-shrouded hills. A new day brings with it new mysteries and challenges.",
         game_map=game_map,
+        # print_map_each_turn=True,
     )
     clients = make_clients()
 

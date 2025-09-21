@@ -122,6 +122,60 @@ class GameMap:
             ],
         }
 
+    def render_ascii(self, agents: Dict[str, Agent] = None, color: bool = True) -> str:
+        """Render an ASCII diagram of the map.
+        Legend: '.' passable, '#' blocked, 'L' named location, 'A' agent, '*' multiple agents.
+        If color=True, apply ANSI colors to improve readability.
+        """
+        # Build quick lookups
+        loc_by_xy = {(loc.x, loc.y): loc for loc in self.locations.values()}
+        agents_xy: Dict[Tuple[int, int], int] = {}
+        if agents:
+            for a in agents.values():
+                xy = (a.properties.get("map_xy") or [None, None])
+                if xy and xy[0] is not None and xy[1] is not None:
+                    key = (int(xy[0]), int(xy[1]))
+                    agents_xy[key] = agents_xy.get(key, 0) + 1
+
+        rows: List[str] = []
+        for y in range(self.height):
+            row = []
+            for x in range(self.width):
+                ch = '.' if self.is_passable(x, y) else '#'
+                if (x, y) in loc_by_xy:
+                    ch = 'L'
+                cnt = agents_xy.get((x, y), 0)
+                if cnt == 1:
+                    ch = 'A'
+                elif cnt > 1:
+                    ch = '*'
+                if color:
+                    if ch == '.':
+                        ch = "\x1b[2m.\x1b[0m"  # dim
+                    elif ch == '#':
+                        ch = "\x1b[90m#\x1b[0m"  # gray
+                    elif ch == 'L':
+                        ch = "\x1b[33mL\x1b[0m"  # yellow
+                    elif ch == 'A':
+                        ch = "\x1b[36mA\x1b[0m"  # cyan
+                    elif ch == '*':
+                        ch = "\x1b[35m*\x1b[0m"  # magenta
+                row.append(ch)
+            rows.append(''.join(row))
+        header = f"Map {self.width}x{self.height}"
+        if color:
+            legend = (
+                "Legend: "
+                + "\x1b[2m.\x1b[0m passable, "
+                + "\x1b[90m#\x1b[0m blocked, "
+                + "\x1b[33mL\x1b[0m location, "
+                + "\x1b[36mA\x1b[0m agent, "
+                + "\x1b[35m*\x1b[0m multiple"
+            )
+        else:
+            legend = "Legend: . passable, # blocked, L location, A agent, * multiple"
+        return "\n".join([header, legend] + rows)
+
     @classmethod
     def from_dict(cls, data: Dict):
         """Creates a map from a dictionary."""
@@ -323,11 +377,13 @@ class VillageScene(Scene):
         game_map: GameMap,
         movement_cost: int = 1,
         chat_range: int = 5,
+        print_map_each_turn: bool = False,
     ):
         super().__init__(name, initial_event)
         self.game_map = game_map
         self.movement_cost = movement_cost
         self.chat_range = chat_range
+        self.print_map_each_turn = print_map_each_turn
         # Use minutes in state["time"] to match Event formatting; advance per round
         self.minutes_per_turn = 0
         self.state["time"] = 0
@@ -429,6 +485,21 @@ There are people nearby; I'll greet them.
             *super().get_scene_actions(agent),
         ]
 
+    def post_turn(self, agent: Agent, simulator: Simulator):
+        # No per-turn time advance (minutes_per_turn=0)
+        super().post_turn(agent, simulator)
+
+    def parse_and_handle_action(self, action_data, agent: Agent, simulator: Simulator):
+        handled = super().parse_and_handle_action(action_data, agent, simulator)
+        if getattr(self, "print_map_each_turn", False) and action_data.get("action"):
+            ascii_map = self.game_map.render_ascii(simulator.agents)
+            simulator.record_log(
+                f"After action {action_data.get('action')} by {agent.name}:\n{ascii_map}",
+                sender=agent.name,
+                kind="map",
+            )
+        return handled
+
     def post_round(self, simulator: Simulator):
         """每轮结束后的处理"""
         # Advance scene clock by 60 minutes per full round
@@ -517,6 +588,7 @@ Current time: {hours}:{mins:02d} ({time_of_day})
             "movement_cost": self.movement_cost,
             "chat_range": self.chat_range,
             "map": self.game_map.to_dict(),
+            "print_map_each_turn": self.print_map_each_turn,
         }
 
     @classmethod
@@ -525,4 +597,5 @@ Current time: {hours}:{mins:02d} ({time_of_day})
             "game_map": GameMap.from_dict(config["map"]),
             "movement_cost": config.get("movement_cost", 1),
             "chat_range": config.get("chat_range", 5),
+            "print_map_each_turn": config.get("print_map_each_turn", False),
         }
