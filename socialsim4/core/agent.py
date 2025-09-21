@@ -183,8 +183,7 @@ Usage:
 {action_instructions}
 
 
-Here are some examples:
-{scene.get_examples() if scene else ""}
+{("Here are some examples:\n" + scene.get_examples()) if (scene and scene.get_examples() != "") else ""}
 
 
 Initial instruction:
@@ -522,6 +521,9 @@ History:
         for attempt in range(self.max_repeat):
             try:
                 llm_output = self.call_llm(clients, ctx)
+                # print(
+                #     f"LLM output for {self.name} (attempt {attempt + 1}):\n{llm_output}\n"
+                # )
                 thoughts, plan, action_block, plan_update_block = (
                     self._parse_full_response(llm_output)
                 )

@@ -434,14 +434,12 @@ There are people nearby; I'll greet them.
                 evt = StatusEvent(status)
                 text = evt.to_string(self.state.get("time"))
                 agent.append_env_message(text)
-                simulator.record_log(text, recipients=[agent.name], kind="StatusEvent")
 
             if agent.properties["energy"] <= 30:
                 status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
                 evt = StatusEvent(status)
                 text = evt.to_string(self.state.get("time"))
                 agent.append_env_message(text)
-                simulator.record_log(text, recipients=[agent.name], kind="StatusEvent")
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
         time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"

@@ -1,3 +1,15 @@
+def _fmt_time_prefix(time_val):
+    if time_val is None:
+        return ""
+    try:
+        minutes = int(time_val)
+        hours = minutes // 60
+        mins = minutes % 60
+        return f"[{hours}:{mins:02d}] "
+    except Exception:
+        return f"[{time_val}:00] "
+
+
 class Event:
     def to_string(self, time=None):
         raise NotImplementedError
@@ -12,7 +24,7 @@ class MessageEvent(Event):
         self.message = message
 
     def to_string(self, time=None):
-        time_str = f"[{time}:00] " if time is not None else ""
+        time_str = _fmt_time_prefix(time)
         return f"{time_str}[Message] {self.sender}: {self.message}"
 
     def get_sender(self):
@@ -24,7 +36,7 @@ class PublicEvent(Event):
         self.content = content
 
     def to_string(self, time=None):
-        time_str = f"[{time}:00] " if time is not None else ""
+        time_str = _fmt_time_prefix(time)
         return f"{time_str}Public Event: {self.content}"
 
 
@@ -33,7 +45,7 @@ class NewsEvent(Event):
         self.content = content
 
     def to_string(self, time=None):
-        time_str = f"[{time}:00] " if time is not None else ""
+        time_str = _fmt_time_prefix(time)
         return f"{time_str}[NEWS] {self.content}"
 
 
@@ -42,7 +54,7 @@ class StatusEvent(Event):
         self.status_data = status_data
 
     def to_string(self, time=None):
-        time_str = f"[{time}:00] " if time is not None else ""
+        time_str = _fmt_time_prefix(time)
         return f"{time_str}Status: {self.status_data}"
 
 
@@ -53,7 +65,7 @@ class SpeakEvent(Event):
 
     def to_string(self, time=None):
         # Natural transcript style: "[time] Alice: message"
-        time_str = f"[{time}:00] " if time is not None else ""
+        time_str = _fmt_time_prefix(time)
         return f"{time_str}{self.sender}: {self.message}"
 
     def get_sender(self):

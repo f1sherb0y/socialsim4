@@ -43,6 +43,18 @@
 #let re-searched = regex("^\\s*(.+?)\\s+searched:\\s*(.*)$")
 #let re-viewed = regex("^\\s*(.+?)\\s+viewed web page:\\s*(.*)$")
 
+// New formats with timestamps like "[0:21] ..."
+// [m:ss] Public Event: ...
+#let re-public-ts = regex("^\\s*\\[(\\d+:\\d\\d)\\]\\s*Public Event:\\s*(.*)$")
+// [m:ss] Name: message
+#let re-msg-ts = regex("^\\s*\\[(\\d+:\\d\\d)\\]\\s*([^:]+):\\s*(.*)$")
+
+// Common werewolf action lines without timestamps should start new generic events
+#let re-voting-openclose = regex("^\\s*Moderator\\s+(opened|closed)\\s+voting\\s*$")
+#let re-voted-lynch = regex("^\\s*.+?\\s+voted to lynch\\s+.+?(?:\\s*\\(tally:\\s*\\d+\\))?\\s*$")
+#let re-cast-night = regex("^\\s*.+?\\s+cast\\s+\\w+\\s+vote:\\s*.+$")
+#let re-used-ability = regex("^\\s*.+?\\s+used\\s+\\w+(?:\\s+on\\s+.+?)?(?:\\s*\\(.*\\))?\\s*$")
+
 #let parse-transcript = (raw, colors: theme) => {
   let blocks = ()
 
@@ -58,11 +70,17 @@
     // Evaluate regex markers
     let m-msg = stripped.match(re-msg)
     let m-public = stripped.match(re-public)
+    let m-msg-ts = stripped.match(re-msg-ts)
+    let m-public-ts = stripped.match(re-public-ts)
     let m-host = stripped.match(re-host-brief)
     let m-searched = stripped.match(re-searched)
     let m-viewed = stripped.match(re-viewed)
+    let m-voting = stripped.match(re-voting-openclose)
+    let m-voted = stripped.match(re-voted-lynch)
+    let m-cast = stripped.match(re-cast-night)
+    let m-used = stripped.match(re-used-ability)
 
-    if m-msg != none or m-public != none or m-host != none or m-searched != none or m-viewed != none {
+    if m-msg != none or m-public != none or m-msg-ts != none or m-public-ts != none or m-host != none or m-searched != none or m-viewed != none or m-voting != none or m-voted != none or m-cast != none or m-used != none {
       // Commit ongoing block
       if kind == "public" {
         blocks += (public-event-block(buf, colors: colors),)
@@ -70,10 +88,17 @@
         blocks += (event-block(buf, colors: colors),)
       } else if kind == "message" {
         blocks += (message-block(sender, buf, colors: colors),)
-      }
+      }               
 
       // Start new block from matches
-      if m-msg != none {
+      if m-msg-ts != none {
+        kind = "message"
+        sender = m-msg-ts.captures.at(1).trim()
+        buf = m-msg-ts.captures.at(2).trim()
+      } else if m-public-ts != none {
+        kind = "public"
+        buf = m-public-ts.captures.at(1).trim()
+      } else if m-msg != none {
         kind = "message"
         sender = m-msg.captures.at(0).trim()
         buf = m-msg.captures.at(1).trim()
@@ -84,7 +109,7 @@
         // Treat host requests as generic events (not public events)
         kind = "event"
         buf = stripped
-      } else if m-searched != none or m-viewed != none {
+      } else if m-searched != none or m-viewed != none or m-voting != none or m-voted != none or m-cast != none or m-used != none {
         // Treat searched/viewed as generic events (not public events)
         kind = "event"
         buf = stripped

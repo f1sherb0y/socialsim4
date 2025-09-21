@@ -11,6 +11,8 @@ class Scene:
         self.name = name
         self.initial_event = PublicEvent(initial_event)
         self.state = {}
+        # Default timekeeping: minutes since 0. Scenes can adjust per-turn minutes.
+        self.minutes_per_turn = 3
 
     def get_scenario_description(self):
         return ""
@@ -51,6 +53,22 @@ class Scene:
 
     def post_round(self, simulator):
         pass
+
+    def post_turn(self, agent: Agent, simulator: Simulator):
+        """Hook after a single agent finishes their turn.
+        Default: advance scene time by minutes_per_turn.
+        Scenes can override for custom timekeeping.
+        """
+        try:
+            cur = int(self.state.get("time") or 0)
+            self.state["time"] = cur + int(getattr(self, "minutes_per_turn", 0) or 0)
+        except Exception:
+            # Be resilient if time is not numeric
+            pass
+
+    def should_skip_turn(self, agent: Agent, simulator: Simulator) -> bool:
+        """Whether to skip this agent's action processing for this turn. Default: False."""
+        return False
 
     def is_complete(self):
         return False

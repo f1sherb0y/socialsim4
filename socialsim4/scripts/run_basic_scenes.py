@@ -11,6 +11,7 @@ from socialsim4.core.llm import create_llm_client
 from socialsim4.core.scenes.council_scene import CouncilScene
 from socialsim4.core.scenes.simple_chat_scene import SimpleChatScene
 from socialsim4.core.scenes.village_scene import GameMap, VillageScene
+from socialsim4.core.scenes.werewolf_scene import WerewolfScene
 from socialsim4.core.simulator import Simulator
 
 
@@ -22,26 +23,18 @@ def console_logger(event_type: str, data):
     - log_recorded: plain transcript of notes (e.g., web_search/view_page)
     - send_message/web_search/view_page/yield: JSON payload
     """
-    try:
-        if event_type in (
-            "action_start",
-            "action_end",
-            "agent_process_start",
-            "agent_process_end",
-            "send_message",
-            "web_search",
-            "view_page",
-            "yield",
-        ):
-            print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
-        elif event_type in ("event_recorded", "log_recorded"):
-            text = data.get("text", "") if isinstance(data, dict) else str(data)
-            tag = "event" if event_type == "event_recorded" else "note"
-            print(f"[{tag}] {text}")
-        else:
-            print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
-    except Exception:
-        print(f"[{event_type}] {data}")
+    if event_type in (
+        "action_end",
+        "send_message",
+        "web_search",
+        "view_page",
+        "yield",
+    ):
+        print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
+    elif event_type in ("event_recorded", "log_recorded"):
+        text = data.get("text", "") if isinstance(data, dict) else str(data)
+        tag = "event" if event_type == "event_recorded" else "note"
+        print(f"[{tag}] {text}")
 
 
 def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
@@ -78,11 +71,11 @@ def make_clients() -> Dict[str, object]:
             dialect="openai",
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_BASE_URL"),
-            temperature=float(os.getenv("OPENAI_TEMPERATURE", "0.7")),
+            temperature=float(os.getenv("OPENAI_TEMPERATURE", "1.0")),
             max_tokens=int(os.getenv("OPENAI_MAX_TOKENS", "65536")),
             top_p=float(os.getenv("OPENAI_TOP_P", "1.0")),
-            frequency_penalty=float(os.getenv("OPENAI_FREQUENCY_PENALTY", "0.0")),
-            presence_penalty=float(os.getenv("OPENAI_PRESENCE_PENALTY", "0.0")),
+            frequency_penalty=float(os.getenv("OPENAI_FREQUENCY_PENALTY", "0.2")),
+            presence_penalty=float(os.getenv("OPENAI_PRESENCE_PENALTY", "0.2")),
             stream=False,
         )
     elif dialect == "gemini":
@@ -92,9 +85,12 @@ def make_clients() -> Dict[str, object]:
             model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
             dialect="gemini",
             api_key=os.getenv("GEMINI_API_KEY"),
-            temperature=float(os.getenv("GEMINI_TEMPERATURE", "0.7")),
+            temperature=float(os.getenv("GEMINI_TEMPERATURE", "1.0")),
             max_tokens=int(os.getenv("GEMINI_MAX_TOKENS", "65536")),
             top_p=float(os.getenv("GEMINI_TOP_P", "1.0")),
+            frequency_penalty=float(os.getenv("GEMINI_FREQUENCY_PENALTY", "0.2")),
+            presence_penalty=float(os.getenv("GEMINI_PRESENCE_PENALTY", "0.2")),
+            stream=False,
         )
     else:
         provider = LLMConfig(name="chat", kind="mock", model="mock", dialect="mock")
@@ -146,6 +142,9 @@ def run_simple_chat():
 
     sim = Simulator(agents, scene, clients, event_handler=console_logger)
 
+    # Participants announcement before other messages
+    sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
+
     # Broadcast a public announcement before starting the simulation
     sim.broadcast(
         PublicEvent(
@@ -154,7 +153,7 @@ def run_simple_chat():
     )
 
     sim.run(num_rounds=5)
-    print(sim.get_transcript())
+    print(sim.get_timeline())
 
 
 def run_council():
@@ -283,8 +282,10 @@ def run_council():
     clients = make_clients()
 
     sim = Simulator(reps, scene, clients, event_handler=console_logger)
+    # Participants announcement at start
+    sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in reps])))
     sim.run(num_rounds=15)
-    print(sim.get_transcript())
+    print(sim.get_timeline())
 
 
 def run_village():
@@ -377,6 +378,9 @@ def run_village():
 
     sim = Simulator(agents, scene, clients, event_handler=console_logger)
 
+    # Participants announcement at start
+    sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
+
     sim.broadcast(
         PublicEvent(
             "At sunrise, word spreads in the village_center: the well's flow is weak, and a faint humming has been heard near the ancient_ruins after dusk."
@@ -384,10 +388,90 @@ def run_village():
     )
 
     sim.run(num_rounds=5)
-    print(sim.get_transcript())
+    print(sim.get_timeline())
+
+
+def run_werewolf():
+    print("=== WerewolfScene ===")
+    # Define a fixed cast and roles for determinism in the demo
+    names = ["Moderator", "Elena", "Bram", "Ronan", "Mira", "Pia", "Taro"]
+    role_map = {
+        "Elena": "seer",
+        "Bram": "witch",
+        "Ronan": "werewolf",
+        "Mira": "werewolf",
+        "Pia": "villager",
+        "Taro": "villager",
+    }
+
+    def role_prompt(name):
+        if name == "Moderator":
+            return (
+                "You are the Moderator. Your job is to direct the day flow fairly and clearly.\n"
+                "Behavioral guidelines:\n"
+                "- Neutrality: do not take sides or hint at hidden roles. Avoid speculation.\n"
+                "- Phase control: start with open discussion; each player may should send at most one message in discussion. When all have spoken or passed, begin the voting phase; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
+                "- Clarity: make brief, procedural reminders (e.g., 'Final statements', 'Voting soon', 'Please cast or update your vote'). Keep announcements short.\n"
+                "- Discipline: never reveal or summarize hidden information; do not speculate or pressure specific outcomes.\n"
+            )
+        r = role_map.get(name, "villager")
+        if r == "werewolf":
+            return "You are a Werewolf. Coordinate discreetly with other wolves and eliminate villagers at night."
+        if r == "seer":
+            return "You are the Seer. Each night you may inspect one player to learn whether they are a werewolf."
+        if r == "witch":
+            return "You are the Witch. You have two potions total: one to save the night victim, one to poison a player (each once)."
+        return "You are a Villager. You have no night power; use discussion and voting to find werewolves."
+
+    agents: List[Agent] = []
+    for name in names:
+        r = role_map.get(name)
+        # Assign only role-specific actions here; common actions are provided by the scene.
+        if name == "Moderator":
+            actions = ["open_voting", "close_voting"]
+        elif r == "werewolf":
+            actions = ["night_kill"]
+        elif r == "seer":
+            actions = ["inspect"]
+        elif r == "witch":
+            actions = ["witch_save", "witch_poison"]
+        else:
+            actions = []
+
+        agents.append(
+            Agent.from_dict(
+                {
+                    "name": name,
+                    "user_profile": role_prompt(name),
+                    "style": "concise and natural",
+                    "initial_instruction": "",
+                    "role_prompt": "",
+                    "action_space": actions,
+                    "properties": {
+                        "role": r,
+                    },
+                }
+            )
+        )
+
+    participants_line = "Participants: " + ", ".join(names)
+    initial_text = f"Welcome to Werewolf. {participants_line}. Roles are assigned privately. Night begins."
+    scene = WerewolfScene(
+        "werewolf_village",
+        initial_text,
+        role_map=role_map,
+        moderator_names=["Moderator"],
+    )
+    clients = make_clients()
+
+    sim = Simulator(agents, scene, clients, event_handler=console_logger)
+    # Run with a generous cap; simulation stops early when the scene declares completion.
+    sim.run(num_rounds=50)
+    print(sim.get_timeline())
 
 
 if __name__ == "__main__":
     # run_simple_chat()
-    run_council()
+    # run_council()
     # run_village()
+    run_werewolf()

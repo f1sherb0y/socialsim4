@@ -125,8 +125,8 @@ class Simulator:
         simulator.event_log = data.get("event_log", [])
         return simulator
 
-    def get_transcript(self) -> str:
-        """Return a plain-text transcript of all recorded events so far."""
+    def get_timeline(self) -> str:
+        """Return a plain-text timeline of recorded events and notes (excludes private status)."""
         return "\n".join(record.get("text", "") for record in self.event_log)
 
     def run(self, num_rounds=50):
@@ -137,6 +137,10 @@ class Simulator:
 
         while round < num_rounds:
             # 每一轮都按固定顺序处理所有agent
+            if self.scene.is_complete():
+                print("Scenario complete. Simulation ends.")
+                break
+
             for agent_name in agent_order:
                 agent = self.agents.get(agent_name)
                 if not agent:
@@ -152,16 +156,17 @@ class Simulator:
                 ):
                     status_prompt = self.scene.get_agent_status_prompt(agent)
                     if status_prompt:
-                        # Wrap as a status event for presentation; log as plain text
+                        # Private status delivery only; do not record in public timeline
                         evt = StatusEvent(status_prompt)
                         text = evt.to_string(self.scene.state.get("time"))
                         agent.append_env_message(text)
-                        self.record_log(
-                            text,
-                            sender=None,
-                            recipients=[agent.name],
-                            kind="StatusEvent",
-                        )
+
+                # Skip turn based on scene rule (e.g., villagers at night in werewolf)
+                if self.scene.should_skip_turn(agent, self):
+                    # Still advance scene time if needed
+                    print(f"Skipping turn for {agent.name} as per scene rules.")
+                    self.scene.post_turn(agent, self)
+                    continue
 
                 # Multi-step per-turn loop (agent may act multiple times until yield)
                 steps = 0
@@ -212,11 +217,12 @@ class Simulator:
                     if yielded or not any_handled:
                         continue_turn = False
 
-            self.scene.post_round(self)
+                # Scene-specific post-turn hook (e.g., timekeeping)
+                self.scene.post_turn(agent, self)
+                if self.scene.is_complete():
+                    break
 
-            if self.scene.is_complete():
-                print("Scenario complete. Simulation ends.")
-                break
+            self.scene.post_round(self)
 
             self.round_num += 1
             round += 1

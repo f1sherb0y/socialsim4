@@ -14,10 +14,20 @@ from .actions.village_actions import (
     # QuickMoveAction,
     RestAction,
 )
-from .actions.web_actions import WebSearchAction, ViewPageAction
+from .actions.web_actions import ViewPageAction, WebSearchAction
+from .actions.werewolf_actions import (
+    CloseVotingAction,
+    InspectAction,
+    NightKillAction,
+    OpenVotingAction,
+    VoteLynchAction,
+    WitchPoisonAction,
+    WitchSaveAction,
+)
 from .scenes.council_scene import CouncilScene
 from .scenes.simple_chat_scene import SimpleChatScene
 from .scenes.village_scene import VillageScene
+from .scenes.werewolf_scene import WerewolfScene
 
 ACTION_SPACE_MAP = {
     "send_message": SendMessageAction(),
@@ -38,10 +48,20 @@ ACTION_SPACE_MAP = {
     # Web actions
     "web_search": WebSearchAction(),
     "view_page": ViewPageAction(),
+    # Werewolf actions
+    "vote_lynch": VoteLynchAction(),
+    "night_kill": NightKillAction(),
+    "inspect": InspectAction(),
+    "witch_save": WitchSaveAction(),
+    "witch_poison": WitchPoisonAction(),
+    # Moderator actions
+    "open_voting": OpenVotingAction(),
+    "close_voting": CloseVotingAction(),
 }
 
 SCENE_MAP = {
     "simple_chat_scene": SimpleChatScene,
     "council_scene": CouncilScene,
     "village_scene": VillageScene,
+    "werewolf_scene": WerewolfScene,
 }

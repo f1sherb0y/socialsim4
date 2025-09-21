@@ -2,6 +2,23 @@ from socialsim4.core.action import Action
 from socialsim4.core.event import MessageEvent, SpeakEvent
 
 
+class SpeakAction(Action):
+    NAME = "speak"
+    DESC = "Say something."
+    INSTRUCTION = """- To speak:
+<Action name=\"speak\"><message>[your_message]</message></Action>
+"""
+
+    def handle(self, action_data, agent, simulator, scene):
+        message = action_data.get("message")
+        if message:
+            simulator.log_event("speak", {"agent": agent.name, "content": message})
+            event = SpeakEvent(agent.name, message)
+            scene.deliver_message(event, agent, simulator)
+            return True
+        return False
+
+
 class SendMessageAction(Action):
     NAME = "send_message"
     DESC = "Post a message to all participants."

@@ -130,3 +130,5 @@ node_modules
 
 storage 
 socialsim.db
+socialsim4/vis/*.txt
+*.pdf

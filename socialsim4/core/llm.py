@@ -61,6 +61,9 @@ class LLMClient:
             response = self.client.chat.completions.create(
                 model=self.provider.model,
                 messages=openai_messages,
+                frequency_penalty=self.provider.frequency_penalty,
+                presence_penalty=self.provider.presence_penalty,
+                max_tokens=self.provider.max_tokens,
                 temperature=self.provider.temperature,
             )
             return response.choices[0].message.content.strip()
@@ -102,7 +105,16 @@ class LLMClient:
                                 parts.append({"text": p["text"]})
                 if parts:
                     contents.append({"role": gem_role, "parts": parts})
-            response = self.client.generate_content(contents)
+            response = self.client.generate_content(
+                contents,
+                generation_config={
+                    "temperature": self.provider.temperature,
+                    "max_output_tokens": self.provider.max_tokens,
+                    "top_p": self.provider.top_p,
+                    "frequency_penalty": self.provider.frequency_penalty,
+                    "presence_penalty": self.provider.presence_penalty,
+                },
+            )
             return response.text.strip()
         elif self.provider.dialect == "mock":
             return self.client.chat(messages)
@@ -184,7 +196,11 @@ class _MockModel:
         elif "you are living in a virtual village" in sys_lower:
             scene = "village"
         else:
-            scene = "chat"
+            # Detect werewolf scene by keyword
+            if "werewolf" in sys_lower:
+                scene = "werewolf"
+            else:
+                scene = "chat"
 
         if scene == "council":
             if agent_name.lower() == "host":
@@ -233,6 +249,51 @@ class _MockModel:
                 action = {"action": "yield"}
                 thought = "No need to say more now."
                 plan = "1. Yield. [CURRENT]"
+            plan_update = "no change"
+
+        elif scene == "werewolf":
+            # Heuristic role detection from system profile
+            role = "villager"
+            if "you are the seer" in sys_lower or "you are seer" in sys_lower:
+                role = "seer"
+            elif "you are the witch" in sys_lower or "you are witch" in sys_lower:
+                role = "witch"
+            elif "you are a werewolf" in sys_lower or "you are werewolf" in sys_lower:
+                role = "werewolf"
+
+            # Use fixed names from demo to make actions meaningful
+            default_targets = ["Pia", "Taro", "Elena", "Bram", "Ronan", "Mira"]
+
+            def pick_other(exclude):
+                for n in default_targets:
+                    if n != exclude:
+                        return n
+                return "Pia"
+
+            if call_n == 1:
+                if role == "werewolf":
+                    action = {"action": "night_kill", "target": "Pia"}
+                    thought = "Coordinate a night kill discreetly."
+                    plan = "1. Night kill. [CURRENT]"
+                elif role == "seer":
+                    action = {"action": "inspect", "target": "Ronan"}
+                    thought = "Inspect a likely suspect."
+                    plan = "1. Inspect. [CURRENT]"
+                elif role == "witch":
+                    action = {"action": "witch_save"}
+                    thought = "Prepare to save tonight's victim."
+                    plan = "1. Save. [CURRENT]"
+                else:  # villager
+                    action = {"action": "yield"}
+                    thought = "Nothing to do at night."
+                    plan = "1. Wait. [CURRENT]"
+            else:
+                # Daytime: cast a vote
+                target = "Ronan" if role != "werewolf" else "Elena"
+                action = {"action": "vote_lynch", "target": target}
+                thought = "Participate in the day vote."
+                plan = "1. Vote. [CURRENT]"
+
             plan_update = "no change"
 
         else:  # simple chat
