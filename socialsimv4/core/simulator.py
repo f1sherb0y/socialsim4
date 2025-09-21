@@ -44,25 +44,7 @@ class Simulator:
         if broadcast_initial:
             self.broadcast(self.scene.initial_event)
 
-    def record_event(self, event: Event, recipients=None):
-        """Record an event with time, type, text, sender, recipients.
-        recipients: list of agent names or None (means broadcast to all except sender).
-        """
-        time = self.scene.state.get("time")
-        try:
-            text = event.to_string(time)
-        except Exception:
-            text = str(event)
-        record = {
-            "time": time,
-            "type": event.__class__.__name__,
-            "sender": event.get_sender() if hasattr(event, "get_sender") else None,
-            "recipients": recipients,  # None implies broadcast
-            "text": text,
-        }
-        self.event_log.append(record)
-        if self.log_event:
-            self.log_event("event_recorded", record)
+    # Removed: record_event (use record_log instead for transcript entries)
 
     def record_log(self, text: str, sender: str = None, recipients=None, kind: str = "log"):
         """Record a non-world, informational transcript line without using Event.
@@ -90,8 +72,13 @@ class Simulator:
             if agent.name != sender:
                 agent.append_env_message(formatted)
                 recipients.append(agent.name)
-        # Record broadcast
-        self.record_event(event, recipients=recipients)
+        # Record broadcast as a transcript line
+        self.record_log(
+            formatted,
+            sender=sender,
+            recipients=recipients,
+            kind=event.__class__.__name__,
+        )
 
     def to_dict(self):
         return {
@@ -163,12 +150,11 @@ class Simulator:
                 ):
                     status_prompt = self.scene.get_agent_status_prompt(agent)
                     if status_prompt:
-                        # Wrap as a status event for logging
+                        # Wrap as a status event for presentation; log as plain text
                         evt = StatusEvent(status_prompt)
-                        agent.append_env_message(
-                            evt.to_string(self.scene.state.get("time"))
-                        )
-                        self.record_event(evt, recipients=[agent.name])
+                        text = evt.to_string(self.scene.state.get("time"))
+                        agent.append_env_message(text)
+                        self.record_log(text, sender=None, recipients=[agent.name], kind="StatusEvent")
 
                 # Multi-step per-turn loop (agent may act multiple times until yield)
                 steps = 0

@@ -73,5 +73,10 @@ class TalkToAction(Action):
         agent.append_env_message(event.to_string(scene.state.get("time")))
         # Deliver only to the target
         target.append_env_message(event.to_string(scene.state.get("time")))
-        simulator.record_event(event, recipients=[to_name])
+        simulator.record_log(
+            event.to_string(scene.state.get("time")),
+            sender=agent.name,
+            recipients=[to_name],
+            kind=event.__class__.__name__,
+        )
         return True

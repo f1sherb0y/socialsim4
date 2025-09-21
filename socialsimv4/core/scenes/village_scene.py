@@ -432,14 +432,16 @@ There are people nearby; I'll greet them.
             if agent.properties["hunger"] >= 70:
                 status = f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
                 evt = StatusEvent(status)
-                agent.append_env_message(evt.to_string(self.state.get("time")))
-                simulator.record_event(evt, recipients=[agent.name])
+                text = evt.to_string(self.state.get("time"))
+                agent.append_env_message(text)
+                simulator.record_log(text, recipients=[agent.name], kind="StatusEvent")
 
             if agent.properties["energy"] <= 30:
                 status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
                 evt = StatusEvent(status)
-                agent.append_env_message(evt.to_string(self.state.get("time")))
-                simulator.record_event(evt, recipients=[agent.name])
+                text = evt.to_string(self.state.get("time"))
+                agent.append_env_message(text)
+                simulator.record_log(text, recipients=[agent.name], kind="StatusEvent")
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
         time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"
@@ -476,7 +478,12 @@ Current time: {self.state.get("time", 0)} hours ({time_of_day})
             if dist <= self.chat_range:
                 a.append_env_message(formatted)
                 recipients.append(a.name)
-        simulator.record_event(event, recipients=recipients)
+        simulator.record_log(
+            formatted,
+            sender=sender.name if hasattr(sender, "name") else sender,
+            recipients=recipients,
+            kind=event.__class__.__name__,
+        )
 
     def to_dict(self):
         base = super().to_dict()
