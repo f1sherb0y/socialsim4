@@ -1,5 +1,5 @@
 from socialsim4.core.action import Action
-from socialsim4.core.event import MessageEvent, SpeakEvent
+from socialsim4.core.event import MessageEvent, SpeakEvent, TalkToEvent
 
 
 class SpeakAction(Action):
@@ -85,7 +85,7 @@ class TalkToAction(Action):
             agent.append_env_message(f"{to_name} is too far to talk to.")
             return False
 
-        event = SpeakEvent(agent.name, message)
+        event = TalkToEvent(agent.name, to_name, message)
         # Sender always sees their own speech
         agent.append_env_message(event.to_string(scene.state.get("time")))
         # Deliver only to the target

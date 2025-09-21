@@ -72,6 +72,20 @@ class SpeakEvent(Event):
         return self.sender
 
 
+class TalkToEvent(Event):
+    def __init__(self, sender, recipient, message):
+        self.sender = sender
+        self.recipient = recipient
+        self.message = message
+
+    def to_string(self, time=None):
+        time_str = _fmt_time_prefix(time)
+        return f"{time_str}{self.sender} to {self.recipient}: {self.message}"
+
+    def get_sender(self):
+        return self.sender
+
+
 """
 Note: Web search or page view activities are not modeled as world Events.
 They are logged via Simulator.record_log as transcript notes.

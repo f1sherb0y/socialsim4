@@ -180,7 +180,9 @@ class GameMap:
     ) -> List[MapLocation]:
         """获取附近的位置"""
         nearby = []
-        for location in self.locations.values():
+        for location in sorted(
+            self.locations.values(), key=lambda l: (l.y, l.x, l.name)
+        ):
             distance = abs(location.x - x) + abs(location.y - y)
             if distance <= radius:
                 nearby.append(location)
@@ -326,6 +328,8 @@ class VillageScene(Scene):
         self.game_map = game_map
         self.movement_cost = movement_cost
         self.chat_range = chat_range
+        # Use minutes in state["time"] to match Event formatting; advance per round
+        self.minutes_per_turn = 0
         self.state["time"] = 0
 
     def get_scenario_description(self):
@@ -380,19 +384,39 @@ There are people nearby; I'll greet them.
     def initialize_agent(self, agent: Agent):
         """Initializes an agent with scene-specific properties."""
         super().initialize_agent(agent)
-        agent.properties["hunger"] = 0
-        agent.properties["energy"] = 100
-        agent.properties["inventory"] = {}
-        # Default spawn at village_center if exists, else center of map
-        spawn = self.game_map.get_location("village_center")
-        if spawn:
-            agent.properties["map_xy"] = [spawn.x, spawn.y]
-            agent.properties["map_position"] = "village_center"
-            spawn.add_agent(agent.name)
+        # Initialize basics only if not preset
+        agent.properties.setdefault("hunger", 0)
+        agent.properties.setdefault("energy", 100)
+        agent.properties.setdefault("inventory", {})
+
+        # Respect preset map_xy/map_position if provided; otherwise choose a spawn
+        xy = agent.properties.get("map_xy")
+        pos_name = agent.properties.get("map_position")
+
+        if xy and isinstance(xy, (list, tuple)) and len(xy) == 2:
+            x, y = int(xy[0]), int(xy[1])
+        elif pos_name and self.game_map.get_location(pos_name):
+            loc = self.game_map.get_location(pos_name)
+            x, y = loc.x, loc.y
+            agent.properties["map_xy"] = [x, y]
         else:
-            cx, cy = self.game_map.width // 2, self.game_map.height // 2
-            agent.properties["map_xy"] = [cx, cy]
-            agent.properties["map_position"] = f"{cx},{cy}"
+            spawn = self.game_map.get_location("village_center")
+            if spawn:
+                x, y = spawn.x, spawn.y
+                agent.properties["map_xy"] = [x, y]
+                agent.properties["map_position"] = "village_center"
+                spawn.add_agent(agent.name)
+            else:
+                cx, cy = self.game_map.width // 2, self.game_map.height // 2
+                x, y = cx, cy
+                agent.properties["map_xy"] = [x, y]
+                agent.properties["map_position"] = f"{x},{y}"
+
+        # Ensure map_position matches coordinates; track occupancy for named locations
+        loc = self.game_map.get_location_at(x, y)
+        agent.properties["map_position"] = loc.name if loc else f"{x},{y}"
+        if loc:
+            loc.add_agent(agent.name)
 
     def get_scene_actions(self, agent: Agent):
         """Return actions available in the village (map) scene for this agent."""
@@ -407,7 +431,8 @@ There are people nearby; I'll greet them.
 
     def post_round(self, simulator: Simulator):
         """每轮结束后的处理"""
-        self.state["time"] += 1
+        # Advance scene clock by 60 minutes per full round
+        self.state["time"] += 60
 
         # Update agent state
         for agent in simulator.agents.values():
@@ -442,7 +467,10 @@ There are people nearby; I'll greet them.
                 agent.append_env_message(text)
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
-        time_of_day = "day" if self.state.get("time", 0) % 24 < 18 else "night"
+        minutes = int(self.state.get("time", 0) or 0)
+        hours = (minutes // 60) % 24
+        mins = minutes % 60
+        time_of_day = "day" if hours < 18 else "night"
         xy = agent.properties.get("map_xy") or [None, None]
         loc = self.game_map.get_location_at(xy[0], xy[1]) if xy[0] is not None else None
         loc_name = loc.name if loc else agent.properties.get("map_position", "?")
@@ -452,7 +480,7 @@ Current position: {loc_name} at ({xy[0]},{xy[1]})
 Hunger level: {agent.properties["hunger"]}
 Energy level: {agent.properties["energy"]}
 Inventory: {agent.properties["inventory"]}
-Current time: {self.state.get("time", 0)} hours ({time_of_day})
+Current time: {hours}:{mins:02d} ({time_of_day})
 """
 
     def deliver_message(self, event, sender: Agent, simulator: Simulator):
@@ -483,32 +511,18 @@ Current time: {self.state.get("time", 0)} hours ({time_of_day})
             kind=event.__class__.__name__,
         )
 
-    def to_dict(self):
-        base = super().to_dict()
-        base.update(
-            {
-                "movement_cost": self.movement_cost,
-                "chat_range": self.chat_range,
-                "map": self.game_map.to_dict(),
-            }
-        )
-        return base
+    # ----- Unified serialization hooks -----
+    def serialize_config(self) -> dict:
+        return {
+            "movement_cost": self.movement_cost,
+            "chat_range": self.chat_range,
+            "map": self.game_map.to_dict(),
+        }
 
     @classmethod
-    def from_dict(cls, data):
-        name = data.get("name", "VillageScene")
-        initial_event = data.get("initial_event", "")
-        movement_cost = data.get("movement_cost", 1)
-        chat_range = data.get("chat_range", 5)
-        map_cfg = data.get("map", {})
-        game_map = GameMap.from_dict(map_cfg)
-
-        scene = cls(
-            name,
-            initial_event,
-            game_map=game_map,
-            movement_cost=movement_cost,
-            chat_range=chat_range,
-        )
-        scene.state = data.get("state", {"time": 0})
-        return scene
+    def deserialize_config(cls, config: Dict) -> Dict:
+        return {
+            "game_map": GameMap.from_dict(config["map"]),
+            "movement_cost": config.get("movement_cost", 1),
+            "chat_range": config.get("chat_range", 5),
+        }

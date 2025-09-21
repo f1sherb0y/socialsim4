@@ -5,13 +5,11 @@ from socialsim4.core.event import PublicEvent
 
 
 def _is_alive(scene, name: str) -> bool:
-    alive = scene.state.get("alive", [])
-    return name in alive
+    return name in scene.state.get("alive", [])
 
 
 def _role_of(scene, name: str) -> Optional[str]:
-    roles = scene.state.get("roles", {})
-    return roles.get(name)
+    return scene.state.get("roles", {}).get(name)
 
 
 class VoteLynchAction(Action):
@@ -57,10 +55,9 @@ class NightKillAction(Action):
         if scene.state.get("phase") != "night":
             agent.append_env_message("Night kill can only be cast at night.")
             return False
-        if (
-            not _is_alive(scene, agent.name)
-            or _role_of(scene, agent.name) != "werewolf"
-        ):
+        if (not _is_alive(scene, agent.name)) or _role_of(
+            scene, agent.name
+        ) != "werewolf":
             agent.append_env_message("Only living werewolves can vote a night kill.")
             return False
         if scene.state.get("day_count", 0) == 0:
@@ -114,12 +111,10 @@ class InspectAction(Action):
             agent.append_env_message("Provide a living 'target' to inspect.")
             return False
 
-        role = _role_of(scene, target)
-        is_wolf = role == "werewolf"
-        # Private result to Seer only
-        result = f"Inspection result: {target} is {'a werewolf' if is_wolf else 'not a werewolf'}."
-        agent.append_env_message(result)
-        # Record action with minimal result hint
+        is_wolf = _role_of(scene, target) == "werewolf"
+        agent.append_env_message(
+            f"Inspection result: {target} is {'a werewolf' if is_wolf else 'not a werewolf'}."
+        )
         simulator.record_log(
             f"{agent.name} used inspect on {target} (result: {'werewolf' if is_wolf else 'not'})",
             sender=agent.name,
@@ -151,11 +146,9 @@ class WitchSaveAction(Action):
             agent.append_env_message("You have already used your save potion.")
             return False
 
-        # Mark the night as saved
         scene.state["witch_saved"] = True
         uses["heals_left"] = uses.get("heals_left", 0) - 1
         agent.append_env_message("You prepare the save potion for tonight's victim.")
-        # Record with a small result hint
         simulator.record_log(
             f"{agent.name} used witch_save (victim will be saved)",
             sender=agent.name,
@@ -191,13 +184,11 @@ class WitchPoisonAction(Action):
             agent.append_env_message("You have already used your poison potion.")
             return False
 
-        # Record poison target for this night
         scene.state.setdefault("witch_actions", {}).setdefault(agent.name, {})[
             "poison_target"
         ] = target
         uses["poisons_left"] = uses.get("poisons_left", 0) - 1
         agent.append_env_message(f"You prepared a poison targeting {target}.")
-        # Record to timeline for debugging
         simulator.record_log(
             f"{agent.name} used witch_poison on {target}",
             sender=agent.name,

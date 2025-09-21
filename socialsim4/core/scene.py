@@ -93,21 +93,36 @@ class Scene:
         return [YieldAction()]
 
     def to_dict(self):
+        # Unified serialization shape with scene-specific config under "config"
         return {
+            "type": getattr(self, "TYPE", "scene"),
             "name": self.name,
             "initial_event": self.initial_event.content,
             "state": self.state,
-            "type": getattr(self, "TYPE", "scene"),
+            "config": self.serialize_config(),
         }
 
     @classmethod
     def from_dict(cls, data):
-        # This is a base class, so we'll just return a generic scene.
-        # In a real application, you'd have a factory function that
-        # creates the correct scene type based on the data.
-        scene = cls(
-            name=data["name"],
-            initial_event=data["initial_event"],
-        )
-        scene.state = data.get("state", dict())
+        # Unified deserialization using scene-specific config hook
+        name = data["name"]
+        initial_event = data["initial_event"]
+        config = data.get("config", {})
+        init_kwargs = cls.deserialize_config(config)
+        scene = cls(name, initial_event, **init_kwargs)
+        scene.state = data.get("state", {})
         return scene
+
+    # ----- Serialization hooks for subclasses -----
+    def serialize_config(self) -> dict:
+        """Return scene-specific configuration (non-state) for serialization.
+        Subclasses override to include their own immutable config.
+        """
+        return {}
+
+    @classmethod
+    def deserialize_config(cls, config: dict) -> dict:
+        """Parse config dict and return kwargs for the class constructor.
+        Subclasses override to map config -> __init__ kwargs.
+        """
+        return {}
