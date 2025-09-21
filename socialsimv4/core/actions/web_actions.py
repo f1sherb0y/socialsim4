@@ -1,6 +1,7 @@
 import re
 
 from socialsimv4.core.action import Action
+from socialsimv4.core.event import ViewPageEvent, WebSearchEvent
 from socialsimv4.core.tools.web import view_page as tool_view_page
 from socialsimv4.core.tools.web import web_search as tool_web_search
 
@@ -45,6 +46,11 @@ class WebSearchAction(Action):
             if snippet:
                 lines.append(f"   {snippet}")
         agent.append_env_message("\n".join(lines))
+        # Include in transcript as a private event
+        try:
+            simulator.record_event(WebSearchEvent(agent.name, query), recipients=[agent.name])
+        except Exception:
+            pass
         simulator.log_event(
             "web_search",
             {"agent": agent.name, "query": query, "count": len(results)},
@@ -81,6 +87,11 @@ class ViewPageAction(Action):
         text = data.get("text", "")
         header = f"Page content preview: {title}" if title else "Page content preview:"
         agent.append_env_message(f"{header}\nURL: {url}\n\n{text}")
+        # Include in transcript as a private event
+        try:
+            simulator.record_event(ViewPageEvent(agent.name, url), recipients=[agent.name])
+        except Exception:
+            pass
         simulator.log_event(
             "view_page",
             {
