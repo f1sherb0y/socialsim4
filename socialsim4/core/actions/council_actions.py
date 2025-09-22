@@ -16,9 +16,8 @@ class StartVotingAction(Action):
                 "The Host has initiated the voting round. Please cast your votes now."
             )
             simulator.broadcast(event)
-            # Record a private confirmation for the host
+            # Private confirmation for the host
             agent.add_env_feedback("You started the voting.")
-            scene.log(f"{agent.name} has started the voting.")
             result = {}
             summary = f"{agent.name} started the voting round"
             return True, result, summary
@@ -74,19 +73,7 @@ class VotingStatusAction(Action):
         return True, result, summary
 
 
-class GetRoundsAction(Action):
-    NAME = "get_rounds"
-    DESC = "Get the current round number."
-    INSTRUCTION = """- To get the current round number:
-<Action name=\"get_rounds\" />
-"""
-
-    def handle(self, action_data, agent, simulator, scene):
-        rounds = simulator.round_num
-        agent.add_env_feedback(f"Current round: {rounds}")
-        result = {"round": rounds}
-        summary = f"Current round: {rounds}"
-        return True, result, summary
+# Removed: GetRoundsAction — no round concept
 
 
 class RequestBriefAction(Action):
@@ -125,19 +112,15 @@ class RequestBriefAction(Action):
             f"Need: {desc}\n"
         )
 
-        material = None
-        try:
-            # Try using the configured LLM
-            material = agent.call_llm(
-                simulator.clients,
-                [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-            )
-            if not isinstance(material, str):
-                material = ""
-        except Exception:
+        # Try using the configured LLM
+        material = agent.call_llm(
+            simulator.clients,
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        if not isinstance(material, str):
             material = ""
 
         used_fallback = False
@@ -158,16 +141,7 @@ class RequestBriefAction(Action):
         # Deliver privately to host and record the event (private)
         agent.add_env_feedback(content)
         # Add a concise transcript note (non-world log)
-        try:
-            simulator.record_log(
-                f"{agent.name} requested brief: {desc}",
-                sender=agent.name,
-                recipients=[agent.name],
-                kind="request_brief",
-            )
-        except Exception:
-            pass
-        scene.log(f"{agent.name} requested brief for: {desc} (private)")
+        # No logging inside action handlers; central logging can use the returned summary/result
         result = {"desc": desc, "material": material.strip(), "source": ("fallback" if used_fallback else "llm")}
         summary = f"{agent.name} requested a brief: {desc}"
         return True, result, summary
@@ -201,12 +175,25 @@ class VoteAction(Action):
             event = MessageEvent(agent.name, vote_message)
             # Route through scene delivery so voter also retains their own message
             scene.deliver_message(event, agent, simulator)
-            scene.log(
-                f"{agent.name} votes {vote}"
-                + (f" with comment: {comment}" if comment else "")
-            )
+            # No logging here; central processing can record using result/summary
             result = {"vote": vote, "comment": comment}
             summary = f"{agent.name} voted {vote}"
+            # If all non-host members have voted, announce result immediately
+            num_members = sum(1 for a in simulator.agents.values() if a.name != "Host")
+            votes = scene.state.get("votes", {})
+            if num_members > 0 and len(votes) >= num_members and not scene.state.get("voting_completed_announced", False):
+                yes = sum(v == "yes" for v in votes.values())
+                no = sum(v == "no" for v in votes.values())
+                abstain = sum(v == "abstain" for v in votes.values())
+                result_text = "passed" if yes > num_members / 2 else "failed"
+                simulator.broadcast(
+                    PublicEvent(
+                        f"Voting on the draft has concluded. It {result_text} with {yes} yes, {no} no, and {abstain} abstain."
+                    )
+                )
+                scene.state["voting_completed_announced"] = True
+                if hasattr(scene, "complete"):
+                    scene.complete = True
             return True, result, summary
         error = "Invalid vote or role."
         agent.add_env_feedback(error)

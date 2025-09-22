@@ -12,7 +12,6 @@ class SpeakAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
         if message:
-            simulator.log_event("speak", {"agent": agent.name, "content": message})
             event = SpeakEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
             result = {"message": message}
@@ -33,9 +32,6 @@ class SendMessageAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         message = action_data.get("message")
         if message:
-            simulator.log_event(
-                "send_message", {"agent": agent.name, "message": message}
-            )
             event = MessageEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
             result = {"message": message}
@@ -54,7 +50,6 @@ class YieldAction(Action):
 """
 
     def handle(self, action_data, agent, simulator, scene):
-        simulator.log_event("yield", {"agent": agent.name})
         result = {}
         summary = f"{agent.name} yielded the floor"
         return True, result, summary
@@ -103,12 +98,6 @@ class TalkToAction(Action):
         agent.add_env_feedback(event.to_string(scene.state.get("time")))
         # Deliver only to the target
         target.add_env_feedback(event.to_string(scene.state.get("time")))
-        simulator.record_log(
-            event.to_string(scene.state.get("time")),
-            sender=agent.name,
-            recipients=[to_name],
-            kind=event.__class__.__name__,
-        )
         result = {"to": to_name, "message": message}
         summary = f"{agent.name} to {to_name}: {message}"
         return True, result, summary

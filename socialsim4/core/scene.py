@@ -30,12 +30,13 @@ class Scene:
 
     def parse_and_handle_action(self, action_data, agent: Agent, simulator: Simulator):
         action_name = action_data.get("action")
-        if not action_name:
-            return False
         for act in agent.action_space:
             if act.NAME == action_name:
-                return act.handle(action_data, agent, simulator, self)
-        return False
+                success, result, summary = act.handle(
+                    action_data, agent, simulator, self
+                )
+                return success, result, summary
+        return False, {}, None
 
     def deliver_message(self, event, sender: Agent, simulator: Simulator):
         """Deliver a chat message event. Default behavior is global broadcast
@@ -43,11 +44,8 @@ class Scene:
         (e.g., proximity-based chat in map scenes).
         """
         # Ensure the sender also retains what they said in their own context
-        try:
-            formatted = event.to_string(self.state.get("time"))
-            sender.add_env_feedback(formatted)
-        except Exception:
-            pass
+        formatted = event.to_string(self.state.get("time"))
+        sender.add_env_feedback(formatted)
         # Broadcast to everyone else and record the event
         simulator.broadcast(event)
 
@@ -59,12 +57,8 @@ class Scene:
         Default: advance scene time by minutes_per_turn.
         Scenes can override for custom timekeeping.
         """
-        try:
-            cur = int(self.state.get("time") or 0)
-            self.state["time"] = cur + int(getattr(self, "minutes_per_turn", 0) or 0)
-        except Exception:
-            # Be resilient if time is not numeric
-            pass
+        cur = int(self.state.get("time") or 0)
+        self.state["time"] = cur + int(getattr(self, "minutes_per_turn", 0) or 0)
 
     def should_skip_turn(self, agent: Agent, simulator: Simulator) -> bool:
         """Whether to skip this agent's action processing for this turn. Default: False."""

@@ -37,7 +37,8 @@ class SimulationInstance:
             self.running = True
 
         try:
-            self.simulator.run(num_rounds=num_rounds)
+            # Interpret num_rounds as number of turns for the simplified engine
+            self.simulator.run(max_turns=num_rounds)
         finally:
             with self.run_lock:
                 self.running = False
@@ -106,7 +107,7 @@ class SimulationManager:
             return False, "Simulation is already running"
 
         self.executor.submit(instance.run, num_rounds=rounds)
-        return True, f"Ran simulation '{sim_code}' for {rounds} round(s)."
+        return True, f"Ran simulation '{sim_code}' for {rounds} turn(s)."
 
     def load_simulation(self, sim_code, data, clients):
         with self.lock:

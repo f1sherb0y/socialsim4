@@ -67,7 +67,9 @@ async def get_simulation_status(
         raise HTTPException(status_code=404, detail="Simulation not found")
 
     status = "running" if instance.running else "idle"
-    return {"status": status, "round": instance.simulator.round_num}
+    turns = getattr(instance.simulator, "turns", 0)
+    # Provide both keys for UI compatibility (round deprecated)
+    return {"status": status, "turns": turns, "round": turns}
 
 
 @router.post("/run")

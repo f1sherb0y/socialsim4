@@ -34,12 +34,6 @@ class VoteLynchAction(Action):
         votes = scene.state.setdefault("lynch_votes", {})
         votes[agent.name] = target
         tally = sum(1 for v, t in votes.items() if t == target and _is_alive(scene, v))
-        simulator.record_log(
-            f"{agent.name} voted to lynch {target} (tally: {tally})",
-            sender=agent.name,
-            recipients=[n for n in scene.state.get("alive", []) if n != agent.name],
-            kind="vote_lynch",
-        )
         simulator.broadcast(PublicEvent(f"{agent.name} voted to lynch {target}."))
         result = {"target": target, "tally": tally}
         summary = f"{agent.name} voted to lynch {target}"
@@ -61,7 +55,11 @@ class NightKillAction(Action):
             scene, agent.name
         ) != "werewolf":
             agent.add_env_feedback("Only living werewolves can vote a night kill.")
-            return False, {"error": "not_werewolf_or_dead"}, f"{agent.name} night_kill failed"
+            return (
+                False,
+                {"error": "not_werewolf_or_dead"},
+                f"{agent.name} night_kill failed",
+            )
         if scene.state.get("day_count", 0) == 0:
             agent.add_env_feedback(
                 "First night has no kills; discuss with fellow wolves."
@@ -84,12 +82,6 @@ class NightKillAction(Action):
             1
             for v, t in votes.items()
             if t == target and _is_alive(scene, v) and _role_of(scene, v) == "werewolf"
-        )
-        simulator.record_log(
-            f"{agent.name} cast night_kill vote: {target} (tally: {tally})",
-            sender=agent.name,
-            recipients=None,
-            kind="night_kill",
         )
         result = {"target": target, "tally": tally}
         summary = f"{agent.name} voted night kill: {target}"
@@ -119,14 +111,10 @@ class InspectAction(Action):
         agent.add_env_feedback(
             f"Inspection result: {target} is {'a werewolf' if is_wolf else 'not a werewolf'}."
         )
-        simulator.record_log(
-            f"{agent.name} used inspect on {target} (result: {'werewolf' if is_wolf else 'not'})",
-            sender=agent.name,
-            recipients=None,
-            kind="inspect",
-        )
         result = {"target": target, "is_werewolf": is_wolf}
-        summary = f"{agent.name} inspected {target} ({'werewolf' if is_wolf else 'not'})"
+        summary = (
+            f"{agent.name} inspected {target} ({'werewolf' if is_wolf else 'not'})"
+        )
         return True, result, summary
 
 
@@ -143,7 +131,11 @@ class WitchSaveAction(Action):
             return False, {"error": "wrong_phase"}, f"{agent.name} witch_save failed"
         if not _is_alive(scene, agent.name) or _role_of(scene, agent.name) != "witch":
             agent.add_env_feedback("Only a living Witch can save.")
-            return False, {"error": "not_witch_or_dead"}, f"{agent.name} witch_save failed"
+            return (
+                False,
+                {"error": "not_witch_or_dead"},
+                f"{agent.name} witch_save failed",
+            )
 
         uses = scene.state.setdefault("witch_uses", {}).setdefault(
             agent.name, {"heals_left": 1, "poisons_left": 1}
@@ -155,12 +147,6 @@ class WitchSaveAction(Action):
         scene.state["witch_saved"] = True
         uses["heals_left"] = uses.get("heals_left", 0) - 1
         agent.add_env_feedback("You prepare the save potion for tonight's victim.")
-        simulator.record_log(
-            f"{agent.name} used witch_save (victim will be saved)",
-            sender=agent.name,
-            recipients=None,
-            kind="witch_save",
-        )
         result = {"saved": True}
         summary = f"{agent.name} used witch save"
         return True, result, summary
@@ -179,30 +165,36 @@ class WitchPoisonAction(Action):
             return False, {"error": "wrong_phase"}, f"{agent.name} witch_poison failed"
         if not _is_alive(scene, agent.name) or _role_of(scene, agent.name) != "witch":
             agent.add_env_feedback("Only a living Witch can poison.")
-            return False, {"error": "not_witch_or_dead"}, f"{agent.name} witch_poison failed"
+            return (
+                False,
+                {"error": "not_witch_or_dead"},
+                f"{agent.name} witch_poison failed",
+            )
         target = action_data.get("target")
         if not target or not _is_alive(scene, target) or target == agent.name:
             agent.add_env_feedback("Provide a living 'target' other than yourself.")
-            return False, {"error": "invalid_target"}, f"{agent.name} witch_poison failed"
+            return (
+                False,
+                {"error": "invalid_target"},
+                f"{agent.name} witch_poison failed",
+            )
 
         uses = scene.state.setdefault("witch_uses", {}).setdefault(
             agent.name, {"heals_left": 1, "poisons_left": 1}
         )
         if uses.get("poisons_left", 0) <= 0:
             agent.add_env_feedback("You have already used your poison potion.")
-            return False, {"error": "no_poison_left"}, f"{agent.name} witch_poison failed"
+            return (
+                False,
+                {"error": "no_poison_left"},
+                f"{agent.name} witch_poison failed",
+            )
 
         scene.state.setdefault("witch_actions", {}).setdefault(agent.name, {})[
             "poison_target"
         ] = target
         uses["poisons_left"] = uses.get("poisons_left", 0) - 1
         agent.add_env_feedback(f"You prepared a poison targeting {target}.")
-        simulator.record_log(
-            f"{agent.name} used witch_poison on {target}",
-            sender=agent.name,
-            recipients=None,
-            kind="witch_poison",
-        )
         result = {"target": target}
         summary = f"{agent.name} prepared poison for {target}"
         return True, result, summary
@@ -225,7 +217,6 @@ class OpenVotingAction(Action):
             return False, {"error": "wrong_phase"}, f"{agent.name} open_voting failed"
         scene.state["phase"] = "day_voting"
         scene.state["lynch_votes"] = {}
-        simulator.record_log(f"{name} opened voting", sender=name, kind="open_voting")
         simulator.broadcast(PublicEvent("Voting is now open."))
         result = {"opened": True}
         summary = f"{agent.name} opened voting"
@@ -243,11 +234,14 @@ class CloseVotingAction(Action):
         name = agent.name
         if not scene.is_moderator(name):
             agent.add_env_feedback("Only the moderator can close voting.")
-            return False, {"error": "not_moderator"}, f"{agent.name} close_voting failed"
+            return (
+                False,
+                {"error": "not_moderator"},
+                f"{agent.name} close_voting failed",
+            )
         if scene.state.get("phase") != "day_voting":
             agent.add_env_feedback("Close voting only during voting phase.")
             return False, {"error": "wrong_phase"}, f"{agent.name} close_voting failed"
-        simulator.record_log(f"{name} closed voting", sender=name, kind="close_voting")
         scene._resolve_lynch(simulator, prefer_plurality=True)
         scene.state["lynch_votes"] = {}
         scene.state["phase"] = "night"

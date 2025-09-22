@@ -16,25 +16,12 @@ from socialsim4.core.simulator import Simulator
 
 
 def console_logger(event_type: str, data):
-    """Compact console logger that prints key simulation events.
-
-    - action_start/action_end, agent_process_start/agent_process_end: JSON payload
-    - event_recorded: plain transcript of events (Public/Status/Speak)
-    - log_recorded: plain transcript of notes (e.g., web_search/view_page)
-    - send_message/web_search/view_page/yield: JSON payload
-    """
-    if event_type in (
-        "action_end",
-        "send_message",
-        "web_search",
-        "view_page",
-        "yield",
-    ):
-        print(f"[{event_type}] {json.dumps(data, ensure_ascii=False)}")
-    elif event_type in ("event_recorded", "log_recorded"):
-        text = data.get("text", "") if isinstance(data, dict) else str(data)
-        tag = "event" if event_type == "event_recorded" else "note"
-        print(f"[{tag}] {text}")
+    """Compact console logger that prints key simulation events."""
+    if event_type == "system_broadcast":
+        print(f"[{event_type}] {data.get('text')}")
+    elif event_type == "action_end":
+        action_data = data.get("action")
+        print(f"[{action_data.get('action')}] {data.get('summary')}")
 
 
 def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
@@ -152,8 +139,7 @@ def run_simple_chat():
         )
     )
 
-    sim.run(num_rounds=5)
-    print(sim.get_timeline())
+    sim.run(max_turns=30)
 
 
 def run_council():
@@ -255,7 +241,7 @@ def run_council():
                 "style": "assertive and analytical",
                 "initial_instruction": "",
                 "role_prompt": "Push for strong air-quality targets and transparent reporting.",
-                "action_space": ["send_message", "yield", "vote", "get_rounds"],
+                "action_space": ["send_message", "yield", "vote"],
                 "properties": {},
             }
         ),
@@ -284,7 +270,7 @@ def run_council():
     sim = Simulator(reps, scene, clients, event_handler=console_logger)
     # Participants announcement at start
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in reps])))
-    sim.run(num_rounds=15)
+    sim.run(max_turns=120)
     print(sim.get_timeline())
 
 
@@ -388,8 +374,7 @@ def run_village():
         )
     )
 
-    sim.run(num_rounds=5)
-    print(sim.get_timeline())
+    sim.run(max_turns=40)
 
 
 def run_werewolf():
@@ -467,12 +452,11 @@ def run_werewolf():
 
     sim = Simulator(agents, scene, clients, event_handler=console_logger)
     # Run with a generous cap; simulation stops early when the scene declares completion.
-    sim.run(num_rounds=50)
-    print(sim.get_timeline())
+    sim.run(max_turns=400)
 
 
 if __name__ == "__main__":
     # run_simple_chat()
     # run_council()
-    run_village()
-    # run_werewolf()
+    # run_village()
+    run_werewolf()

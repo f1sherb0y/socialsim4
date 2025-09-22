@@ -10,7 +10,7 @@ from socialsim4.core.actions.village_actions import (
     RestAction,
 )
 from socialsim4.core.agent import Agent
-from socialsim4.core.event import PublicEvent, StatusEvent
+from socialsim4.core.event import StatusEvent
 from socialsim4.core.scene import Scene
 from socialsim4.core.simulator import Simulator
 
@@ -235,7 +235,7 @@ class GameMap:
         """获取附近的位置"""
         nearby = []
         for location in sorted(
-            self.locations.values(), key=lambda l: (l.y, l.x, l.name)
+            self.locations.values(), key=lambda loc: (loc.y, loc.x, loc.name)
         ):
             distance = abs(location.x - x) + abs(location.y - y)
             if distance <= radius:
@@ -486,11 +486,44 @@ There are people nearby; I'll greet them.
         ]
 
     def post_turn(self, agent: Agent, simulator: Simulator):
-        # No per-turn time advance (minutes_per_turn=0)
+        # Advance scene clock by 60 minutes per agent turn
+        self.state["time"] = int(self.state.get("time", 0) or 0) + 60
         super().post_turn(agent, simulator)
 
+        # Basic physiological changes for acting agent
+        agent.properties["hunger"] = min(100, agent.properties.get("hunger", 0) + 3)
+        agent.properties["energy"] = max(0, agent.properties.get("energy", 100) - 2)
+
+        # Position/occupancy sync for named locations
+        xy = agent.properties.get("map_xy")
+        if xy:
+            loc = self.game_map.get_location_at(xy[0], xy[1])
+            # 清理不在此处的占用
+            for location in self.game_map.locations.values():
+                if agent.name in location.agents_here and (
+                    location.x != xy[0] or location.y != xy[1]
+                ):
+                    location.remove_agent(agent.name)
+            if loc and agent.name not in loc.agents_here:
+                loc.add_agent(agent.name)
+
+        # Status warnings (English, plain) for acting agent
+        if agent.properties["hunger"] >= 70:
+            status = f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
+            evt = StatusEvent(status)
+            text = evt.to_string(self.state.get("time"))
+            agent.add_env_feedback(text)
+
+        if agent.properties["energy"] <= 30:
+            status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
+            evt = StatusEvent(status)
+            text = evt.to_string(self.state.get("time"))
+            agent.add_env_feedback(text)
+
     def parse_and_handle_action(self, action_data, agent: Agent, simulator: Simulator):
-        handled = super().parse_and_handle_action(action_data, agent, simulator)
+        success, result, summary = super().parse_and_handle_action(
+            action_data, agent, simulator
+        )
         if getattr(self, "print_map_each_turn", False) and action_data.get("action"):
             ascii_map = self.game_map.render_ascii(simulator.agents)
             simulator.record_log(
@@ -498,44 +531,9 @@ There are people nearby; I'll greet them.
                 sender=agent.name,
                 kind="map",
             )
-        return handled
+        return success, result, summary
 
-    def post_round(self, simulator: Simulator):
-        """每轮结束后的处理"""
-        # Advance scene clock by 60 minutes per full round
-        self.state["time"] += 60
-
-        # Update agent state
-        for agent in simulator.agents.values():
-            # Basic physiological changes
-            agent.properties["hunger"] = min(100, agent.properties["hunger"] + 3)
-            agent.properties["energy"] = max(0, agent.properties["energy"] - 2)
-
-            # Position/occupancy sync for named locations
-            xy = agent.properties.get("map_xy")
-            if xy:
-                loc = self.game_map.get_location_at(xy[0], xy[1])
-                # 清理不在此处的占用
-                for location in self.game_map.locations.values():
-                    if agent.name in location.agents_here and (
-                        location.x != xy[0] or location.y != xy[1]
-                    ):
-                        location.remove_agent(agent.name)
-                if loc and agent.name not in loc.agents_here:
-                    loc.add_agent(agent.name)
-
-            # Status warnings (English, plain)
-            if agent.properties["hunger"] >= 70:
-                status = f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
-                evt = StatusEvent(status)
-                text = evt.to_string(self.state.get("time"))
-                agent.add_env_feedback(text)
-
-            if agent.properties["energy"] <= 30:
-                status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
-                evt = StatusEvent(status)
-                text = evt.to_string(self.state.get("time"))
-                agent.add_env_feedback(text)
+    # Removed post_round: no round concept
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
         minutes = int(self.state.get("time", 0) or 0)
@@ -575,12 +573,6 @@ Current time: {hours}:{mins:02d} ({time_of_day})
             if dist <= self.chat_range:
                 a.add_env_feedback(formatted)
                 recipients.append(a.name)
-        simulator.record_log(
-            formatted,
-            sender=sender.name if hasattr(sender, "name") else sender,
-            recipients=recipients,
-            kind=event.__class__.__name__,
-        )
 
     # ----- Unified serialization hooks -----
     def serialize_config(self) -> dict:

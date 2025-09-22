@@ -1,6 +1,5 @@
 from .actions.base_actions import SendMessageAction, TalkToAction, YieldAction
 from .actions.council_actions import (
-    GetRoundsAction,
     RequestBriefAction,
     StartVotingAction,
     VoteAction,
@@ -28,6 +27,7 @@ from .scenes.council_scene import CouncilScene
 from .scenes.simple_chat_scene import SimpleChatScene
 from .scenes.village_scene import VillageScene
 from .scenes.werewolf_scene import WerewolfScene
+from .ordering import ORDERING_MAP as _ORDERING_MAP
 
 ACTION_SPACE_MAP = {
     "send_message": SendMessageAction(),
@@ -41,7 +41,6 @@ ACTION_SPACE_MAP = {
     # "quick_move": QuickMoveAction(),
     # "explore": ExploreAction(),
     "start_voting": StartVotingAction(),
-    "get_rounds": GetRoundsAction(),
     "request_brief": RequestBriefAction(),
     "voting_status": VotingStatusAction(),
     "vote": VoteAction(),
@@ -65,3 +64,5 @@ SCENE_MAP = {
     "village_scene": VillageScene,
     "werewolf_scene": WerewolfScene,
 }
+
+ORDERING_MAP = _ORDERING_MAP

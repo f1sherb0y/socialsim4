@@ -48,17 +48,6 @@ class WebSearchAction(Action):
             if snippet:
                 lines.append(f"   {snippet}")
         agent.add_env_feedback("\n".join(lines))
-        # Include in transcript as a private log line (not a world Event)
-        simulator.record_log(
-            f"{agent.name} searched: {query}",
-            sender=agent.name,
-            recipients=[agent.name],
-            kind="web_search",
-        )
-        simulator.log_event(
-            "web_search",
-            {"agent": agent.name, "query": query, "count": len(results)},
-        )
         result = {"query": query, "results": results}
         summary = f"{agent.name} searched: '{query}' ({len(results)} results)"
         return True, result, summary
@@ -95,22 +84,6 @@ class ViewPageAction(Action):
         text = data.get("text", "")
         header = f"Page content preview: {title}" if title else "Page content preview:"
         agent.add_env_feedback(f"{header}\nURL: {url}\n\n{text}")
-        # Include in transcript as a private log line (not a world Event)
-        simulator.record_log(
-            f"{agent.name} viewed web page: {url}",
-            sender=agent.name,
-            recipients=[agent.name],
-            kind="view_page",
-        )
-        simulator.log_event(
-            "view_page",
-            {
-                "agent": agent.name,
-                "url": url,
-                "length": len(text),
-                "truncated": bool(data.get("truncated")),
-            },
-        )
         result = {
             "url": url,
             "title": title,

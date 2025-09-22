@@ -94,17 +94,7 @@ class MoveToLocationAction(Action):
         if nearby:
             agent.add_env_feedback("Nearby agents: " + ", ".join(nearby))
 
-        simulator.log_event(
-            "move",
-            {
-                "agent": agent.name,
-                "scene": scene.TYPE,
-                "from": start_xy,
-                "to": target_xy,
-                "energy_cost": energy_cost,
-                "path": path,
-            },
-        )
+        # No logging here; central processing can consume result/summary
         result = {"from": start_xy, "to": target_xy, "energy_cost": energy_cost, "path": path}
         summary = f"{agent.name} moved to {tuple(target_xy)} (energy {energy_cost})"
         return True, result, summary
@@ -175,13 +165,7 @@ class LookAroundAction(Action):
             info.append(f"Nearby agents: {agents_str}")
 
         agent.add_env_feedback("\n".join(info))
-        simulator.log_event(
-            "look",
-            {
-                "agent": agent.name,
-                "scene": scene.TYPE,
-            },
-        )
+        # No logging here; central processing can consume result/summary
         result = {"radius": radius}
         summary = f"{agent.name} looked around (r={radius})"
         return True, result, summary
@@ -243,17 +227,7 @@ class GatherResourceAction(Action):
         agent.add_env_feedback(
             f"You gathered {actual_amount} {resource_type}. Inventory: {agent.properties['inventory']}"
         )
-        simulator.log_event(
-            "gather",
-            {
-                "agent": agent.name,
-                "scene": scene.TYPE,
-                "resource": resource_type,
-                "amount": actual_amount,
-                "source": source,
-                "position": xy,
-            },
-        )
+        # No logging here; central processing can consume result/summary
         result = {"resource": resource_type, "amount": actual_amount, "source": source, "position": xy}
         summary = f"{agent.name} gathered {actual_amount} {resource_type}"
         return True, result, summary
@@ -281,15 +255,7 @@ class RestAction(Action):
             )
 
         agent.properties["energy"] = min(100, agent.properties["energy"] + energy_gain)
-        simulator.log_event(
-            "rest",
-            {
-                "agent": agent.name,
-                "scene": scene.TYPE,
-                "energy_gain": energy_gain,
-                "new_energy": agent.properties["energy"],
-            },
-        )
+        # No logging here; central processing can consume result/summary
         result = {"energy_gain": energy_gain, "new_energy": agent.properties["energy"]}
         summary = f"{agent.name} rested (+{energy_gain} energy)"
         return True, result, summary

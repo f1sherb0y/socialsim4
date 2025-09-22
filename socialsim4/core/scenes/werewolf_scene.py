@@ -110,7 +110,8 @@ class WerewolfScene(Scene):
 
     def deliver_message(self, event: Event, sender: Agent, simulator: Simulator):
         phase = self.state.get("phase")
-        formatted = event.to_string(self.state.get("time"))
+        time = self.state.get("time")
+        formatted = event.to_string(time)
         recipients: List[str] = []
         mod_sender = self.is_moderator(sender.name)
         for a in simulator.agents.values():
@@ -130,12 +131,6 @@ class WerewolfScene(Scene):
                 a.add_env_feedback(formatted)
                 recipients.append(a.name)
         sender.add_env_feedback(formatted)
-        simulator.record_log(
-            formatted,
-            sender=sender.name,
-            recipients=recipients,
-            kind=event.__class__.__name__,
-        )
 
     def post_turn(self, agent: Agent, simulator: Simulator):
         super().post_turn(agent, simulator)
