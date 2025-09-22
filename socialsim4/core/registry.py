@@ -2,6 +2,7 @@ from .actions.base_actions import SendMessageAction, TalkToAction, YieldAction
 from .actions.council_actions import (
     RequestBriefAction,
     StartVotingAction,
+    FinishMeetingAction,
     VoteAction,
     VotingStatusAction,
 )
@@ -42,6 +43,7 @@ ACTION_SPACE_MAP = {
     # "quick_move": QuickMoveAction(),
     # "explore": ExploreAction(),
     "start_voting": StartVotingAction(),
+    "finish_meeting": FinishMeetingAction(),
     "request_brief": RequestBriefAction(),
     "voting_status": VotingStatusAction(),
     "vote": VoteAction(),

@@ -174,6 +174,7 @@ def run_council():
                 "role_prompt": "",
                 "action_space": [
                     "start_voting",
+                    "finish_meeting",
                     "request_brief",
                 ],
                 "properties": {},
@@ -279,11 +280,16 @@ def run_council():
 
     clients = make_clients()
 
-    sim = Simulator(reps, scene, clients, event_handler=console_logger)
+    sim = Simulator(
+        reps,
+        scene,
+        clients,
+        event_handler=console_logger,
+        ordering=SequentialOrdering(),
+    )
     # Participants announcement at start
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in reps])))
     sim.run(max_turns=120)
-    print(sim.get_timeline())
 
 
 def run_village():
@@ -481,7 +487,7 @@ def run_werewolf():
 
 
 if __name__ == "__main__":
-    run_simple_chat()
-    # run_council()
+    # run_simple_chat()
+    run_council()
     # run_village()
     # run_werewolf()

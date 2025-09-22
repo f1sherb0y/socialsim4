@@ -1,3 +1,4 @@
+from queue import Queue
 from typing import Callable, List, Optional
 
 from socialsim4.core.agent import Agent
@@ -35,6 +36,7 @@ class Simulator:
             ordering: Ordering = SequentialOrdering()
         self.ordering = ordering
         self.ordering.set_simulation(self)
+        self.event_queue = Queue()
 
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
@@ -58,6 +60,16 @@ class Simulator:
         if self.log_event:
             self.log_event(event_type, data)
 
+    def emit_event_later(self, event_type: str, data: dict):
+        self.ordering.on_event(self, event_type, data)
+        self.event_queue.put({"type": event_type, "data": data})
+
+    def emit_remaining_events(self):
+        while not self.event_queue.empty():
+            item = self.event_queue.get()
+            if self.log_event:
+                self.log_event(item["type"], item["data"])
+
     def broadcast(self, event: Event):
         sender = event.get_sender()
         time = self.scene.state.get("time")
@@ -70,7 +82,7 @@ class Simulator:
                 recipients.append(agent.name)
 
         # Timeline: keep minimal
-        self.emit_event(
+        self.emit_event_later(
             "system_broadcast",
             {
                 "time": time,
@@ -161,6 +173,7 @@ class Simulator:
             steps = 0
             first_step = True
             continue_turn = True
+            self.emit_remaining_events()
             while continue_turn and steps < self.max_steps_per_turn:
                 self.emit_event(
                     "agent_process_start", {"agent": agent.name, "step": steps + 1}
@@ -202,6 +215,7 @@ class Simulator:
                             "summary": summary,
                         },
                     )
+                    self.emit_remaining_events()
                     if action_data.get("action") == "yield":
                         yielded = True
                         break
