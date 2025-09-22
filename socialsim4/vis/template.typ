@@ -1,34 +1,29 @@
-
 #let theme = (
-  public-event: rgb("#1e88e5"),  // Public event label
-  message: rgb("#8e24aa"),       // "[Message]" label
-  sender: rgb("#2e7d32"),        // Sender name
-  content: rgb("#263238"),       // Message/content text
+  action: rgb("#1e88e5"),      // Renamed from public-event for clarity
+  message-tag: rgb("#8e24aa"), // Renamed from message for clarity
+  sender: rgb("#2e7d32"),
+  content: rgb("#263238"),
 )
 
 #let render-multiline = (s, fill: theme.content) => {
-  for part in s.split("\n") {
+  for part in s.trim().split("\n") {
     text(fill: fill)[#part]
     linebreak()
   }
 }
 
-// A generic event block (no "Public Event:" label)
-#let event-block = (content, colors: theme) => [
-  #text(fill: colors.public-event)[[Event]]
+// MODIFIED: Takes `event-type` to display tags like [web_search]
+#let event-block = (event-type, content, colors: theme) => [
+  #text(fill: colors.action)[[#event-type]]
   #h(8pt)
   #render-multiline(content, fill: colors.content)
 ]
 
-// A public event block with a colored label
-#let public-event-block = (content, colors: theme) => [
-  #text(fill: colors.public-event)[[Public Event]]
-  #h(8pt)
-  #render-multiline(content, fill: colors.content)
-]
+// DELETED: public-event-block is no longer needed.
 
+// MODIFIED: Changed the hardcoded label from "Message" to "send_message"
 #let message-block = (sender, msg, colors: theme) => [
-  #text(fill: colors.message)[[Message]]
+  #text(fill: colors.message-tag)[[message]]
   #h(8pt)
   #text(fill: colors.sender)[#sender]
   #text(fill: colors.content)[:]
@@ -37,98 +32,67 @@
   #render-multiline(msg, fill: colors.content)
 ]
 
-#let re-msg = regex("^\\s*\\[Message\\]\\s*(.*?):\\s*(.*)$")
-#let re-public = regex("^\\s*Public Event:\\s*(.*)$")
-#let re-host-brief = regex("^\\s*Host requested brief:.*$")
-#let re-searched = regex("^\\s*(.+?)\\s+searched:\\s*(.*)$")
-#let re-viewed = regex("^\\s*(.+?)\\s+viewed web page:\\s*(.*)$")
-
-// New formats with timestamps like "[0:21] ..."
-// [m:ss] Public Event: ...
-#let re-public-ts = regex("^\\s*\\[(\\d+:\\d\\d)\\]\\s*Public Event:\\s*(.*)$")
-// [m:ss] Name: message
-#let re-msg-ts = regex("^\\s*\\[(\\d+:\\d\\d)\\]\\s*([^:]+):\\s*(.*)$")
-
-// Common werewolf action lines without timestamps should start new generic events
-#let re-voting-openclose = regex("^\\s*Moderator\\s+(opened|closed)\\s+voting\\s*$")
-#let re-voted-lynch = regex("^\\s*.+?\\s+voted to lynch\\s+.+?(?:\\s*\\(tally:\\s*\\d+\\))?\\s*$")
-#let re-cast-night = regex("^\\s*.+?\\s+cast\\s+\\w+\\s+vote:\\s*.+$")
-#let re-used-ability = regex("^\\s*.+?\\s+used\\s+\\w+(?:\\s+on\\s+.+?)?(?:\\s*\\(.*\\))?\\s*$")
+// --- MODIFIED: All old regexes are replaced with two new, general ones. ---
+#let re-tagged-line = regex("^\s*\[(.*?)\]\s*(.*)$")
+#let re-sender-msg = regex("(?s)^(.+?):\s*(.*)$")
+// --- End of regex modification ---
 
 #let parse-transcript = (raw, colors: theme) => {
   let blocks = ()
 
   // Accumulators for current block
-  let kind = none          // "public" | "event" | "message" | none
+  let kind = none
   let sender = ""
   let buf = ""
+  let event_type = "" // ADDED: State for the current event's tag
 
-  // Line-based scan that splits on markers and preserves intermediate lines
-  for raw-line in raw.replace("\r\n", "\n").replace("\r", "\n").split("\n") {
+  for raw-line in raw.replace("\r\n", "\n").split("\n") {
     let stripped = raw-line.trim()
 
-    // Evaluate regex markers
-    let m-msg = stripped.match(re-msg)
-    let m-public = stripped.match(re-public)
-    let m-msg-ts = stripped.match(re-msg-ts)
-    let m-public-ts = stripped.match(re-public-ts)
-    let m-host = stripped.match(re-host-brief)
-    let m-searched = stripped.match(re-searched)
-    let m-viewed = stripped.match(re-viewed)
-    let m-voting = stripped.match(re-voting-openclose)
-    let m-voted = stripped.match(re-voted-lynch)
-    let m-cast = stripped.match(re-cast-night)
-    let m-used = stripped.match(re-used-ability)
+    // --- MODIFIED: The main trigger logic ---
+    let m-tagged = stripped.match(re-tagged-line)
 
-    if m-msg != none or m-public != none or m-msg-ts != none or m-public-ts != none or m-host != none or m-searched != none or m-viewed != none or m-voting != none or m-voted != none or m-cast != none or m-used != none {
-      // Commit ongoing block
-      if kind == "public" {
-        blocks += (public-event-block(buf, colors: colors),)
-      } else if kind == "event" {
-        blocks += (event-block(buf, colors: colors),)
+    if m-tagged != none {
+      // Commit ongoing block (logic is the same, but call is modified)
+      if kind == "event" {
+        blocks.push(event-block(event_type, buf, colors: colors))
       } else if kind == "message" {
-        blocks += (message-block(sender, buf, colors: colors),)
-      }               
+        blocks.push(message-block(sender, buf, colors: colors))
+      }
 
-      // Start new block from matches
-      if m-msg-ts != none {
+      // Start new block from the single generic match
+      let tag = m-tagged.captures.at(0)
+      let content = m-tagged.captures.at(1)
+
+      if tag == "send_message" {
         kind = "message"
-        sender = m-msg-ts.captures.at(1).trim()
-        buf = m-msg-ts.captures.at(2).trim()
-      } else if m-public-ts != none {
-        kind = "public"
-        buf = m-public-ts.captures.at(1).trim()
-      } else if m-msg != none {
-        kind = "message"
-        sender = m-msg.captures.at(0).trim()
-        buf = m-msg.captures.at(1).trim()
-      } else if m-public != none {
-        kind = "public"
-        buf = m-public.captures.at(0).trim()
-      } else if m-host != none {
-        // Treat host requests as generic events (not public events)
+        let sender_match = content.match(re-sender-msg)
+        if sender_match != none {
+          sender = sender_match.captures.at(0).trim()
+          buf = sender_match.captures.at(1).trim()
+        } else {
+          sender = "Unknown" // Fallback for malformed message
+          buf = content
+        }
+      } else {
         kind = "event"
-        buf = stripped
-      } else if m-searched != none or m-viewed != none or m-voting != none or m-voted != none or m-cast != none or m-used != none {
-        // Treat searched/viewed as generic events (not public events)
-        kind = "event"
-        buf = stripped
+        event_type = tag
+        buf = content
       }
       continue
     }
+    // --- End of main trigger modification ---
 
-    // Continuation of current block: preserve original spacing
+    // Continuation of current block: this logic is unchanged and correct.
     if buf != "" { buf += "\n" }
     buf += raw-line
   }
 
-  // Commit the trailing block
-  if kind == "public" {
-    blocks += (public-event-block(buf, colors: colors),)
-  } else if kind == "event" {
-    blocks += (event-block(buf, colors: colors),)
+  // Commit the trailing block (logic is the same, but call is modified)
+  if kind == "event" {
+    blocks.push(event-block(event_type, buf, colors: colors))
   } else if kind == "message" {
-    blocks += (message-block(sender, buf, colors: colors),)
+    blocks.push(message-block(sender, buf, colors: colors))
   }
 
   // Render with some vertical spacing between blocks

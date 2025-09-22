@@ -35,7 +35,7 @@ class SendMessageAction(Action):
             event = MessageEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
             result = {"message": message}
-            summary = f"{agent.name} posted: {message}"
+            summary = f"{agent.name}: {message}"
             return True, result, summary
         error = "Missing message."
         agent.add_env_feedback(error)

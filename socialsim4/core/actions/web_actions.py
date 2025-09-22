@@ -1,4 +1,5 @@
 import re
+import httpx
 
 from socialsim4.core.action import Action
 from socialsim4.core.tools.web import view_page as tool_view_page
@@ -53,7 +54,16 @@ class ViewPageAction(Action):
         max_chars = int((action_data or {}).get("max_chars", 4000))
         max_chars = max(500, min(20000, max_chars))
 
-        data = tool_view_page(url, max_chars)
+        try:
+            data = tool_view_page(url, max_chars)
+        except httpx.HTTPError as e:
+            error = f"view_page HTTP error: {e}"
+            agent.add_env_feedback(error)
+            return False, {"error": "http_error", "detail": str(e)}, f"{agent.name} view_page failed"
+        except Exception as e:
+            error = f"view_page failed: {e}"
+            agent.add_env_feedback(error)
+            return False, {"error": "view_error", "detail": str(e)}, f"{agent.name} view_page failed"
 
         title = data.get("title")
         text = data.get("text", "")

@@ -1,19 +1,21 @@
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 from socialsim4.core.agent import Agent
 from socialsim4.core.event import Event, StatusEvent
 from socialsim4.core.ordering import ORDERING_MAP, Ordering, SequentialOrdering
 
+# from socialsim4.core.scene import Scene
+
 
 class Simulator:
     def __init__(
         self,
-        agents,
+        agents: List[Agent],
         scene,
         clients,
         broadcast_initial=True,
         max_steps_per_turn=5,
-        ordering: Optional[object] = None,
+        ordering: Optional[Ordering] = None,
         event_handler: Callable[[str, dict], None] = None,
     ):
         self.log_event = event_handler
@@ -30,10 +32,9 @@ class Simulator:
         self.max_steps_per_turn = max_steps_per_turn
         # Build ordering (class or instance); keep it simple
         if ordering is None:
-            self.ordering: Ordering = SequentialOrdering(self)
-        else:
-            # Factory that accepts (sim) and returns an Ordering instance
-            self.ordering = ordering(self)  # type: ignore
+            ordering: Ordering = SequentialOrdering()
+        self.ordering = ordering
+        self.ordering.set_simulation(self)
 
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
@@ -47,7 +48,6 @@ class Simulator:
                     if name and name not in existing:
                         agent.action_space.append(act)
 
-        # 初始化所有agent的personal_history：添加初始事件作为user role if flag is True
         if broadcast_initial:
             self.broadcast(self.scene.initial_event)
 
@@ -77,7 +77,7 @@ class Simulator:
                 "type": event.__class__.__name__,
                 "sender": sender,
                 "recipients": recipients,
-                "text": formatted,
+                "text": event.to_string(),
             },
         )
 
@@ -128,7 +128,6 @@ class Simulator:
         return simulator
 
     def run(self, max_turns=1000):
-        print("--- Initialization ---")
         order_iter = self.ordering.iter()
         turns = 0
 

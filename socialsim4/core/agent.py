@@ -2,8 +2,6 @@ import json
 import re
 import xml.etree.ElementTree as ET
 
-import openai
-
 from socialsim4.api.config import MAX_REPEAT
 from socialsim4.core.memory import ShortTermMemory
 
@@ -53,12 +51,7 @@ class Agent:
         def _fmt_list(items):
             if not items:
                 return "- (none)"
-            return "\n".join(
-                [
-                    f"- {item}"
-                for item in items
-            ]
-        )
+            return "\n".join([f"- {item}" for item in items])
 
         def _fmt_goals(goals):
             if not goals:
@@ -202,9 +195,9 @@ Planning guidelines (internal/private):
 - Prefer continuity: preserve unaffected goals/milestones; make the smallest coherent change when adapting to new information. State what stays the same.
 
 Turn Flow:
-- Output exactly one Thoughts/Plan/Action block per response (single block).
-- You may take multiple actions during your turn, one at a time.
+- Output exactly one Thoughts/Plan/Action block per response.
 - Some actions may return immediate results (e.g., briefs, searches). Incorporate them and proceed;
+- Some actions may require multiple steps (e.g., complex messages, multi-step tasks), do not yield the floor. The system will schedule your next turn.
 - If the next step is clear, take it; when finished, yield the floor with <Action name="yield"></Action>.
 
 Your entire response MUST follow the format below. 
@@ -421,6 +414,7 @@ History:
           <Action name="yield"></Action>
         Returns [dict] with keys: 'action' and child tags as top-level fields.
         """
+
         if not action_block:
             return []
         text = action_block.strip()
@@ -431,6 +425,7 @@ History:
             text = text[3:-3].strip()
         elif text.startswith("`") and text.endswith("`"):
             text = text.strip("`")
+        text = text.strip("`")
 
         # Parse as a single Action element
         root = ET.fromstring(text)
@@ -453,7 +448,7 @@ History:
         current_length = len(self.short_memory)
         if current_length == self.last_history_length and not initiative:
             # 没有新事件，无反应
-            print(f"No new messages for {self.name}, skipping")
+            # print(f"No new messages for {self.name}, skipping")
             return {}
 
         # 检查并总结如果需要
@@ -472,8 +467,12 @@ History:
             ctx.append({"role": "user", "content": hint})
 
         llm_output = self.call_llm(clients, ctx)
-        thoughts, plan, action_block, plan_update_block = self._parse_full_response(llm_output)
-        action_data = self._parse_actions(action_block) or self._parse_actions(llm_output)
+        thoughts, plan, action_block, plan_update_block = self._parse_full_response(
+            llm_output
+        )
+        action_data = self._parse_actions(action_block) or self._parse_actions(
+            llm_output
+        )
         plan_update = self._parse_plan_update(plan_update_block)
         if plan_update:
             self._apply_plan_update(plan_update)
@@ -487,10 +486,7 @@ History:
         ) and plan:
             self._infer_initial_plan_from_plan_text(plan)
 
-        # 原封不动地记录发送的LLM消息到自己的history (即使为空或无效)
         self.short_memory.append("assistant", llm_output)
-
-        # 更新last_history_length（包括新添加的assistant消息）
         self.last_history_length = len(self.short_memory)
 
         return action_data

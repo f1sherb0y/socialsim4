@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Dict, List
 
@@ -8,21 +7,27 @@ from socialsim4.api.schemas import LLMConfig
 from socialsim4.core.agent import Agent
 from socialsim4.core.event import PublicEvent
 from socialsim4.core.llm import create_llm_client
+from socialsim4.core.ordering import (
+    LLMModeratedOrdering,
+    RandomOrdering,
+    SequentialOrdering,
+)
 from socialsim4.core.scenes.council_scene import CouncilScene
 from socialsim4.core.scenes.simple_chat_scene import SimpleChatScene
 from socialsim4.core.scenes.village_scene import GameMap, VillageScene
 from socialsim4.core.scenes.werewolf_scene import WerewolfScene
-from socialsim4.core.ordering import LLMModeratedOrdering
 from socialsim4.core.simulator import Simulator
 
 
 def console_logger(event_type: str, data):
     """Compact console logger that prints key simulation events."""
     if event_type == "system_broadcast":
-        print(f"[{event_type}] {data.get('text')}")
+        if data.get("sender") is None or data.get("sender") == "":
+            print(f"[Public Event] {data.get('text')}")
     elif event_type == "action_end":
         action_data = data.get("action")
-        print(f"[{action_data.get('action')}] {data.get('summary')}")
+        if action_data.get("action") != "yield":
+            print(f"[{action_data.get('action')}] {data.get('summary')}")
 
 
 def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
@@ -128,15 +133,11 @@ def run_simple_chat():
     scene = SimpleChatScene("room", "Welcome to the chat room.")
     clients = make_clients()
 
-    # Use moderator-driven ordering (queue based): moderator must emit schedule_order
-    moderator_obj = next(a for a in agents if a.name == "Moderator")
-    schedule_names = [a.name for a in agents if a.name != "Moderator"]
-
     sim = Simulator(
         agents,
         scene,
         clients,
-        ordering=lambda s: LLMModeratedOrdering(s, moderator_obj, names=schedule_names),
+        ordering=RandomOrdering(),
         event_handler=console_logger,
     )
 
@@ -374,7 +375,13 @@ def run_village():
     )
     clients = make_clients()
 
-    sim = Simulator(agents, scene, clients, event_handler=console_logger)
+    sim = Simulator(
+        agents,
+        scene,
+        clients,
+        event_handler=console_logger,
+        ordering=SequentialOrdering(),
+    )
 
     # Participants announcement at start
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
@@ -410,7 +417,7 @@ def run_werewolf():
                 "- Phase control: start with open discussion; each player may should send at most one message in discussion. When all have spoken or passed, begin the voting phase; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
                 "- Clarity: make brief, procedural reminders (e.g., 'Final statements', 'Voting soon', 'Please cast or update your vote'). Keep announcements short.\n"
                 "- Discipline: never reveal or summarize hidden information; do not speculate or pressure specific outcomes.\n"
-                "- Scheduling: when asked by the system to schedule, emit exactly one action and nothing else: <Action name=\"schedule_order\"><order>[\"Name1\", \"Name2\"]</order></Action>.\n"
+                '- Scheduling: when asked by the system to schedule, emit exactly one action and nothing else: <Action name="schedule_order"><order>["Name1", "Name2"]</order></Action>.\n'
             )
         r = role_map.get(name, "villager")
         if r == "werewolf":
@@ -462,13 +469,19 @@ def run_werewolf():
     )
     clients = make_clients()
 
-    sim = Simulator(agents, scene, clients, event_handler=console_logger)
+    sim = Simulator(
+        agents,
+        scene,
+        clients,
+        event_handler=console_logger,
+        ordering=LLMModeratedOrdering(moderator=agents[0]),
+    )
     # Run with a generous cap; simulation stops early when the scene declares completion.
     sim.run(max_turns=400)
 
 
 if __name__ == "__main__":
-    # run_simple_chat()
+    run_simple_chat()
     # run_council()
     # run_village()
-    run_werewolf()
+    # run_werewolf()

@@ -10,7 +10,7 @@ class Scene:
     def __init__(self, name, initial_event):
         self.name = name
         self.initial_event = PublicEvent(initial_event)
-        self.state = {}
+        self.state = {"time": 1080}
         # Default timekeeping: minutes since 0. Scenes can adjust per-turn minutes.
         self.minutes_per_turn = 3
 
