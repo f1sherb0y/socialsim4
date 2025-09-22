@@ -571,9 +571,18 @@ History:
 
         return action_data
 
-    def append_env_message(self, content):
-        """Append environmental (user) message to personal_history, merging if last is user."""
+    def add_env_feedback(self, content: str):
+        """Add feedback from the simulation environment to the agent's context.
+
+        Stores the feedback as a `user` role entry in short-term memory so the
+        agent can react to system/status updates, private confirmations, and
+        scene messages.
+        """
         self.short_memory.append("user", content)
+
+    def append_env_message(self, content):
+        """Deprecated: use add_env_feedback(). Kept for compatibility."""
+        return self.add_env_feedback(content)
 
     def to_dict(self):
         return {

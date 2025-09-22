@@ -84,9 +84,3 @@ class TalkToEvent(Event):
 
     def get_sender(self):
         return self.sender
-
-
-"""
-Note: Web search or page view activities are not modeled as world Events.
-They are logged via Simulator.record_log as transcript notes.
-"""

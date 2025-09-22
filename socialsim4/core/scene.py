@@ -45,7 +45,7 @@ class Scene:
         # Ensure the sender also retains what they said in their own context
         try:
             formatted = event.to_string(self.state.get("time"))
-            sender.append_env_message(formatted)
+            sender.add_env_feedback(formatted)
         except Exception:
             pass
         # Broadcast to everyone else and record the event

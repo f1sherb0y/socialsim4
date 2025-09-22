@@ -17,10 +17,14 @@ class StartVotingAction(Action):
             )
             simulator.broadcast(event)
             # Record a private confirmation for the host
-            agent.append_env_message("You started the voting.")
+            agent.add_env_feedback("You started the voting.")
             scene.log(f"{agent.name} has started the voting.")
-            return True
-        return False
+            result = {}
+            summary = f"{agent.name} started the voting round"
+            return True, result, summary
+        error = "Voting already started."
+        agent.add_env_feedback(error)
+        return False, {"error": error}, f"{agent.name} failed to start voting"
 
 
 class VotingStatusAction(Action):
@@ -35,8 +39,10 @@ class VotingStatusAction(Action):
         votes = scene.state.get("votes", {})
         num_members = sum(1 for a in simulator.agents.values() if a.name != "Host")
         if not started:
-            agent.append_env_message("Voting has not started.")
-            return True
+            agent.add_env_feedback("Voting has not started.")
+            result = {"started": False, "members": num_members}
+            summary = "Voting not started"
+            return True, result, summary
 
         yes = sum(v == "yes" for v in votes.values())
         no = sum(v == "no" for v in votes.values())
@@ -54,8 +60,18 @@ class VotingStatusAction(Action):
             f"- Pending: {pending}"
             + (f" ({', '.join(pending_names)})" if pending_names else ""),
         ]
-        agent.append_env_message("\n".join(lines))
-        return True
+        agent.add_env_feedback("\n".join(lines))
+        result = {
+            "started": True,
+            "members": num_members,
+            "yes": yes,
+            "no": no,
+            "abstain": abstain,
+            "pending": pending,
+            "pending_names": pending_names,
+        }
+        summary = f"Voting status: yes {yes}, no {no}, abstain {abstain}, pending {pending}"
+        return True, result, summary
 
 
 class GetRoundsAction(Action):
@@ -67,8 +83,10 @@ class GetRoundsAction(Action):
 
     def handle(self, action_data, agent, simulator, scene):
         rounds = simulator.round_num
-        agent.append_env_message(f"Current round: {rounds}")
-        return True
+        agent.add_env_feedback(f"Current round: {rounds}")
+        result = {"round": rounds}
+        summary = f"Current round: {rounds}"
+        return True, result, summary
 
 
 class RequestBriefAction(Action):
@@ -85,15 +103,15 @@ class RequestBriefAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         # Only the host can fetch briefs
         if getattr(agent, "name", "") != "Host":
-            agent.append_env_message("Only the Host can use request_brief.")
-            return False
+            error = "Only the Host can use request_brief."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} request_brief failed"
 
         desc = action_data.get("desc") if isinstance(action_data, dict) else None
         if not desc or not isinstance(desc, str):
-            agent.append_env_message(
-                'Missing parameter: "desc" (description of material to retrieve).'
-            )
-            return False
+            error = 'Missing parameter: "desc" (description of material to retrieve).'
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} request_brief failed"
 
         # Prepare a concise LLM prompt for a short, actionable briefing
         system_prompt = (
@@ -122,6 +140,7 @@ class RequestBriefAction(Action):
         except Exception:
             material = ""
 
+        used_fallback = False
         if not material.strip():
             # Fallback: short list of prompts to guide discussion
             material = (
@@ -133,10 +152,11 @@ class RequestBriefAction(Action):
                 "- Top risk and mitigation\n"
                 "- Open question for the chamber"
             )
+            used_fallback = True
 
         content = f"Brief (private) on '{desc}':\n{material.strip()}"
         # Deliver privately to host and record the event (private)
-        agent.append_env_message(content)
+        agent.add_env_feedback(content)
         # Add a concise transcript note (non-world log)
         try:
             simulator.record_log(
@@ -148,7 +168,9 @@ class RequestBriefAction(Action):
         except Exception:
             pass
         scene.log(f"{agent.name} requested brief for: {desc} (private)")
-        return True
+        result = {"desc": desc, "material": material.strip(), "source": ("fallback" if used_fallback else "llm")}
+        summary = f"{agent.name} requested a brief: {desc}"
+        return True, result, summary
 
 
 class VoteAction(Action):
@@ -160,12 +182,14 @@ class VoteAction(Action):
 
     def handle(self, action_data, agent, simulator, scene):
         if not scene.state.get("voting_started", False):
-            agent.append_env_message("Voting has not started yet.")
-            return False
+            error = "Voting has not started yet."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} vote failed"
 
         if agent.name in scene.state.get("votes", {}):
-            agent.append_env_message("You have already voted.")
-            return False
+            error = "You have already voted."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} vote failed"
 
         vote = action_data.get("vote")
         if vote in ["yes", "no", "abstain"] and agent.name != "Host":
@@ -181,5 +205,9 @@ class VoteAction(Action):
                 f"{agent.name} votes {vote}"
                 + (f" with comment: {comment}" if comment else "")
             )
-            return True
-        return False
+            result = {"vote": vote, "comment": comment}
+            summary = f"{agent.name} voted {vote}"
+            return True, result, summary
+        error = "Invalid vote or role."
+        agent.add_env_feedback(error)
+        return False, {"error": error}, f"{agent.name} vote failed"

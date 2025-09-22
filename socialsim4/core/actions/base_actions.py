@@ -15,8 +15,12 @@ class SpeakAction(Action):
             simulator.log_event("speak", {"agent": agent.name, "content": message})
             event = SpeakEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
-            return True
-        return False
+            result = {"message": message}
+            summary = f"{agent.name} said: {message}"
+            return True, result, summary
+        error = "Missing message."
+        agent.add_env_feedback(error)
+        return False, {"error": error}, f"{agent.name} failed to speak"
 
 
 class SendMessageAction(Action):
@@ -34,8 +38,12 @@ class SendMessageAction(Action):
             )
             event = MessageEvent(agent.name, message)
             scene.deliver_message(event, agent, simulator)
-            return True
-        return False
+            result = {"message": message}
+            summary = f"{agent.name} posted: {message}"
+            return True, result, summary
+        error = "Missing message."
+        agent.add_env_feedback(error)
+        return False, {"error": error}, f"{agent.name} failed to post"
 
 
 class YieldAction(Action):
@@ -47,7 +55,9 @@ class YieldAction(Action):
 
     def handle(self, action_data, agent, simulator, scene):
         simulator.log_event("yield", {"agent": agent.name})
-        return True
+        result = {}
+        summary = f"{agent.name} yielded the floor"
+        return True, result, summary
 
 
 class TalkToAction(Action):
@@ -61,13 +71,15 @@ class TalkToAction(Action):
         to_name = action_data.get("to")
         message = action_data.get("message")
         if not to_name or not message:
-            agent.append_env_message("Provide 'to' (name) and 'message'.")
-            return False
+            error = "Provide 'to' (name) and 'message'."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} failed to talk"
 
         target = simulator.agents.get(to_name)
         if not target:
-            agent.append_env_message(f"No such person: {to_name}.")
-            return False
+            error = f"No such person: {to_name}."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} failed to talk"
 
         # Range check for scenes with spatial chat
         in_range = True
@@ -82,18 +94,21 @@ class TalkToAction(Action):
             in_range = True
 
         if not in_range:
-            agent.append_env_message(f"{to_name} is too far to talk to.")
-            return False
+            error = f"{to_name} is too far to talk to."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} failed to talk"
 
         event = TalkToEvent(agent.name, to_name, message)
         # Sender always sees their own speech
-        agent.append_env_message(event.to_string(scene.state.get("time")))
+        agent.add_env_feedback(event.to_string(scene.state.get("time")))
         # Deliver only to the target
-        target.append_env_message(event.to_string(scene.state.get("time")))
+        target.add_env_feedback(event.to_string(scene.state.get("time")))
         simulator.record_log(
             event.to_string(scene.state.get("time")),
             sender=agent.name,
             recipients=[to_name],
             kind=event.__class__.__name__,
         )
-        return True
+        result = {"to": to_name, "message": message}
+        summary = f"{agent.name} to {to_name}: {message}"
+        return True, result, summary

@@ -132,7 +132,7 @@ class GameMap:
         agents_xy: Dict[Tuple[int, int], int] = {}
         if agents:
             for a in agents.values():
-                xy = (a.properties.get("map_xy") or [None, None])
+                xy = a.properties.get("map_xy") or [None, None]
                 if xy and xy[0] is not None and xy[1] is not None:
                     key = (int(xy[0]), int(xy[1]))
                     agents_xy[key] = agents_xy.get(key, 0) + 1
@@ -141,27 +141,27 @@ class GameMap:
         for y in range(self.height):
             row = []
             for x in range(self.width):
-                ch = '.' if self.is_passable(x, y) else '#'
+                ch = "." if self.is_passable(x, y) else "#"
                 if (x, y) in loc_by_xy:
-                    ch = 'L'
+                    ch = "L"
                 cnt = agents_xy.get((x, y), 0)
                 if cnt == 1:
-                    ch = 'A'
+                    ch = "A"
                 elif cnt > 1:
-                    ch = '*'
+                    ch = "*"
                 if color:
-                    if ch == '.':
+                    if ch == ".":
                         ch = "\x1b[2m.\x1b[0m"  # dim
-                    elif ch == '#':
+                    elif ch == "#":
                         ch = "\x1b[90m#\x1b[0m"  # gray
-                    elif ch == 'L':
+                    elif ch == "L":
                         ch = "\x1b[33mL\x1b[0m"  # yellow
-                    elif ch == 'A':
+                    elif ch == "A":
                         ch = "\x1b[36mA\x1b[0m"  # cyan
-                    elif ch == '*':
+                    elif ch == "*":
                         ch = "\x1b[35m*\x1b[0m"  # magenta
                 row.append(ch)
-            rows.append(''.join(row))
+            rows.append("".join(row))
         header = f"Map {self.width}x{self.height}"
         if color:
             legend = (
@@ -529,13 +529,13 @@ There are people nearby; I'll greet them.
                 status = f"You are quite hungry (hunger: {agent.properties['hunger']}). Consider finding food."
                 evt = StatusEvent(status)
                 text = evt.to_string(self.state.get("time"))
-                agent.append_env_message(text)
+                agent.add_env_feedback(text)
 
             if agent.properties["energy"] <= 30:
                 status = f"You are tired (energy: {agent.properties['energy']}). Consider resting or moving less."
                 evt = StatusEvent(status)
                 text = evt.to_string(self.state.get("time"))
-                agent.append_env_message(text)
+                agent.add_env_feedback(text)
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
         minutes = int(self.state.get("time", 0) or 0)
@@ -559,7 +559,7 @@ Current time: {hours}:{mins:02d} ({time_of_day})
         time = self.state.get("time")
         formatted = event.to_string(time)
         # Ensure sender also retains their own speech in memory
-        sender.append_env_message(formatted)
+        sender.add_env_feedback(formatted)
         sxy = sender.properties.get("map_xy")
         recipients = []
         for a in simulator.agents.values():
@@ -568,12 +568,12 @@ Current time: {hours}:{mins:02d} ({time_of_day})
             axy = a.properties.get("map_xy")
             if not sxy or not axy:
                 # Fallback: if coords missing, deliver as default
-                a.append_env_message(formatted)
+                a.add_env_feedback(formatted)
                 recipients.append(a.name)
                 continue
             dist = abs(sxy[0] - axy[0]) + abs(sxy[1] - axy[1])
             if dist <= self.chat_range:
-                a.append_env_message(formatted)
+                a.add_env_feedback(formatted)
                 recipients.append(a.name)
         simulator.record_log(
             formatted,

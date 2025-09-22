@@ -1,5 +1,7 @@
 from socialsim4.core.action import Action
-from socialsim4.core.event import PublicEvent
+from socialsim4.core.agent import Agent
+from socialsim4.core.scene import Scene
+from socialsim4.core.simulator import Simulator
 
 
 class MoveToLocationAction(Action):
@@ -11,29 +13,17 @@ class MoveToLocationAction(Action):
 <Action name=\"move_to_location\"><x>12</x><y>34</y></Action>
 """
 
-    def handle(self, action_data, agent, simulator, scene):
+    def handle(self, action_data, agent: Agent, simulator: Simulator, scene: Scene):
         """Move to a location or coordinates using grid pathfinding and terrain costs."""
         # Resolve start
         start_xy = agent.properties.get("map_xy")
-        if not start_xy:
-            # Fallback using named position
-            pos_name = agent.properties.get("map_position")
-            cur_loc = scene.game_map.get_location(pos_name) if pos_name else None
-            if not cur_loc:
-                agent.append_env_message("Current position unknown; cannot move.")
-                return False
-            start_xy = [cur_loc.x, cur_loc.y]
-
-        # Resolve target
         target_xy = None
         target_location = action_data.get("location")
         if target_location:
             loc = scene.game_map.get_location(target_location)
             if not loc:
-                agent.append_env_message(
-                    f"Location '{target_location}' does not exist."
-                )
-                return False
+                agent.add_env_feedback(f"Location '{target_location}' does not exist.")
+                return False, {"error": "unknown_location", "location": target_location}, f"{agent.name} move failed"
             target_xy = [loc.x, loc.y]
         else:
             if "target" in action_data and isinstance(action_data["target"], dict):
@@ -41,33 +31,31 @@ class MoveToLocationAction(Action):
             else:
                 tx, ty = action_data.get("x"), action_data.get("y")
             if tx is None or ty is None:
-                agent.append_env_message(
+                agent.add_env_feedback(
                     "Provide a target 'location' or coordinates 'x' and 'y'."
                 )
-                return False
+                return False, {"error": "missing_target"}, f"{agent.name} move failed"
             target_xy = [int(tx), int(ty)]
 
         if start_xy[0] == target_xy[0] and start_xy[1] == target_xy[1]:
-            agent.append_env_message("You are already at the target.")
-            return False
+            agent.add_env_feedback("You are already at the target.")
+            return False, {"error": "already_there", "to": target_xy}, f"{agent.name} move skipped"
 
         # Pathfinding
         path = scene.game_map.find_path(tuple(start_xy), tuple(target_xy))
         if not path:
-            agent.append_env_message(
-                "No reachable path; possibly blocked by obstacles."
-            )
-            return False
+            agent.add_env_feedback("No reachable path; possibly blocked by obstacles.")
+            return False, {"error": "no_path", "to": target_xy}, f"{agent.name} move failed"
 
         # Compute energy cost: sum of tile movement_cost entering each tile, scaled
         base_cost = scene.game_map.path_cost(path)
         energy_cost = max(1, int(base_cost * scene.movement_cost))
 
         if agent.properties["energy"] < energy_cost:
-            agent.append_env_message(
+            agent.add_env_feedback(
                 f"Not enough energy. Moving to {tuple(target_xy)} costs {energy_cost}, you have {agent.properties['energy']}."
             )
-            return False
+            return False, {"error": "low_energy", "required": energy_cost, "have": agent.properties["energy"]}, f"{agent.name} move failed"
 
         # Update location occupancy (named POIs)
         prev_loc = scene.game_map.get_location_at(start_xy[0], start_xy[1])
@@ -85,17 +73,13 @@ class MoveToLocationAction(Action):
 
         agent.properties["energy"] -= energy_cost
 
-        # Broadcast movement event (global)
-        message = f"{agent.name} moved from {tuple(start_xy)} to {tuple(target_xy)}"
-        simulator.broadcast(PublicEvent(message))
-
         # Inform the agent about the new position
         desc = (
             new_loc.description
             if new_loc
             else scene.game_map.get_tile(*target_xy).terrain
         )
-        agent.append_env_message(f"You arrived at {tuple(target_xy)}. {desc}")
+        agent.add_env_feedback(f"You arrived at {tuple(target_xy)}. {desc}")
 
         # Nearby agents at destination
         nearby = []
@@ -108,9 +92,22 @@ class MoveToLocationAction(Action):
                 if dist <= scene.chat_range:
                     nearby.append(f"{other.name} (distance {dist})")
         if nearby:
-            agent.append_env_message("Nearby agents: " + ", ".join(nearby))
+            agent.add_env_feedback("Nearby agents: " + ", ".join(nearby))
 
-        return True
+        simulator.log_event(
+            "move",
+            {
+                "agent": agent.name,
+                "scene": scene.TYPE,
+                "from": start_xy,
+                "to": target_xy,
+                "energy_cost": energy_cost,
+                "path": path,
+            },
+        )
+        result = {"from": start_xy, "to": target_xy, "energy_cost": energy_cost, "path": path}
+        summary = f"{agent.name} moved to {tuple(target_xy)} (energy {energy_cost})"
+        return True, result, summary
 
 
 class LookAroundAction(Action):
@@ -120,14 +117,14 @@ class LookAroundAction(Action):
 <Action name=\"look_around\"><radius>5</radius></Action>
 """
 
-    def handle(self, action_data, agent, simulator, scene):
+    def handle(self, action_data, agent: Agent, simulator: Simulator, scene: Scene):
         """Look around: list nearby locations, resources, and agents."""
         xy = agent.properties.get("map_xy")
         if not xy:
             pos_name = agent.properties.get("map_position")
             loc = scene.game_map.get_location(pos_name) if pos_name else None
             if not loc:
-                return False
+                return False, {"error": "unknown_position"}, f"{agent.name} look failed"
             xy = [loc.x, loc.y]
 
         radius = int(action_data.get("radius", max(3, min(7, scene.chat_range))))
@@ -177,8 +174,17 @@ class LookAroundAction(Action):
             )
             info.append(f"Nearby agents: {agents_str}")
 
-        agent.append_env_message("\n".join(info))
-        return True
+        agent.add_env_feedback("\n".join(info))
+        simulator.log_event(
+            "look",
+            {
+                "agent": agent.name,
+                "scene": scene.TYPE,
+            },
+        )
+        result = {"radius": radius}
+        summary = f"{agent.name} looked around (r={radius})"
+        return True, result, summary
 
 
 class GatherResourceAction(Action):
@@ -188,7 +194,7 @@ class GatherResourceAction(Action):
 <Action name=\"gather_resource\"><resource>[resource_name]</resource><amount>[number]</amount></Action>
 """
 
-    def handle(self, action_data, agent, simulator, scene):
+    def handle(self, action_data, agent: Agent, simulator: Simulator, scene: Scene):
         """Gather resources, preferring tile resources at current position."""
         resource_type = action_data.get("resource")
         amount = int(action_data.get("amount", 1))
@@ -200,8 +206,8 @@ class GatherResourceAction(Action):
             if loc:
                 xy = [loc.x, loc.y]
         if not xy:
-            agent.append_env_message("Current position unknown; cannot gather.")
-            return False
+            agent.add_env_feedback("Current position unknown; cannot gather.")
+            return False, {"error": "unknown_position"}, f"{agent.name} gather failed"
 
         tile = scene.game_map.get_tile(xy[0], xy[1])
         available = 0
@@ -216,13 +222,13 @@ class GatherResourceAction(Action):
                 source = "location"
 
         if available <= 0:
-            agent.append_env_message(f"No {resource_type} to gather here.")
-            return False
+            agent.add_env_feedback(f"No {resource_type} to gather here.")
+            return False, {"error": "not_available", "resource": resource_type}, f"{agent.name} gather failed"
 
         actual_amount = max(0, min(amount, available))
         if actual_amount == 0:
-            agent.append_env_message(f"{resource_type} is depleted.")
-            return False
+            agent.add_env_feedback(f"{resource_type} is depleted.")
+            return False, {"error": "depleted", "resource": resource_type}, f"{agent.name} gather failed"
 
         # 执行收集
         if source == "tile":
@@ -234,13 +240,23 @@ class GatherResourceAction(Action):
             agent.properties["inventory"].get(resource_type, 0) + actual_amount
         )
 
-        message = f"{agent.name} gathered {actual_amount} {resource_type} at ({xy[0]},{xy[1]})"
-        simulator.broadcast(PublicEvent(message))
-
-        agent.append_env_message(
+        agent.add_env_feedback(
             f"You gathered {actual_amount} {resource_type}. Inventory: {agent.properties['inventory']}"
         )
-        return True
+        simulator.log_event(
+            "gather",
+            {
+                "agent": agent.name,
+                "scene": scene.TYPE,
+                "resource": resource_type,
+                "amount": actual_amount,
+                "source": source,
+                "position": xy,
+            },
+        )
+        result = {"resource": resource_type, "amount": actual_amount, "source": source, "position": xy}
+        summary = f"{agent.name} gathered {actual_amount} {resource_type}"
+        return True, result, summary
 
 
 class RestAction(Action):
@@ -250,25 +266,30 @@ class RestAction(Action):
 <Action name=\"rest\" />
 """
 
-    def handle(self, action_data, agent, simulator, scene):
+    def handle(self, action_data, agent: Agent, simulator: Simulator, scene: Scene):
         """Rest to regain energy."""
         current_location = scene.game_map.get_location(agent.properties["map_position"])
 
         # Resting in a building is more effective
         if current_location and current_location.location_type == "building":
             energy_gain = 30
-            agent.append_env_message(
-                f"You rest comfortably in {current_location.name}."
-            )
+            agent.add_env_feedback(f"You rest comfortably in {current_location.name}.")
         else:
             energy_gain = 15
-            agent.append_env_message(
+            agent.add_env_feedback(
                 f"You take a short rest at {current_location.name if current_location else 'this spot'}."
             )
 
         agent.properties["energy"] = min(100, agent.properties["energy"] + energy_gain)
-
-        message = f"{agent.name} took a rest"
-        simulator.broadcast(PublicEvent(message))
-
-        return True
+        simulator.log_event(
+            "rest",
+            {
+                "agent": agent.name,
+                "scene": scene.TYPE,
+                "energy_gain": energy_gain,
+                "new_energy": agent.properties["energy"],
+            },
+        )
+        result = {"energy_gain": energy_gain, "new_energy": agent.properties["energy"]}
+        summary = f"{agent.name} rested (+{energy_gain} energy)"
+        return True, result, summary

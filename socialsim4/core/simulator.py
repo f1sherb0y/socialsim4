@@ -1,4 +1,4 @@
-import json
+from typing import Callable
 
 from socialsim4.core.agent import Agent
 from socialsim4.core.event import Event, StatusEvent
@@ -13,7 +13,7 @@ class Simulator:
         broadcast_initial=True,
         status_update_interval=1,
         max_steps_per_turn=5,
-        event_handler=None,
+        event_handler: Callable[[str, dict], None] = None,
     ):
         self.log_event = event_handler
 
@@ -44,8 +44,6 @@ class Simulator:
         if broadcast_initial:
             self.broadcast(self.scene.initial_event)
 
-    # Removed: record_event (use record_log instead for transcript entries)
-
     def record_log(
         self, text: str, sender: str = None, recipients=None, kind: str = "log"
     ):
@@ -72,15 +70,8 @@ class Simulator:
         for agent in self.agents.values():
             # Since we removed joined_groups, we assume all agents are in the main group
             if agent.name != sender:
-                agent.append_env_message(formatted)
+                agent.add_env_feedback(formatted)
                 recipients.append(agent.name)
-        # Record broadcast as a transcript line
-        self.record_log(
-            formatted,
-            sender=sender,
-            recipients=recipients,
-            kind=event.__class__.__name__,
-        )
 
     def to_dict(self):
         return {
@@ -159,7 +150,7 @@ class Simulator:
                         # Private status delivery only; do not record in public timeline
                         evt = StatusEvent(status_prompt)
                         text = evt.to_string(self.scene.state.get("time"))
-                        agent.append_env_message(text)
+                        agent.add_env_feedback(text)
 
                 # Skip turn based on scene rule (e.g., villagers at night in werewolf)
                 if self.scene.should_skip_turn(agent, self):

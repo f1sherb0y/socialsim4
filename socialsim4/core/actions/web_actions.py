@@ -15,8 +15,9 @@ class WebSearchAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         query = (action_data or {}).get("query")
         if not query:
-            agent.append_env_message("web_search: missing <query>.")
-            return False
+            error = "web_search: missing <query>."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} web_search failed"
         try:
             max_results = int((action_data or {}).get("max_results", 5))
         except Exception:
@@ -26,12 +27,14 @@ class WebSearchAction(Action):
         try:
             results = tool_web_search(query, max_results)
         except Exception as e:
-            agent.append_env_message(f"web_search failed: {e}")
-            return False
+            error = f"web_search failed: {e}"
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} web_search failed"
 
         if not results:
-            agent.append_env_message("web_search: no results or network unavailable.")
-            return False
+            error = "web_search: no results or network unavailable."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} web_search failed"
 
         # Format and deliver results to the agent only (not broadcast)
         lines = [f"Web search results for '{query}':"]
@@ -44,7 +47,7 @@ class WebSearchAction(Action):
             lines.append(f"{i}. {title} - {url}")
             if snippet:
                 lines.append(f"   {snippet}")
-        agent.append_env_message("\n".join(lines))
+        agent.add_env_feedback("\n".join(lines))
         # Include in transcript as a private log line (not a world Event)
         simulator.record_log(
             f"{agent.name} searched: {query}",
@@ -56,7 +59,9 @@ class WebSearchAction(Action):
             "web_search",
             {"agent": agent.name, "query": query, "count": len(results)},
         )
-        return True
+        result = {"query": query, "results": results}
+        summary = f"{agent.name} searched: '{query}' ({len(results)} results)"
+        return True, result, summary
 
 
 class ViewPageAction(Action):
@@ -69,8 +74,9 @@ class ViewPageAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         url = (action_data or {}).get("url", "").strip()
         if not url:
-            agent.append_env_message("view_page: missing <url>.")
-            return False
+            error = "view_page: missing <url>."
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} view_page failed"
 
         try:
             max_chars = int((action_data or {}).get("max_chars", 4000))
@@ -81,13 +87,14 @@ class ViewPageAction(Action):
         try:
             data = tool_view_page(url, max_chars)
         except Exception as e:
-            agent.append_env_message(f"view_page failed: {e}")
-            return False
+            error = f"view_page failed: {e}"
+            agent.add_env_feedback(error)
+            return False, {"error": error}, f"{agent.name} view_page failed"
 
         title = data.get("title")
         text = data.get("text", "")
         header = f"Page content preview: {title}" if title else "Page content preview:"
-        agent.append_env_message(f"{header}\nURL: {url}\n\n{text}")
+        agent.add_env_feedback(f"{header}\nURL: {url}\n\n{text}")
         # Include in transcript as a private log line (not a world Event)
         simulator.record_log(
             f"{agent.name} viewed web page: {url}",
@@ -104,4 +111,12 @@ class ViewPageAction(Action):
                 "truncated": bool(data.get("truncated")),
             },
         )
-        return True
+        result = {
+            "url": url,
+            "title": title,
+            "text": text,
+            "truncated": bool(data.get("truncated")),
+        }
+        title_or_url = title or url
+        summary = f"{agent.name} viewed page: {title_or_url}"
+        return True, result, summary

@@ -127,9 +127,9 @@ class WerewolfScene(Scene):
                 and (self._is_alive(a.name) or self.is_moderator(a.name))
             )
             if ok:
-                a.append_env_message(formatted)
+                a.add_env_feedback(formatted)
                 recipients.append(a.name)
-        sender.append_env_message(formatted)
+        sender.add_env_feedback(formatted)
         simulator.record_log(
             formatted,
             sender=sender.name,
