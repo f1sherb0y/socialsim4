@@ -9,103 +9,42 @@ from socialsim4.api.schemas import LLMConfig
 class LLMClient:
     def __init__(self, provider: LLMConfig):
         self.provider = provider
-        if self.provider.dialect == "openai":
-            self.client = OpenAI(
-                api_key=self.provider.api_key,
-                base_url=self.provider.base_url,
-            )
-        elif self.provider.dialect == "gemini":
-            genai.configure(api_key=self.provider.api_key)
-            self.client = genai.GenerativeModel(self.provider.model)
-        elif self.provider.dialect == "mock":
+        if provider.dialect == "openai":
+            self.client = OpenAI(api_key=provider.api_key, base_url=provider.base_url)
+        elif provider.dialect == "gemini":
+            genai.configure(api_key=provider.api_key)
+            self.client = genai.GenerativeModel(provider.model)
+        elif provider.dialect == "mock":
             self.client = _MockModel()
         else:
-            raise ValueError(f"Unknown LLM provider dialect: {self.provider.dialect}")
+            raise ValueError(f"Unknown LLM provider dialect: {provider.dialect}")
 
     def chat(self, messages):
         if self.provider.dialect == "openai":
-            openai_messages = []
-            for msg in messages:
-                role = msg.get("role")
-                if role not in ["system", "user", "assistant"]:
-                    continue
-
-                # Handle system messages that might have 'content' instead of 'parts'
-                if role == "system" and "content" in msg:
-                    openai_messages.append(
-                        {"role": "system", "content": msg["content"]}
-                    )
-                    continue
-
-                content_parts = []
-                for part in msg.get("parts", []):
-                    if isinstance(part, str):
-                        content_parts.append({"type": "text", "text": part})
-                    elif isinstance(part, dict) and "inline_data" in part:
-                        inline_data = part["inline_data"]
-                        mime_type = inline_data.get("mime_type")
-                        data = inline_data.get("data")
-                        if mime_type and data:
-                            content_parts.append(
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:{mime_type};base64,{data}"
-                                    },
-                                }
-                            )
-
-                if content_parts:
-                    openai_messages.append({"role": role, "content": content_parts})
-
-            response = self.client.chat.completions.create(
+            msgs = [
+                {"role": m["role"], "content": m["content"]}
+                for m in messages
+                if m["role"] in ("system", "user", "assistant")
+            ]
+            resp = self.client.chat.completions.create(
                 model=self.provider.model,
-                messages=openai_messages,
+                messages=msgs,
                 frequency_penalty=self.provider.frequency_penalty,
                 presence_penalty=self.provider.presence_penalty,
                 max_tokens=self.provider.max_tokens,
                 temperature=self.provider.temperature,
             )
-            return response.choices[0].message.content.strip()
-        elif self.provider.dialect == "gemini":
-            # Map our internal messages (role + parts/content) to Gemini's expected contents
-            contents = []
-            for msg in messages:
-                role = msg.get("role")
-                if role not in ["system", "user", "assistant"]:
-                    continue
-                gem_role = "model" if role == "assistant" else "user"
-                parts = []
-                # Preferred path: parts array (our ShortTermMemory.serialize builds this)
-                if "parts" in msg:
-                    for part in msg.get("parts", []):
-                        if isinstance(part, str):
-                            parts.append({"text": part})
-                        elif isinstance(part, dict) and "inline_data" in part:
-                            inline_data = part["inline_data"]
-                            mime_type = inline_data.get("mime_type")
-                            data = inline_data.get("data")
-                            if mime_type and data:
-                                parts.append(
-                                    {
-                                        "inline_data": {
-                                            "mime_type": mime_type,
-                                            "data": data,
-                                        }
-                                    }
-                                )
-                # Fallback path: single content string/list (e.g., system message we insert)
-                if not parts and "content" in msg:
-                    content = msg["content"]
-                    if isinstance(content, str):
-                        parts.append({"text": content})
-                    elif isinstance(content, list):
-                        for p in content:
-                            if isinstance(p, dict) and "text" in p:
-                                parts.append({"text": p["text"]})
-                if parts:
-                    contents.append({"role": gem_role, "parts": parts})
-            response = self.client.generate_content(
+            return resp.choices[0].message.content.strip()
+        if self.provider.dialect == "gemini":
+            contents = [
+                {
+                    "role": ("model" if m["role"] == "assistant" else "user"),
+                    "parts": [{"text": m["content"]}],
+                }
+                for m in messages
+                if m["role"] in ("system", "user", "assistant")
+            ]
+            resp = self.client.generate_content(
                 contents,
                 generation_config={
                     "temperature": self.provider.temperature,
@@ -115,46 +54,38 @@ class LLMClient:
                     "presence_penalty": self.provider.presence_penalty,
                 },
             )
-            return response.text.strip()
-        elif self.provider.dialect == "mock":
+            return resp.text.strip()
+        if self.provider.dialect == "mock":
             return self.client.chat(messages)
-        else:
-            raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
+        raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
 
     def completion(self, prompt):
         if self.provider.dialect == "openai":
-            response = self.client.completions.create(
+            resp = self.client.completions.create(
                 model=self.provider.model,
                 prompt=prompt,
                 temperature=self.provider.temperature,
                 max_tokens=self.provider.max_tokens,
             )
-            return response.choices[0].text.strip()
-        elif self.provider.dialect == "gemini":
-            response = self.client.generate_content(prompt)
-            return response.text.strip()
-        elif self.provider.dialect == "mock":
-            # Not used for mock
+            return resp.choices[0].text.strip()
+        if self.provider.dialect == "gemini":
+            resp = self.client.generate_content(prompt)
+            return resp.text.strip()
+        if self.provider.dialect == "mock":
             return ""
-        else:
-            raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
+        raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
 
     def embedding(self, text):
         if self.provider.dialect == "openai":
-            response = self.client.embeddings.create(
-                model=self.provider.model,
-                input=text,
-            )
-            return response.data[0].embedding
-        elif self.provider.dialect == "gemini":
-            return genai.embed_content(
-                model=self.provider.model,
-                content=text,
-            )["embedding"]
-        elif self.provider.dialect == "mock":
+            resp = self.client.embeddings.create(model=self.provider.model, input=text)
+            return resp.data[0].embedding
+        if self.provider.dialect == "gemini":
+            return genai.embed_content(model=self.provider.model, content=text)[
+                "embedding"
+            ]
+        if self.provider.dialect == "mock":
             return []
-        else:
-            raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
+        raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
 
 
 def create_llm_client(provider: LLMConfig):
@@ -170,15 +101,8 @@ class _MockModel:
         self.agent_calls = {}
 
     def chat(self, messages):
-        # Extract system content
-        sys = next(
-            (m.get("content") for m in messages if m.get("role") == "system"), ""
-        )
-        if isinstance(sys, list):
-            # OpenAI format might be a list of dicts; flatten to text
-            sys_text = "\n".join(x.get("text", "") for x in sys if isinstance(x, dict))
-        else:
-            sys_text = sys or ""
+        # Extract system content (single string)
+        sys_text = next((m["content"] for m in messages if m["role"] == "system"), "")
 
         # Identify agent name
         m = re.search(r"You are\s+([^\n\.]+)", sys_text)
@@ -317,9 +241,6 @@ class _MockModel:
 
 
 def action_to_xml(a):
-    # Convert a simple dict action to XML string for the mock model
-    if not isinstance(a, dict):
-        return '<Action name="yield"></Action>'
     name = a.get("action") or a.get("name") or "yield"
     params = [k for k in a.keys() if k not in ("action", "name")]
     if not params:

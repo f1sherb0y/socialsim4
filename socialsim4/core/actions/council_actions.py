@@ -94,11 +94,7 @@ class RequestBriefAction(Action):
             agent.add_env_feedback(error)
             return False, {"error": error}, f"{agent.name} request_brief failed"
 
-        desc = action_data.get("desc") if isinstance(action_data, dict) else None
-        if not desc or not isinstance(desc, str):
-            error = 'Missing parameter: "desc" (description of material to retrieve).'
-            agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} request_brief failed"
+        desc = action_data["desc"]
 
         # Prepare a concise LLM prompt for a short, actionable briefing
         system_prompt = (
@@ -120,8 +116,7 @@ class RequestBriefAction(Action):
                 {"role": "user", "content": user_prompt},
             ],
         )
-        if not isinstance(material, str):
-            material = ""
+        # Assume LLM returns a string in this prototype
 
         used_fallback = False
         if not material.strip():
@@ -192,8 +187,7 @@ class VoteAction(Action):
                     )
                 )
                 scene.state["voting_completed_announced"] = True
-                if hasattr(scene, "complete"):
-                    scene.complete = True
+                scene.complete = True
             return True, result, summary
         error = "Invalid vote or role."
         agent.add_env_feedback(error)

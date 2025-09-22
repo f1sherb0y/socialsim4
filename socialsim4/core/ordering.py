@@ -1,4 +1,3 @@
-import json
 import random
 from typing import Callable, Iterator, Optional
 
@@ -66,7 +65,7 @@ class ControlledOrdering(Ordering):
             name = None
             if self.next_fn:
                 name = self.next_fn(self.sim)
-            if isinstance(name, str) and name in self.sim.agents:
+            if name and name in self.sim.agents:
                 yield name
             else:
                 yield next(self._fallback)
@@ -75,9 +74,12 @@ class ControlledOrdering(Ordering):
 class LLMModeratedOrdering(Ordering):
     NAME = "llm_moderated"
 
-    def __init__(self, sim, client_name: str = "chat"):
+    def __init__(self, sim, moderator, names: list[str] | None = None):
         super().__init__(sim)
-        self.client_name = client_name
+        # Fixed types in prototype: moderator must be an Agent object
+        self.moderator = moderator
+        # Freeze the scheduling candidate set at init time
+        self.names: list[str] = list(names) if names is not None else list(sim.agents.keys())
         self._queue: list[str] = []
 
     def iter(self) -> Iterator[str]:
@@ -85,8 +87,8 @@ class LLMModeratedOrdering(Ordering):
             if not self._queue:
                 self._refill_queue()
             if not self._queue:
-                # Fallback to simple sequential if LLM produced nothing
-                self._queue.extend(list(self.sim.agents.keys()))
+                # Fallback to simple sequential if nothing produced
+                self._queue.extend(list(self.names))
             yield self._queue.pop(0)
 
     def post_turn(self, agent_name: str) -> None:
@@ -98,36 +100,36 @@ class LLMModeratedOrdering(Ordering):
             self._refill_queue()
 
     def _refill_queue(self) -> None:
-        client = (self.sim.clients or {}).get(self.client_name)
-        names = list(self.sim.agents.keys())
+        names = self.names
         if not names:
             return
-        if not client:
-            self._queue.extend(names)
-            return
-        # Ask for a short schedule; allow 1..N names
-        prompt = (
-            "Schedule the next few agents to act. Choose 1..N names from the list, in order.\n"
-            f"Agents: {', '.join(names)}\n"
-            "Output ONLY a JSON array of names. Example: [\"Alice\", \"Bob\"]"
+        mod = self.moderator
+
+        # Nudge moderator to emit a schedule_order action only
+        instruction = (
+            "Scheduling request: choose 1..N agents from the list in order and emit a single "
+            "<Action name=\"schedule_order\"><order>[\"A\",\"B\"]</order></Action>. "
+            "Do not emit any other action or message."
         )
-        messages = [
-            {"role": "system", "content": "You output only a JSON array of agent names."},
-            {"role": "user", "content": prompt},
-        ]
-        txt = client.chat(messages) or "[]"
-        start = txt.find("[")
-        end = txt.find("]", start)
-        arr = json.loads(txt[start : end + 1])
-        # Validate and deduplicate while preserving order
-        seen = set()
-        batch: list[str] = []
-        for n in arr:
-            if isinstance(n, str) and n in self.sim.agents and n not in seen:
-                seen.add(n)
-                batch.append(n)
-        if batch:
-            self._queue.extend(batch)
+        mod.add_env_feedback(
+            f"[Scheduling] Agents: {', '.join(names)}\n{instruction}"
+        )
+        # Ask the moderator to take exactly one step with initiative
+        action_datas = mod.process(self.sim.clients, initiative=True, scene=self.sim.scene)
+        # Require and execute exactly the scheduling action
+        sched = None
+        for a in (action_datas or []):
+            if a and a.get("action") == "schedule_order":
+                sched = a
+                break
+        if sched is None:
+            raise ValueError("Moderator must emit schedule_order action during scheduling")
+        self.sim.scene.parse_and_handle_action(sched, mod, self.sim)
+
+    # Allow schedule action to push into the queue
+    def add_to_queue(self, names: list[str]) -> None:
+        # Validate and extend
+        self._queue.extend([n for n in names if n in self.sim.agents])
 
 
 ORDERING_MAP = {

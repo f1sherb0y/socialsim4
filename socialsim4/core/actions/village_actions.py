@@ -26,10 +26,7 @@ class MoveToLocationAction(Action):
                 return False, {"error": "unknown_location", "location": target_location}, f"{agent.name} move failed"
             target_xy = [loc.x, loc.y]
         else:
-            if "target" in action_data and isinstance(action_data["target"], dict):
-                tx, ty = action_data["target"].get("x"), action_data["target"].get("y")
-            else:
-                tx, ty = action_data.get("x"), action_data.get("y")
+            tx, ty = action_data["x"], action_data["y"]
             if tx is None or ty is None:
                 agent.add_env_feedback(
                     "Provide a target 'location' or coordinates 'x' and 'y'."

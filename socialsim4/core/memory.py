@@ -17,9 +17,7 @@ class ShortTermMemory:
 
     def searilize(self, dialect="default"):
         if dialect == "default":
-            return [
-                {"role": msg["role"], "parts": [msg["content"]]} for msg in self.history
-            ]
+            return [{"role": msg["role"], "content": msg["content"]} for msg in self.history]
         else:
             raise NotImplementedError(f"Unknown dialect: {dialect}")
 

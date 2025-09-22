@@ -77,16 +77,10 @@ class TalkToAction(Action):
             return False, {"error": error}, f"{agent.name} failed to talk"
 
         # Range check for scenes with spatial chat
-        in_range = True
-        try:
-            sxy = agent.properties.get("map_xy")
-            txy = target.properties.get("map_xy")
-            chat_range = getattr(scene, "chat_range", None)
-            if sxy and txy and chat_range is not None:
-                dist = abs(sxy[0] - txy[0]) + abs(sxy[1] - txy[1])
-                in_range = dist <= chat_range
-        except Exception:
-            in_range = True
+        sxy = agent.properties.get("map_xy")
+        txy = target.properties.get("map_xy")
+        dist = abs(sxy[0] - txy[0]) + abs(sxy[1] - txy[1])
+        in_range = dist <= scene.chat_range
 
         if not in_range:
             error = f"{to_name} is too far to talk to."

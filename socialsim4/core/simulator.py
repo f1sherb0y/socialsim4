@@ -31,11 +31,9 @@ class Simulator:
         # Build ordering (class or instance); keep it simple
         if ordering is None:
             self.ordering: Ordering = SequentialOrdering(self)
-        elif isinstance(ordering, type):
-            self.ordering = ordering(self)  # type: ignore
         else:
-            # Assume it's an Ordering already constructed; attach sim if needed
-            self.ordering = ordering  # type: ignore
+            # Factory that accepts (sim) and returns an Ordering instance
+            self.ordering = ordering(self)  # type: ignore
 
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
@@ -55,9 +53,8 @@ class Simulator:
 
     # ----- Event plumbing: forward to ordering and external handler -----
     def emit_event(self, event_type: str, data: dict):
-        if hasattr(self, "ordering") and self.ordering and hasattr(self.ordering, "on_event"):
-            # Let ordering observe all events for context-aware scheduling
-            self.ordering.on_event(self, event_type, data)
+        # Let ordering observe all events for context-aware scheduling
+        self.ordering.on_event(self, event_type, data)
         if self.log_event:
             self.log_event(event_type, data)
 

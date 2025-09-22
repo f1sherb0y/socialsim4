@@ -1,13 +1,10 @@
 def _fmt_time_prefix(time_val):
     if time_val is None:
         return ""
-    try:
-        minutes = int(time_val)
-        hours = minutes // 60
-        mins = minutes % 60
-        return f"[{hours}:{mins:02d}] "
-    except Exception:
-        return f"[{time_val}:00] "
+    minutes = int(time_val)
+    hours = minutes // 60
+    mins = minutes % 60
+    return f"[{hours}:{mins:02d}] "
 
 
 class Event:

@@ -55,10 +55,10 @@ class Agent:
                 return "- (none)"
             return "\n".join(
                 [
-                    f"- {item}" if isinstance(item, str) else f"- {item}"
-                    for item in items
-                ]
-            )
+                    f"- {item}"
+                for item in items
+            ]
+        )
 
         def _fmt_goals(goals):
             if not goals:
@@ -255,13 +255,7 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
         client = clients.get(client_name)
         if not client:
             raise ValueError(f"LLM client '{client_name}' not found.")
-
-        try:
-            result = client.chat(messages)
-            return result
-        except Exception as e:
-            print(f"LLM API failed for {self.name}: {e}")
-            raise
+        return client.chat(messages)
 
     def summarize_history(self, client):
         # 构建总结prompt
@@ -335,23 +329,17 @@ History:
         m = re.search(r"\{.*\}", text, re.DOTALL)
         if not m:
             return None
-        try:
-            data = json.loads(m.group(0))
-            if not isinstance(data, dict):
-                return None
-            # only accept if 'patch' or 'replace' present
-            if "replace" in data or "patch" in data:
-                return data
-            return None
-        except json.JSONDecodeError:
-            return None
+        data = json.loads(m.group(0))
+        if "replace" in data or "patch" in data:
+            return data
+        return None
 
     def _apply_plan_update(self, update):
         """Apply plan update: either full replace or shallow patch with list replacement."""
         if not update:
             return False
         justification = update.get("justification", "")
-        if "replace" in update and isinstance(update["replace"], dict):
+        if "replace" in update:
             self.plan_state = update["replace"]
             if self.log_event:
                 self.log_event(
@@ -363,22 +351,10 @@ History:
                     },
                 )
             return True
-        if "patch" in update and isinstance(update["patch"], dict):
+        if "patch" in update:
             patch = update["patch"]
             for k, v in patch.items():
-                # lists replace entirely; dicts shallow-merge; scalars replace
-                if isinstance(v, list):
-                    self.plan_state[k] = v
-                elif isinstance(v, dict):
-                    base = self.plan_state.get(k, {})
-                    if isinstance(base, dict):
-                        merged = base.copy()
-                        merged.update(v)
-                        self.plan_state[k] = merged
-                    else:
-                        self.plan_state[k] = v
-                else:
-                    self.plan_state[k] = v
+                self.plan_state[k] = v
             if self.log_event:
                 self.log_event(
                     "plan_update_applied",
@@ -456,23 +432,8 @@ History:
         elif text.startswith("`") and text.endswith("`"):
             text = text.strip("`")
 
-        # Try parsing whole block as XML first
-        xml_str = text
-        root = None
-        try:
-            root = ET.fromstring(xml_str)
-        except Exception:
-            # Try to locate the first <Action ...>...</Action> or self-closing variant
-            m = re.search(
-                r"<Action\b[\s\S]*?</Action>|<Action\b[^>]*/>", text, re.IGNORECASE
-            )
-            if not m:
-                return []
-            frag = m.group(0)
-            try:
-                root = ET.fromstring(frag)
-            except Exception:
-                return []
+        # Parse as a single Action element
+        root = ET.fromstring(text)
 
         if root is None or root.tag.lower() != "action":
             return []
@@ -504,64 +465,27 @@ History:
         ctx.insert(0, {"role": "system", "content": system_prompt})
 
         # Non-ephemeral action-only nudge for intra-turn calls or when last was assistant
-        try:
-            last_role = None
-            if len(ctx) > 1:
-                last_role = ctx[-1].get("role")
-            if initiative or last_role == "assistant":
-                hint = "Action only. One XML Action; no code fences."
-                # Persist the hint so the agent's view reflects separate turns
-                self.short_memory.append("user", hint)
-                # Also include it in the immediate request context
-                ctx.append({"role": "user", "parts": [hint]})
-        except Exception:
-            pass
+        last_role = ctx[-1].get("role") if len(ctx) > 1 else None
+        if initiative or last_role == "assistant":
+            hint = "Action only. One XML Action; no code fences."
+            self.short_memory.append("user", hint)
+            ctx.append({"role": "user", "content": hint})
 
-        action_data = None
-        for attempt in range(self.max_repeat):
-            try:
-                llm_output = self.call_llm(clients, ctx)
-                # print(
-                #     f"LLM output for {self.name} (attempt {attempt + 1}):\n{llm_output}\n"
-                # )
-                thoughts, plan, action_block, plan_update_block = (
-                    self._parse_full_response(llm_output)
-                )
-                # Prefer the explicit Action block; if absent (Action-only output),
-                # fall back to parsing the entire response for an <Action> fragment.
-                action_data = self._parse_actions(action_block)
-                if not action_data:
-                    action_data = self._parse_actions(llm_output)
-                # Try applying plan update if present
-                plan_update = self._parse_plan_update(plan_update_block)
-                if plan_update:
-                    self._apply_plan_update(plan_update)
-                elif (
-                    not self.plan_state
-                    or (
-                        not self.plan_state.get("goals")
-                        and not self.plan_state.get("milestones")
-                        and not self.plan_state.get("current_focus")
-                    )
-                ) and plan:
-                    # Initialize from textual Plan as a fallback
-                    self._infer_initial_plan_from_plan_text(plan)
-
-                if not action_data:
-                    raise ValueError("No valid action found in LLM output")
-
-                # If parsing succeeds, break
-                break
-            except (json.JSONDecodeError, ValueError, openai.APIError) as e:
-                print(f"Attempt {attempt + 1} failed for {self.name}: {e}")
-                if attempt == self.max_repeat - 1:
-                    # On final failure, if intra-turn, yield the floor to avoid stalls
-                    if initiative:
-                        llm_output = '<Action name="yield"></Action>'
-                        action_data = [{"action": "yield"}]
-                    else:
-                        llm_output = '<Action name="yield"></Action>'  # safe default
-                        action_data = [{"action": "yield"}]
+        llm_output = self.call_llm(clients, ctx)
+        thoughts, plan, action_block, plan_update_block = self._parse_full_response(llm_output)
+        action_data = self._parse_actions(action_block) or self._parse_actions(llm_output)
+        plan_update = self._parse_plan_update(plan_update_block)
+        if plan_update:
+            self._apply_plan_update(plan_update)
+        elif (
+            not self.plan_state
+            or (
+                not self.plan_state.get("goals")
+                and not self.plan_state.get("milestones")
+                and not self.plan_state.get("current_focus")
+            )
+        ) and plan:
+            self._infer_initial_plan_from_plan_text(plan)
 
         # 原封不动地记录发送的LLM消息到自己的history (即使为空或无效)
         self.short_memory.append("assistant", llm_output)

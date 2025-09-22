@@ -9,15 +9,12 @@ def http_get(url: str, headers=None, timeout=10):
 
     Raises RuntimeError on HTTP/network errors.
     """
-    try:
-        with httpx.Client(follow_redirects=True, timeout=timeout, headers=headers or {}) as client:
-            resp = client.get(url)
-            resp.raise_for_status()
-            content_type = resp.headers.get("content-type", "")
-            text = resp.text
-            return text, content_type
-    except httpx.HTTPError as e:
-        raise RuntimeError(f"HTTP error: {e}")
+    with httpx.Client(follow_redirects=True, timeout=timeout, headers=headers or {}) as client:
+        resp = client.get(url)
+        resp.raise_for_status()
+        content_type = resp.headers.get("content-type", "")
+        text = resp.text
+        return text, content_type
 
 
 def strip_html_text(html_content: str) -> str:
@@ -43,8 +40,5 @@ def strip_html_text(html_content: str) -> str:
 
 
 def safe_http_https_only(url: str) -> bool:
-    try:
-        parsed = urlparse(url)
-        return parsed.scheme in ("http", "https")
-    except Exception:
-        return False
+    parsed = urlparse(url)
+    return parsed.scheme in ("http", "https")

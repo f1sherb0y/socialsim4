@@ -12,6 +12,7 @@ from socialsim4.core.scenes.council_scene import CouncilScene
 from socialsim4.core.scenes.simple_chat_scene import SimpleChatScene
 from socialsim4.core.scenes.village_scene import GameMap, VillageScene
 from socialsim4.core.scenes.werewolf_scene import WerewolfScene
+from socialsim4.core.ordering import LLMModeratedOrdering
 from socialsim4.core.simulator import Simulator
 
 
@@ -127,7 +128,17 @@ def run_simple_chat():
     scene = SimpleChatScene("room", "Welcome to the chat room.")
     clients = make_clients()
 
-    sim = Simulator(agents, scene, clients, event_handler=console_logger)
+    # Use moderator-driven ordering (queue based): moderator must emit schedule_order
+    moderator_obj = next(a for a in agents if a.name == "Moderator")
+    schedule_names = [a.name for a in agents if a.name != "Moderator"]
+
+    sim = Simulator(
+        agents,
+        scene,
+        clients,
+        ordering=lambda s: LLMModeratedOrdering(s, moderator_obj, names=schedule_names),
+        event_handler=console_logger,
+    )
 
     # Participants announcement before other messages
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
@@ -399,6 +410,7 @@ def run_werewolf():
                 "- Phase control: start with open discussion; each player may should send at most one message in discussion. When all have spoken or passed, begin the voting phase; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
                 "- Clarity: make brief, procedural reminders (e.g., 'Final statements', 'Voting soon', 'Please cast or update your vote'). Keep announcements short.\n"
                 "- Discipline: never reveal or summarize hidden information; do not speculate or pressure specific outcomes.\n"
+                "- Scheduling: when asked by the system to schedule, emit exactly one action and nothing else: <Action name=\"schedule_order\"><order>[\"Name1\", \"Name2\"]</order></Action>.\n"
             )
         r = role_map.get(name, "villager")
         if r == "werewolf":
@@ -414,7 +426,7 @@ def run_werewolf():
         r = role_map.get(name)
         # Assign only role-specific actions here; common actions are provided by the scene.
         if name == "Moderator":
-            actions = ["open_voting", "close_voting"]
+            actions = ["open_voting", "close_voting", "schedule_order"]
         elif r == "werewolf":
             actions = ["night_kill"]
         elif r == "seer":

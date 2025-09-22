@@ -13,23 +13,11 @@ class WebSearchAction(Action):
 """
 
     def handle(self, action_data, agent, simulator, scene):
-        query = (action_data or {}).get("query")
-        if not query:
-            error = "web_search: missing <query>."
-            agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} web_search failed"
-        try:
-            max_results = int((action_data or {}).get("max_results", 5))
-        except Exception:
-            max_results = 5
+        query = action_data["query"]
+        max_results = int((action_data or {}).get("max_results", 5))
         max_results = max(1, min(10, max_results))
 
-        try:
-            results = tool_web_search(query, max_results)
-        except Exception as e:
-            error = f"web_search failed: {e}"
-            agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} web_search failed"
+        results = tool_web_search(query, max_results)
 
         if not results:
             error = "web_search: no results or network unavailable."
@@ -61,24 +49,11 @@ class ViewPageAction(Action):
 """
 
     def handle(self, action_data, agent, simulator, scene):
-        url = (action_data or {}).get("url", "").strip()
-        if not url:
-            error = "view_page: missing <url>."
-            agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} view_page failed"
-
-        try:
-            max_chars = int((action_data or {}).get("max_chars", 4000))
-        except Exception:
-            max_chars = 4000
+        url = action_data["url"].strip()
+        max_chars = int((action_data or {}).get("max_chars", 4000))
         max_chars = max(500, min(20000, max_chars))
 
-        try:
-            data = tool_view_page(url, max_chars)
-        except Exception as e:
-            error = f"view_page failed: {e}"
-            agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} view_page failed"
+        data = tool_view_page(url, max_chars)
 
         title = data.get("title")
         text = data.get("text", "")

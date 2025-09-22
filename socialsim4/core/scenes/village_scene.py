@@ -449,7 +449,7 @@ There are people nearby; I'll greet them.
         xy = agent.properties.get("map_xy")
         pos_name = agent.properties.get("map_position")
 
-        if xy and isinstance(xy, (list, tuple)) and len(xy) == 2:
+        if xy:
             x, y = int(xy[0]), int(xy[1])
         elif pos_name and self.game_map.get_location(pos_name):
             loc = self.game_map.get_location(pos_name)

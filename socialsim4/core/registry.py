@@ -23,6 +23,7 @@ from .actions.werewolf_actions import (
     WitchPoisonAction,
     WitchSaveAction,
 )
+from .actions.moderation_actions import ScheduleOrderAction
 from .scenes.council_scene import CouncilScene
 from .scenes.simple_chat_scene import SimpleChatScene
 from .scenes.village_scene import VillageScene
@@ -47,6 +48,8 @@ ACTION_SPACE_MAP = {
     # Web actions
     "web_search": WebSearchAction(),
     "view_page": ViewPageAction(),
+    # Moderation actions
+    "schedule_order": ScheduleOrderAction(),
     # Werewolf actions
     "vote_lynch": VoteLynchAction(),
     "night_kill": NightKillAction(),
