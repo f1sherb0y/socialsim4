@@ -139,7 +139,7 @@ class LLMModeratedOrdering(Ordering):
             raise ValueError(
                 "Moderator must emit schedule_order action during scheduling"
             )
-        success, result, summary = self.sim.scene.parse_and_handle_action(
+        success, result, summary, meta, pass_control = self.sim.scene.parse_and_handle_action(
             sched, mod, self.sim
         )
         self.sim.log_event(
@@ -150,6 +150,7 @@ class LLMModeratedOrdering(Ordering):
                 "success": success,
                 "result": result,
                 "summary": summary,
+                "pass_control": bool(pass_control),
             },
         )
 

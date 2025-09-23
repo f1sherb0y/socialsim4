@@ -23,7 +23,7 @@ class WebSearchAction(Action):
         if not results:
             error = "web_search: no results or network unavailable."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} web_search failed"
+            return False, {"error": error}, f"{agent.name} web_search failed", {}, False
 
         # Format and deliver results to the agent only (not broadcast)
         lines = [f"Web search results for '{query}':"]
@@ -39,7 +39,7 @@ class WebSearchAction(Action):
         agent.add_env_feedback("\n".join(lines))
         result = {"query": query, "results": results}
         summary = f"{agent.name} searched: '{query}' ({len(results)} results)"
-        return True, result, summary
+        return True, result, summary, {}, False
 
 
 class ViewPageAction(Action):
@@ -59,11 +59,11 @@ class ViewPageAction(Action):
         except httpx.HTTPError as e:
             error = f"view_page HTTP error: {e}"
             agent.add_env_feedback(error)
-            return False, {"error": "http_error", "detail": str(e)}, f"{agent.name} view_page failed"
+            return False, {"error": "http_error", "detail": str(e)}, f"{agent.name} view_page failed", {}, False
         except Exception as e:
             error = f"view_page failed: {e}"
             agent.add_env_feedback(error)
-            return False, {"error": "view_error", "detail": str(e)}, f"{agent.name} view_page failed"
+            return False, {"error": "view_error", "detail": str(e)}, f"{agent.name} view_page failed", {}, False
 
         title = data.get("title")
         text = data.get("text", "")
@@ -77,4 +77,4 @@ class ViewPageAction(Action):
         }
         title_or_url = title or url
         summary = f"{agent.name} viewed page: {title_or_url}"
-        return True, result, summary
+        return True, result, summary, {}, False

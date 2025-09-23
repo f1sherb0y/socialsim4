@@ -201,6 +201,7 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
         client = clients.get(client_name)
         if not client:
             raise ValueError(f"LLM client '{client_name}' not found.")
+        # Delegate timeout/retry logic to the client implementation
         return client.chat(messages)
 
     def summarize_history(self, client):

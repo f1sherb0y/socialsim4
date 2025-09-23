@@ -13,12 +13,14 @@ from socialsim4.core.agent import Agent
 from socialsim4.core.event import PublicEvent, StatusEvent
 from socialsim4.core.llm import create_llm_client
 from socialsim4.core.ordering import (
+    ControlledOrdering,
     CycledOrdering,
     LLMModeratedOrdering,
     RandomOrdering,
     SequentialOrdering,
 )
 from socialsim4.core.scenes.council_scene import CouncilScene
+from socialsim4.core.scenes.landlord_scene import LandlordPokerScene
 from socialsim4.core.scenes.simple_chat_scene import SimpleChatScene
 from socialsim4.core.scenes.village_scene import GameMap, VillageScene
 from socialsim4.core.scenes.werewolf_scene import WerewolfScene
@@ -34,6 +36,12 @@ def console_logger(event_type: str, data):
         action_data = data.get("action")
         if action_data.get("action") != "yield":
             print(f"[{action_data.get('action')}] {data.get('summary')}")
+    elif event_type == "landlord_deal":
+        players = data.get("players", {})
+        bottom = data.get("bottom", [])
+        print("[Deal] Bottom:", " ".join(bottom))
+        for name, toks in players.items():
+            print(f"[Deal] {name}:", " ".join(toks))
 
 
 def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
@@ -43,7 +51,7 @@ def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
             Agent.from_dict(
                 {
                     "name": name,
-                    "user_profile": f"You are {name}, a participant in the simulation.",
+                    "user_profile": f"You are {name}.",
                     "style": "concise and natural",
                     "initial_instruction": "",
                     "role_prompt": "",
@@ -95,6 +103,131 @@ def make_clients() -> Dict[str, object]:
         provider = LLMConfig(name="chat", kind="mock", model="mock", dialect="mock")
 
     return {provider.name: create_llm_client(provider)}
+
+
+def run_landlord_scene():
+    print("=== LandlordPokerScene (Dou Dizhu, 4p, 1 deck, call/rob + doubling) ===")
+    # Four configured players with distinct styles/prompts
+    agents = [
+        Agent.from_dict(
+            {
+                "name": "Alice",
+                "user_profile": (
+                    "You are Alice, an aggressive Dou Dizhu player. You are comfortable calling and robbing with high cards, jokers, or multiple pairs/triples. "
+                    "You aim to seize initiative early and pressure opponents with bombs or sequences when possible."
+                ),
+                "style": "decisive and succinct",
+                "initial_instruction": "",
+                "role_prompt": (
+                    "As a human player, evaluate your hand honestly. Call/rob only when your hand is strong; otherwise pass. "
+                    "During play, prefer efficient leads (sequences, triples) and conserve bombs unless needed."
+                ),
+                "action_space": ["yield"],
+                "properties": {},
+            }
+        ),
+        Agent.from_dict(
+            {
+                "name": "Bob",
+                "user_profile": (
+                    "You are Bob, a cautious Dou Dizhu player. You call only with very strong hands (e.g., a rocket, multiple bombs, or dominant high cards) and rarely rob. "
+                    "You prioritize safe, team-oriented play and avoid risky contests."
+                ),
+                "style": "calm and methodical",
+                "initial_instruction": "",
+                "role_prompt": (
+                    "Conserve strength for decisive moments. If you cannot beat cleanly, pass. "
+                    "When landlord, lead from strength; when farmer, cooperate implicitly by not feeding the landlord."
+                ),
+                "action_space": ["yield"],
+                "properties": {},
+            }
+        ),
+        Agent.from_dict(
+            {
+                "name": "Carol",
+                "user_profile": (
+                    "You are Carol, a sequence-focused Dou Dizhu player. You value straights and double sequences, and you manage attachments carefully for airplanes."
+                ),
+                "style": "analytical and concise",
+                "initial_instruction": "",
+                "role_prompt": (
+                    "If your hand forms strong chains (straights/double seq), favor leading those. "
+                    "Protect your combo potential; avoid breaking triples unless necessary."
+                ),
+                "action_space": ["yield"],
+                "properties": {},
+            }
+        ),
+        Agent.from_dict(
+            {
+                "name": "Dave",
+                "user_profile": (
+                    "You are Dave, a power player. You give priority to rockets, 2s, and bombs. You will rob when holding rocket or multiple 2s/bombs."
+                ),
+                "style": "direct and assertive",
+                "initial_instruction": "",
+                "role_prompt": (
+                    "Leverage bombs and rocket to break control. As landlord, push tempo; as farmer, hold power to stop landlord runs."
+                ),
+                "action_space": ["yield"],
+                "properties": {},
+            }
+        ),
+    ]
+    scene = LandlordPokerScene(
+        "landlord",
+        "New game: Dou Dizhu (4 players, one deck). Call/rob bidding, doubling stage, full combos.",
+    )
+    clients = make_clients()
+
+    # Controlled ordering: always schedule the one who should act now
+    def next_active(sim):
+        s = sim.scene
+        p = s.state.get("phase")
+        if p == "bidding":
+            if s.state.get("bidding_stage") == "call":
+                i = s.state.get("bid_turn_index")
+                return s.state.get("players")[i]
+            else:  # rob stage: find next eligible who hasn't acted
+                elig = list(s.state.get("rob_eligible"))
+                acted = dict(s.state.get("rob_acted"))
+                if not elig:
+                    return None
+                # start from bid_turn_index and scan cyclically
+                names = list(s.state.get("players"))
+                start = s.state.get("bid_turn_index")
+                n = len(names)
+                for off in range(n):
+                    idx = (start + off) % n
+                    nm = names[idx]
+                    if nm in elig and not acted.get(nm, False):
+                        return nm
+                return None
+        if p == "doubling":
+            order = list(s.state.get("doubling_order"))
+            acted = dict(s.state.get("doubling_acted"))
+            if not order:
+                return None
+            for nm in order:
+                if not acted.get(nm, False):
+                    return nm
+            return None
+        if p == "playing":
+            i = s.state.get("current_turn")
+            return s.state.get("players")[i]
+        return None
+
+    sim = Simulator(
+        agents,
+        scene,
+        clients,
+        event_handler=console_logger,
+        ordering=ControlledOrdering(next_fn=next_active),
+        max_steps_per_turn=3,
+    )
+    sim.broadcast(PublicEvent("Players: " + ", ".join([a.name for a in agents])))
+    sim.run(max_turns=200)
 
 
 def run_simple_chat():
@@ -517,4 +650,5 @@ if __name__ == "__main__":
     # run_council()
     # run_village()
 
-    run_werewolf()
+    # run_werewolf()
+    run_landlord_scene()

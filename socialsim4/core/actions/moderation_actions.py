@@ -14,7 +14,7 @@ class ScheduleOrderAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         if simulator.ordering.is_queue_empty() is False:
             agent.add_env_feedback("The schedule is not empty; shouldn't schedule now.")
-            return False, {}, "schedule_order failed: schedule not empty"
+            return False, {}, "schedule_order failed: schedule not empty", {}, False
         raw = action_data["order"]
         s = raw.strip()
         names = [x.strip() for x in s.split(",")]
@@ -24,4 +24,4 @@ class ScheduleOrderAction(Action):
         simulator.ordering.add_to_queue(names)
 
         agent.add_env_feedback("Scheduled order: " + ", ".join(names))
-        return True, {"scheduled": names}, f"{agent.name} scheduled: {','.join(names)}"
+        return True, {"scheduled": names}, f"{agent.name} scheduled: {','.join(names)}", {}, False

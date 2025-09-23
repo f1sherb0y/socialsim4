@@ -23,7 +23,7 @@ class MoveToLocationAction(Action):
             loc = scene.game_map.get_location(target_location)
             if not loc:
                 agent.add_env_feedback(f"Location '{target_location}' does not exist.")
-                return False, {"error": "unknown_location", "location": target_location}, f"{agent.name} move failed"
+                return False, {"error": "unknown_location", "location": target_location}, f"{agent.name} move failed", {}, False
             target_xy = [loc.x, loc.y]
         else:
             tx, ty = action_data["x"], action_data["y"]
@@ -31,18 +31,18 @@ class MoveToLocationAction(Action):
                 agent.add_env_feedback(
                     "Provide a target 'location' or coordinates 'x' and 'y'."
                 )
-                return False, {"error": "missing_target"}, f"{agent.name} move failed"
+                return False, {"error": "missing_target"}, f"{agent.name} move failed", {}, False
             target_xy = [int(tx), int(ty)]
 
         if start_xy[0] == target_xy[0] and start_xy[1] == target_xy[1]:
             agent.add_env_feedback("You are already at the target.")
-            return False, {"error": "already_there", "to": target_xy}, f"{agent.name} move skipped"
+            return False, {"error": "already_there", "to": target_xy}, f"{agent.name} move skipped", {}, False
 
         # Pathfinding
         path = scene.game_map.find_path(tuple(start_xy), tuple(target_xy))
         if not path:
             agent.add_env_feedback("No reachable path; possibly blocked by obstacles.")
-            return False, {"error": "no_path", "to": target_xy}, f"{agent.name} move failed"
+            return False, {"error": "no_path", "to": target_xy}, f"{agent.name} move failed", {}, False
 
         # Compute energy cost: sum of tile movement_cost entering each tile, scaled
         base_cost = scene.game_map.path_cost(path)
@@ -52,7 +52,7 @@ class MoveToLocationAction(Action):
             agent.add_env_feedback(
                 f"Not enough energy. Moving to {tuple(target_xy)} costs {energy_cost}, you have {agent.properties['energy']}."
             )
-            return False, {"error": "low_energy", "required": energy_cost, "have": agent.properties["energy"]}, f"{agent.name} move failed"
+            return False, {"error": "low_energy", "required": energy_cost, "have": agent.properties["energy"]}, f"{agent.name} move failed", {}, False
 
         # Update location occupancy (named POIs)
         prev_loc = scene.game_map.get_location_at(start_xy[0], start_xy[1])
@@ -94,7 +94,7 @@ class MoveToLocationAction(Action):
         # No logging here; central processing can consume result/summary
         result = {"from": start_xy, "to": target_xy, "energy_cost": energy_cost, "path": path}
         summary = f"{agent.name} moved to {tuple(target_xy)} (energy {energy_cost})"
-        return True, result, summary
+        return True, result, summary, {}, False
 
 
 class LookAroundAction(Action):
@@ -111,7 +111,7 @@ class LookAroundAction(Action):
             pos_name = agent.properties.get("map_position")
             loc = scene.game_map.get_location(pos_name) if pos_name else None
             if not loc:
-                return False, {"error": "unknown_position"}, f"{agent.name} look failed"
+                return False, {"error": "unknown_position"}, f"{agent.name} look failed", {}, False
             xy = [loc.x, loc.y]
 
         radius = int(action_data.get("radius", max(3, min(7, scene.chat_range))))
@@ -165,7 +165,7 @@ class LookAroundAction(Action):
         # No logging here; central processing can consume result/summary
         result = {"radius": radius}
         summary = f"{agent.name} looked around (r={radius})"
-        return True, result, summary
+        return True, result, summary, {}, False
 
 
 class GatherResourceAction(Action):
@@ -188,7 +188,7 @@ class GatherResourceAction(Action):
                 xy = [loc.x, loc.y]
         if not xy:
             agent.add_env_feedback("Current position unknown; cannot gather.")
-            return False, {"error": "unknown_position"}, f"{agent.name} gather failed"
+            return False, {"error": "unknown_position"}, f"{agent.name} gather failed", {}, False
 
         tile = scene.game_map.get_tile(xy[0], xy[1])
         available = 0
@@ -204,12 +204,12 @@ class GatherResourceAction(Action):
 
         if available <= 0:
             agent.add_env_feedback(f"No {resource_type} to gather here.")
-            return False, {"error": "not_available", "resource": resource_type}, f"{agent.name} gather failed"
+            return False, {"error": "not_available", "resource": resource_type}, f"{agent.name} gather failed", {}, False
 
         actual_amount = max(0, min(amount, available))
         if actual_amount == 0:
             agent.add_env_feedback(f"{resource_type} is depleted.")
-            return False, {"error": "depleted", "resource": resource_type}, f"{agent.name} gather failed"
+            return False, {"error": "depleted", "resource": resource_type}, f"{agent.name} gather failed", {}, False
 
         # 执行收集
         if source == "tile":
@@ -227,7 +227,7 @@ class GatherResourceAction(Action):
         # No logging here; central processing can consume result/summary
         result = {"resource": resource_type, "amount": actual_amount, "source": source, "position": xy}
         summary = f"{agent.name} gathered {actual_amount} {resource_type}"
-        return True, result, summary
+        return True, result, summary, {}, False
 
 
 class RestAction(Action):
@@ -255,4 +255,4 @@ class RestAction(Action):
         # No logging here; central processing can consume result/summary
         result = {"energy_gain": energy_gain, "new_energy": agent.properties["energy"]}
         summary = f"{agent.name} rested (+{energy_gain} energy)"
-        return True, result, summary
+        return True, result, summary, {}, False

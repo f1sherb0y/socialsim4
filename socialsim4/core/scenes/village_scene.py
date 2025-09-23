@@ -521,7 +521,7 @@ There are people nearby; I'll greet them.
             agent.add_env_feedback(text)
 
     def parse_and_handle_action(self, action_data, agent: Agent, simulator: Simulator):
-        success, result, summary = super().parse_and_handle_action(
+        success, result, summary, meta, pass_control = super().parse_and_handle_action(
             action_data, agent, simulator
         )
         if getattr(self, "print_map_each_turn", False) and action_data.get("action"):
@@ -531,7 +531,7 @@ There are people nearby; I'll greet them.
                 sender=agent.name,
                 kind="map",
             )
-        return success, result, summary
+        return success, result, summary, meta, pass_control
 
     # Removed post_round: no round concept
 

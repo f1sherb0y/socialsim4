@@ -7,9 +7,12 @@ class Action:
         """
         Execute the action.
 
-        Returns a triple: (success, result, summary)
-        - success: bool indicating if the action executed successfully
-        - result: dict capturing relevant outcomes so the frontend can replay
-        - summary: one-line human-readable summary for timeline transcripts
+        Return a 5-tuple:
+        (success: bool, result: dict, summary: str, meta: dict, pass_control: bool)
+        - success: did the action execute successfully
+        - result: minimal machine-readable outcome
+        - summary: one-line human-readable summary for transcripts
+        - meta: optional extra info (scene-specific). Use {} if unused.
+        - pass_control: whether to pass control to the next agent immediately
         """
         raise NotImplementedError

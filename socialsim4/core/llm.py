@@ -1,4 +1,8 @@
+import os
 import re
+import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutTimeout
 
 import google.generativeai as genai
 from openai import OpenAI
@@ -18,57 +22,96 @@ class LLMClient:
             self.client = _MockModel()
         else:
             raise ValueError(f"Unknown LLM provider dialect: {provider.dialect}")
+        # Timeout and retry settings (environment-driven defaults)
+        self.timeout_s = float(os.getenv("LLM_TIMEOUT_S", "30"))
+        self.max_retries = int(os.getenv("LLM_MAX_RETRIES", "2"))
+        self.retry_backoff_s = float(os.getenv("LLM_RETRY_BACKOFF_S", "1.0"))
+
+    def _with_timeout_and_retry(self, fn):
+        last_err = None
+        delay = self.retry_backoff_s
+        for attempt in range(self.max_retries + 1):
+            try:
+                # For OpenAI we'll also pass per-request timeout; for others enforce here
+                if self.provider.dialect == "openai":
+                    return fn()
+                # Run in a thread to enforce timeout
+                with ThreadPoolExecutor(max_workers=1) as ex:
+                    fut = ex.submit(fn)
+                    return fut.result(timeout=self.timeout_s)
+            except (FutTimeout, Exception) as e:
+                last_err = e
+                if attempt < self.max_retries:
+                    time.sleep(max(0.0, delay))
+                    delay *= 2
+                    continue
+                raise last_err
 
     def chat(self, messages):
         if self.provider.dialect == "openai":
-            msgs = [
-                {"role": m["role"], "content": m["content"]}
-                for m in messages
-                if m["role"] in ("system", "user", "assistant")
-            ]
-            resp = self.client.chat.completions.create(
-                model=self.provider.model,
-                messages=msgs,
-                frequency_penalty=self.provider.frequency_penalty,
-                presence_penalty=self.provider.presence_penalty,
-                max_tokens=self.provider.max_tokens,
-                temperature=self.provider.temperature,
-            )
-            return resp.choices[0].message.content.strip()
+
+            def _do():
+                msgs = [
+                    {"role": m["role"], "content": m["content"]}
+                    for m in messages
+                    if m["role"] in ("system", "user", "assistant")
+                ]
+                resp = self.client.chat.completions.create(
+                    model=self.provider.model,
+                    messages=msgs,
+                    frequency_penalty=self.provider.frequency_penalty,
+                    presence_penalty=self.provider.presence_penalty,
+                    max_tokens=self.provider.max_tokens,
+                    temperature=self.provider.temperature,
+                    timeout=self.timeout_s,
+                )
+                return resp.choices[0].message.content.strip()
+
+            return self._with_timeout_and_retry(_do)
         if self.provider.dialect == "gemini":
-            contents = [
-                {
-                    "role": ("model" if m["role"] == "assistant" else "user"),
-                    "parts": [{"text": m["content"]}],
-                }
-                for m in messages
-                if m["role"] in ("system", "user", "assistant")
-            ]
-            resp = self.client.generate_content(
-                contents,
-                generation_config={
-                    "temperature": self.provider.temperature,
-                    "max_output_tokens": self.provider.max_tokens,
-                    "top_p": self.provider.top_p,
-                    "frequency_penalty": self.provider.frequency_penalty,
-                    "presence_penalty": self.provider.presence_penalty,
-                },
-            )
-            # Some responses may not populate resp.text; extract from candidates if present
-            text = ""
-            cands = getattr(resp, "candidates", None)
-            if cands:
-                first = cands[0] if len(cands) > 0 else None
-                if first is not None:
-                    content = getattr(first, "content", None)
-                    parts = (
-                        getattr(content, "parts", None) if content is not None else None
-                    )
-                    if parts:
-                        text = "".join([getattr(p, "text", "") for p in parts])
-            return text.strip()
+
+            def _do():
+                contents = [
+                    {
+                        "role": ("model" if m["role"] == "assistant" else "user"),
+                        "parts": [{"text": m["content"]}],
+                    }
+                    for m in messages
+                    if m["role"] in ("system", "user", "assistant")
+                ]
+                resp = self.client.generate_content(
+                    contents,
+                    generation_config={
+                        "temperature": self.provider.temperature,
+                        "max_output_tokens": self.provider.max_tokens,
+                        "top_p": self.provider.top_p,
+                        "frequency_penalty": self.provider.frequency_penalty,
+                        "presence_penalty": self.provider.presence_penalty,
+                    },
+                )
+                # Some responses may not populate resp.text; extract from candidates if present
+                text = ""
+                cands = getattr(resp, "candidates", None)
+                if cands:
+                    first = cands[0] if len(cands) > 0 else None
+                    if first is not None:
+                        content = getattr(first, "content", None)
+                        parts = (
+                            getattr(content, "parts", None)
+                            if content is not None
+                            else None
+                        )
+                        if parts:
+                            text = "".join([getattr(p, "text", "") for p in parts])
+                return text.strip()
+
+            return self._with_timeout_and_retry(_do)
         if self.provider.dialect == "mock":
-            return self.client.chat(messages)
+
+            def _do():
+                return self.client.chat(messages)
+
+            return self._with_timeout_and_retry(_do)
         raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")
 
     def completion(self, prompt):
@@ -132,9 +175,15 @@ class _MockModel:
         elif "you are living in a virtual village" in sys_lower:
             scene = "village"
         else:
-            # Detect werewolf scene by keyword
+            # Detect scenes by keyword
             if "werewolf" in sys_lower:
                 scene = "werewolf"
+            elif (
+                "dou dizhu" in sys_lower
+                or "landlord" in sys_lower
+                or "landlord_scene" in sys_lower
+            ):
+                scene = "landlord"
             else:
                 scene = "chat"
 
@@ -231,6 +280,93 @@ class _MockModel:
                 plan = "1. Vote. [CURRENT]"
 
             plan_update = "no change"
+
+        elif scene == "landlord":
+            # Parse latest status to infer phase and current actor
+            status = None
+            for m in reversed(messages):
+                if (
+                    m.get("role") == "user"
+                    and isinstance(m.get("content"), str)
+                    and "Status:" in m.get("content")
+                ):
+                    status = m["content"]
+                    break
+            phase = ""
+            if status:
+                mm = re.search(r"Phase:\s*([a-zA-Z_]+)", status)
+                if mm:
+                    phase = mm.group(1).strip()
+            # Default conservative policy
+            act = {"action": "yield"}
+            if phase == "bidding":
+                # First time: try to call, otherwise pass
+                if self.agent_calls[agent_name] == 1:
+                    act = {"action": "call_landlord"}
+                else:
+                    act = {"action": "pass"}
+                thought = "Decide whether to call landlord."
+                plan = "1. Act in bidding. [CURRENT]"
+            elif phase == "doubling":
+                act = {"action": "no_double"}
+                thought = "Decline doubling."
+                plan = "1. Consider doubling. [CURRENT]"
+            elif phase == "playing":
+                # Try to play the smallest single from the explicit Hand tokens in status
+                smallest = None
+                if status:
+                    hm = re.search(r"Hand:\s*([\w\s]+)", status)
+                    if hm:
+                        toks = [
+                            t
+                            for t in hm.group(1).strip().split()
+                            if t and t != "(empty)"
+                        ]
+                        order = [
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                            "J",
+                            "Q",
+                            "K",
+                            "A",
+                            "2",
+                            "SJ",
+                            "BJ",
+                        ]
+                        for r in order:
+                            if r in toks:
+                                smallest = r
+                                break
+                if smallest is None:
+                    act = {"action": "yield"}
+                    thought = "No cards to play."
+                    plan = "1. Yield. [CURRENT]"
+                else:
+                    act = {"action": "play_cards", "cards": smallest}
+                    thought = "Try a small single."
+                    plan = "1. Play a small single. [CURRENT]"
+            else:
+                thought = "Wait."
+                plan = "1. Yield. [CURRENT]"
+
+            # Render response
+            # Produce exact one Action block
+            inner = ""
+            if act["action"] == "play_cards":
+                inner = f"<cards>{act['cards']}</cards>"
+            xml = (
+                f'<Action name="{act["action"]}">{inner}</Action>'
+                if inner
+                else f'<Action name="{act["action"]}" />'
+            )
+            plan_update = "no change"
+            return f"--- Thoughts ---\n{thought}\n\n--- Plan ---\n{plan}\n\n--- Action ---\n{xml}\n\n--- Plan Update ---\n{plan_update}"
 
         else:  # simple chat
             if call_n == 1:

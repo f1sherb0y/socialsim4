@@ -13,7 +13,7 @@ class StartVotingAction(Action):
         if scene.state.get("voting_started", False):
             error = "Voting already started."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} failed to start voting"
+            return False, {"error": error}, f"{agent.name} failed to start voting", {}, False
 
         title = action_data["title"].strip()
         scene.state["voting_started"] = True
@@ -29,7 +29,7 @@ class StartVotingAction(Action):
         agent.add_env_feedback(f"Voting started: {title}")
         result = {"title": title}
         summary = f"{agent.name} started the voting: {title}"
-        return True, result, summary
+        return True, result, summary, {}, True
 
 
 class VotingStatusAction(Action):
@@ -47,7 +47,7 @@ class VotingStatusAction(Action):
             agent.add_env_feedback("Voting has not started.")
             result = {"started": False, "members": num_members}
             summary = "Voting not started"
-            return True, result, summary
+            return True, result, summary, {}, False
 
         yes = sum(v == "yes" for v in votes.values())
         no = sum(v == "no" for v in votes.values())
@@ -99,7 +99,7 @@ class RequestBriefAction(Action):
         if getattr(agent, "name", "") != "Host":
             error = "Only the Host can use request_brief."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} request_brief failed"
+            return False, {"error": error}, f"{agent.name} request_brief failed", {}, False
 
         desc = action_data["desc"]
 
@@ -150,7 +150,7 @@ class RequestBriefAction(Action):
             "source": ("fallback" if used_fallback else "llm"),
         }
         summary = f"{agent.name} requested a brief: {desc}"
-        return True, result, summary
+        return True, result, summary, {}, False
 
 
 class VoteAction(Action):
@@ -164,12 +164,12 @@ class VoteAction(Action):
         if not scene.state.get("voting_started", False):
             error = "Voting has not started yet."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} vote failed"
+            return False, {"error": error}, f"{agent.name} vote failed", {}, False
 
         if agent.name in scene.state.get("votes", {}):
             error = "You have already voted."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} vote failed"
+            return False, {"error": error}, f"{agent.name} vote failed", {}, False
 
         vote = action_data.get("vote")
         if vote in ["yes", "no", "abstain"] and agent.name != "Host":
@@ -211,10 +211,10 @@ class VoteAction(Action):
                 scene.state["voting_completed_announced"] = True
                 scene.state["votes"] = {}
                 scene.state["vote_title"] = ""
-            return True, result, summary
+            return True, result, summary, {}, True
         error = "Invalid vote or role."
         agent.add_env_feedback(error)
-        return False, {"error": error}, f"{agent.name} vote failed"
+        return False, {"error": error}, f"{agent.name} vote failed", {}, False
 
 
 class FinishMeetingAction(Action):
@@ -228,4 +228,4 @@ class FinishMeetingAction(Action):
         scene.complete = True
         simulator.broadcast(PublicEvent("The council session is adjourned."))
         agent.add_env_feedback("Meeting finished.")
-        return True, {}, f"{agent.name} finished the meeting"
+        return True, {}, f"{agent.name} finished the meeting", {}, True

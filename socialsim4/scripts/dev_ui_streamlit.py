@@ -125,7 +125,7 @@ class StepRunner:
                 self.sim.emit_event(
                     "action_start", {"agent": agent.name, "action": action_data}
                 )
-                success, result, summary = self.sim.scene.parse_and_handle_action(
+                success, result, summary, meta, pass_control = self.sim.scene.parse_and_handle_action(
                     action_data, agent, self.sim
                 )
                 self.sim.emit_event(
@@ -136,10 +136,11 @@ class StepRunner:
                         "success": success,
                         "result": result,
                         "summary": summary,
+                        "pass_control": bool(pass_control),
                     },
                 )
                 self.sim.emit_remaining_events()
-                if action_data.get("action") == "yield":
+                if bool(pass_control):
                     yielded = True
                     break
             steps += 1

@@ -16,10 +16,10 @@ class SpeakAction(Action):
             scene.deliver_message(event, agent, simulator)
             result = {"message": message}
             summary = f"{agent.name} said: {message}"
-            return True, result, summary
+            return True, result, summary, {}, False
         error = "Missing message."
         agent.add_env_feedback(error)
-        return False, {"error": error}, f"{agent.name} failed to speak"
+        return False, {"error": error}, f"{agent.name} failed to speak", {}, False
 
 
 class SendMessageAction(Action):
@@ -36,10 +36,10 @@ class SendMessageAction(Action):
             scene.deliver_message(event, agent, simulator)
             result = {"message": message}
             summary = f"{agent.name}: {message}"
-            return True, result, summary
+            return True, result, summary, {}, False
         error = "Missing message."
         agent.add_env_feedback(error)
-        return False, {"error": error}, f"{agent.name} failed to post"
+        return False, {"error": error}, f"{agent.name} failed to post", {}, False
 
 
 class YieldAction(Action):
@@ -52,7 +52,7 @@ class YieldAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         result = {}
         summary = f"{agent.name} yielded the floor"
-        return True, result, summary
+        return True, result, summary, {}, True
 
 
 class TalkToAction(Action):
@@ -68,13 +68,13 @@ class TalkToAction(Action):
         if not to_name or not message:
             error = "Provide 'to' (name) and 'message'."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} failed to talk"
+            return False, {"error": error}, f"{agent.name} failed to talk", {}, False
 
         target = simulator.agents.get(to_name)
         if not target:
             error = f"No such person: {to_name}."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} failed to talk"
+            return False, {"error": error}, f"{agent.name} failed to talk", {}, False
 
         # Range check for scenes with spatial chat
         sxy = agent.properties.get("map_xy")
@@ -94,4 +94,4 @@ class TalkToAction(Action):
         target.add_env_feedback(event.to_string(scene.state.get("time")))
         result = {"to": to_name, "message": message}
         summary = f"{agent.name} to {to_name}: {message}"
-        return True, result, summary
+        return True, result, summary, {}, False

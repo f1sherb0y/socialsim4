@@ -206,8 +206,8 @@ class Simulator:
                     self.emit_event(
                         "action_start", {"agent": agent.name, "action": action_data}
                     )
-                    success, result, summary = self.scene.parse_and_handle_action(
-                        action_data, agent, self
+                    success, result, summary, meta, pass_control = (
+                        self.scene.parse_and_handle_action(action_data, agent, self)
                     )
                     self.emit_event(
                         "action_end",
@@ -217,10 +217,11 @@ class Simulator:
                             "success": success,
                             "result": result,
                             "summary": summary,
+                            "pass_control": bool(pass_control),
                         },
                     )
                     self.emit_remaining_events()
-                    if action_data.get("action") == "yield":
+                    if bool(pass_control):
                         yielded = True
                         break
 

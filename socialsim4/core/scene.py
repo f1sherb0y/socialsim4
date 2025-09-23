@@ -32,11 +32,11 @@ class Scene:
         action_name = action_data.get("action")
         for act in agent.action_space:
             if act.NAME == action_name:
-                success, result, summary = act.handle(
+                success, result, summary, meta, pass_control = act.handle(
                     action_data, agent, simulator, self
                 )
-                return success, result, summary
-        return False, {}, None
+                return success, result, summary, meta, bool(pass_control)
+        return False, {}, None, {}, False
 
     def deliver_message(self, event, sender: Agent, simulator: Simulator):
         """Deliver a chat message event. Default behavior is global broadcast

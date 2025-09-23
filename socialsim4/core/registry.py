@@ -1,11 +1,20 @@
 from .actions.base_actions import SendMessageAction, TalkToAction, YieldAction
 from .actions.council_actions import (
+    FinishMeetingAction,
     RequestBriefAction,
     StartVotingAction,
-    FinishMeetingAction,
     VoteAction,
     VotingStatusAction,
 )
+from .actions.landlord_actions import (
+    CallLandlordAction,
+    DoubleAction,
+    NoDoubleAction,
+    PassAction,
+    PlayCardsAction,
+    RobLandlordAction,
+)
+from .actions.moderation_actions import ScheduleOrderAction
 from .actions.village_actions import (
     # ExploreAction,
     GatherResourceAction,
@@ -24,12 +33,12 @@ from .actions.werewolf_actions import (
     WitchPoisonAction,
     WitchSaveAction,
 )
-from .actions.moderation_actions import ScheduleOrderAction
+from .ordering import ORDERING_MAP as _ORDERING_MAP
 from .scenes.council_scene import CouncilScene
+from .scenes.landlord_scene import LandlordPokerScene
 from .scenes.simple_chat_scene import SimpleChatScene
 from .scenes.village_scene import VillageScene
 from .scenes.werewolf_scene import WerewolfScene
-from .ordering import ORDERING_MAP as _ORDERING_MAP
 
 ACTION_SPACE_MAP = {
     "send_message": SendMessageAction(),
@@ -61,6 +70,13 @@ ACTION_SPACE_MAP = {
     # Moderator actions
     "open_voting": OpenVotingAction(),
     "close_voting": CloseVotingAction(),
+    # Landlord poker actions
+    "call_landlord": CallLandlordAction(),
+    "rob_landlord": RobLandlordAction(),
+    "pass": PassAction(),
+    "play_cards": PlayCardsAction(),
+    "double": DoubleAction(),
+    "no_double": NoDoubleAction(),
 }
 
 SCENE_MAP = {
@@ -68,6 +84,7 @@ SCENE_MAP = {
     "council_scene": CouncilScene,
     "village_scene": VillageScene,
     "werewolf_scene": WerewolfScene,
+    "landlord_scene": LandlordPokerScene,
 }
 
 ORDERING_MAP = _ORDERING_MAP
