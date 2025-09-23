@@ -49,7 +49,7 @@ class Scene:
         # Broadcast to everyone else and record the event
         simulator.broadcast(event)
 
-    def post_round(self, simulator):
+    def pre_run(self, simulator: Simulator):
         pass
 
     def post_turn(self, agent: Agent, simulator: Simulator):

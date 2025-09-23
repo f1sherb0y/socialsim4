@@ -19,6 +19,7 @@ class Simulator:
         ordering: Optional[Ordering] = None,
         event_handler: Callable[[str, dict], None] = None,
     ):
+        self.started = False
         self.log_event = event_handler
 
         for agent in agents:
@@ -53,31 +54,33 @@ class Simulator:
         if broadcast_initial:
             self.broadcast(self.scene.initial_event)
 
+        self.scene.pre_run(self)
+        self.started = True
+
     # ----- Event plumbing: forward to ordering and external handler -----
     def emit_event(self, event_type: str, data: dict):
         # Let ordering observe all events for context-aware scheduling
-        self.ordering.on_event(self, event_type, data)
         if self.log_event:
             self.log_event(event_type, data)
+        if self.started:
+            self.ordering.on_event(self, event_type, data)
 
     def emit_event_later(self, event_type: str, data: dict):
-        self.ordering.on_event(self, event_type, data)
         self.event_queue.put({"type": event_type, "data": data})
 
     def emit_remaining_events(self):
         while not self.event_queue.empty():
             item = self.event_queue.get()
-            if self.log_event:
-                self.log_event(item["type"], item["data"])
+            self.emit_event(item["type"], item["data"])
 
-    def broadcast(self, event: Event):
+    def broadcast(self, event: Event, receivers: Optional[List[str]] = None):
         sender = event.get_sender()
         time = self.scene.state.get("time")
         formatted = event.to_string(time)
 
         recipients = []
         for agent in self.agents.values():
-            if agent.name != sender:
+            if agent.name != sender and (receivers is None or agent.name in receivers):
                 agent.add_env_feedback(formatted)
                 recipients.append(agent.name)
 
@@ -140,6 +143,7 @@ class Simulator:
         return simulator
 
     def run(self, max_turns=1000):
+        print("--- Simulation Start ---")
         order_iter = self.ordering.iter()
         turns = 0
 
@@ -227,6 +231,7 @@ class Simulator:
 
             # Post-turn hooks
             self.scene.post_turn(agent, self)
+            self.emit_remaining_events()
             self.ordering.post_turn(agent.name)
             turns += 1
             self.turns = turns

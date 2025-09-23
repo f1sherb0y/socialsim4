@@ -20,7 +20,7 @@ class WerewolfScene(Scene):
         moderator_names: Optional[List[str]] = None,
     ):
         super().__init__(name, initial_event)
-        self.moderator_names = set(moderator_names or [])
+        self.moderator_names = moderator_names or []
         s = self.state
         s.update(
             {
@@ -44,7 +44,7 @@ class WerewolfScene(Scene):
         return (
             "You are playing a Werewolf social deduction game with night and day cycles. "
             "During the day, there are two phases: discussion then voting (the Moderator opens/closes voting). "
-            "At night, werewolves coordinate to eliminate one player; the Seer may inspect; the Witch may save or poison (each potion once)."
+            "At night, werewolves coordinate to eliminate one player; the Seer may inspect; the Witch may save or poison (each potion once). "
         )
 
     def get_behavior_guidelines(self):
@@ -54,15 +54,15 @@ class WerewolfScene(Scene):
             "- If you are the Witch: consider saving the victim and poisoning strategically; you have each potion once.\n"
             "- If you are a Villager: reason from discussion and voting patterns; avoid chaos.\n"
             "- At night, ONLY werewolves are allowed to speak.\n"
-            "- First night: werewolves should not kill.\n"
-            "- Each night, werewolves can vote together to kill one player.\n"
+            "- Werewolves should not kill during the first night.\n"
+            "- Each night except the first night, werewolves can vote together to kill one player.\n"
             "- During day discussion, each player may speak exactly once; follow the published speaking order; answer questions addressed to you succinctly.\n"
             "- During day voting, players are not allowed to speak. Before yielding your turn, cast a lynch vote.\n"
         )
 
     def initialize_agent(self, agent: Agent):
         alive = self.state.setdefault("alive", [])
-        if agent.name not in alive and not self.is_moderator(agent.name):
+        if agent.name not in alive:
             alive.append(agent.name)
         roles = self.state.setdefault("roles", {})
         if agent.name not in roles:
@@ -89,7 +89,7 @@ class WerewolfScene(Scene):
     def _count_roles(self) -> Tuple[int, int]:
         alive = self._alive()
         wolves = sum(1 for n in alive if self._role(n) == "werewolf")
-        villagers = len(alive) - wolves
+        villagers = sum(1 for n in alive if self._role(n) == "villager")
         return wolves, villagers
 
     def _check_win(self):
@@ -114,23 +114,35 @@ class WerewolfScene(Scene):
         formatted = event.to_string(time)
         recipients: List[str] = []
         mod_sender = self.is_moderator(sender.name)
+        sender_role = self._role(sender.name)
         for a in simulator.agents.values():
             if a.name == sender.name:
                 continue
-            ok = (
-                phase == "night"
-                and (
-                    (mod_sender and self._is_alive(a.name))
-                    or (self._is_alive(a.name) and self._role(a.name) == "werewolf")
-                )
-            ) or (
-                phase != "night"
-                and (self._is_alive(a.name) or self.is_moderator(a.name))
-            )
+            if phase == "night":
+                if mod_sender and self._is_alive(a.name):
+                    ok = True
+                elif sender_role == "werewolf":
+                    ok = self._is_alive(a.name) and (
+                        self._role(a.name) == "werewolf" or self.is_moderator(a.name)
+                    )
+                elif sender_role == "witch":
+                    ok = self.is_moderator(a.name)
+                else:
+                    ok = False
+            else:
+                ok = self._is_alive(a.name) or self.is_moderator(a.name)
             if ok:
                 a.add_env_feedback(formatted)
                 recipients.append(a.name)
         sender.add_env_feedback(formatted)
+
+    def pre_run(self, simulator: Simulator):
+        roles_info_str = ", ".join(
+            f"{name} is {role}" for name, role in self.state.get("roles", {}).items()
+        )
+        for name in self.moderator_names:
+            hint = f"You are the Moderator. Players: {', '.join(simulator.agents.keys())}. Roles: {roles_info_str}."
+            simulator.broadcast(PublicEvent(hint, prefix="System"), receivers=[name])
 
     def post_turn(self, agent: Agent, simulator: Simulator):
         super().post_turn(agent, simulator)
@@ -220,6 +232,8 @@ class WerewolfScene(Scene):
             simulator.broadcast(PublicEvent("No lynch today. Night begins."))
 
     def get_agent_status_prompt(self, agent: Agent) -> str:
+        if self.is_moderator(agent.name):
+            return ""
         role = self._role(agent.name) or (
             "moderator" if self.is_moderator(agent.name) else "(unknown)"
         )

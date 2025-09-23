@@ -29,12 +29,13 @@ class MessageEvent(Event):
 
 
 class PublicEvent(Event):
-    def __init__(self, content):
+    def __init__(self, content, prefix="Public Event"):
         self.content = content
+        self.prefix = prefix
 
     def to_string(self, time=None):
         time_str = _fmt_time_prefix(time)
-        return f"{time_str}Public Event: {self.content}"
+        return f"{time_str}{self.prefix}: {self.content}"
 
 
 class NewsEvent(Event):

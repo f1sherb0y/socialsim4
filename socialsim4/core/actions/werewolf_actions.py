@@ -77,7 +77,18 @@ class NightKillAction(Action):
         votes = scene.state.setdefault("night_kill_votes", {})
         votes[agent.name] = target
         # Private confirmation
-        agent.add_env_feedback(f"Night kill vote recorded: {target}.")
+        # agent.add_env_feedback(f"Night kill vote recorded: {target}.")
+        wolves = [
+            name
+            for name in scene.state.get("roles")
+            if _role_of(scene, name) == "werewolf"
+        ]
+        receivers = wolves + scene.moderator_names
+        simulator.broadcast(
+            PublicEvent(f"{agent.name} voted night kill to {target}.", prefix="Event"),
+            receivers=receivers,
+        )
+        # Tally only werewolf votes
         tally = sum(
             1
             for v, t in votes.items()
@@ -110,6 +121,14 @@ class InspectAction(Action):
         is_wolf = _role_of(scene, target) == "werewolf"
         agent.add_env_feedback(
             f"Inspection result: {target} is {'a werewolf' if is_wolf else 'not a werewolf'}."
+        )
+        # Inform moderators privately
+        simulator.broadcast(
+            PublicEvent(
+                f"{agent.name} inspected {target} ({'werewolf' if is_wolf else 'not'})",
+                prefix="Event",
+            ),
+            receivers=scene.moderator_names,
         )
         result = {"target": target, "is_werewolf": is_wolf}
         summary = (
@@ -147,6 +166,11 @@ class WitchSaveAction(Action):
         scene.state["witch_saved"] = True
         uses["heals_left"] = uses.get("heals_left", 0) - 1
         agent.add_env_feedback("You prepare the save potion for tonight's victim.")
+        # Inform moderators privately
+        simulator.broadcast(
+            PublicEvent(f"{agent.name} prepared a save potion.", prefix="Event"),
+            receivers=scene.moderator_names,
+        )
         result = {"saved": True}
         summary = f"{agent.name} used witch save"
         return True, result, summary
@@ -195,6 +219,13 @@ class WitchPoisonAction(Action):
         ] = target
         uses["poisons_left"] = uses.get("poisons_left", 0) - 1
         agent.add_env_feedback(f"You prepared a poison targeting {target}.")
+        # Inform moderators privately
+        simulator.broadcast(
+            PublicEvent(
+                f"{agent.name} prepared a poison targeting {target}.", prefix="Event"
+            ),
+            receivers=scene.moderator_names,
+        )
         result = {"target": target}
         summary = f"{agent.name} prepared poison for {target}"
         return True, result, summary

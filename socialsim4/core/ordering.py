@@ -32,6 +32,18 @@ class SequentialOrdering(Ordering):
                     yield name
 
 
+class CycledOrdering(Ordering):
+    NAME = "cycled"
+
+    def __init__(self, names):
+        self.names = names
+
+    def iter(self) -> Iterator[str]:
+        while True:
+            for name in self.names:
+                yield name
+
+
 class RandomOrdering(Ordering):
     NAME = "random"
 
@@ -92,6 +104,7 @@ class LLMModeratedOrdering(Ordering):
             yield self._queue.pop(0)
 
     def post_turn(self, agent_name: str) -> None:
+        print(f"Remaining schedule: {self._queue}")
         if not self._queue:
             self._refill_queue()
 
@@ -107,11 +120,11 @@ class LLMModeratedOrdering(Ordering):
 
         # Nudge moderator to emit a schedule_order action only
         instruction = (
-            "Scheduling request: choose 1..N agents from the list in order and emit a single "
+            "The schedule is empty now. Please arrange the order of player's action and emit a single "
             '<Action name="schedule_order"><order>["A","B"]</order></Action>. '
             "Do not emit any other action or message."
         )
-        mod.add_env_feedback(f"[Scheduling] Agents: {', '.join(names)}\n{instruction}")
+        mod.add_env_feedback(f"[System] {instruction}")
         # Ask the moderator to take exactly one step with initiative
         action_datas = mod.process(
             self.sim.clients, initiative=True, scene=self.sim.scene
@@ -126,12 +139,27 @@ class LLMModeratedOrdering(Ordering):
             raise ValueError(
                 "Moderator must emit schedule_order action during scheduling"
             )
-        self.sim.scene.parse_and_handle_action(sched, mod, self.sim)
+        success, result, summary = self.sim.scene.parse_and_handle_action(
+            sched, mod, self.sim
+        )
+        self.sim.log_event(
+            "action_end",
+            {
+                "agent": mod.name,
+                "action": sched,
+                "success": success,
+                "result": result,
+                "summary": summary,
+            },
+        )
 
     # Allow schedule action to push into the queue
     def add_to_queue(self, names: list[str]) -> None:
         # Validate and extend
         self._queue.extend([n for n in names if n in self.sim.agents])
+
+    def is_queue_empty(self) -> bool:
+        return len(self._queue) == 0
 
 
 ORDERING_MAP = {

@@ -187,7 +187,7 @@ Initial instruction:
     def get_output_format(self):
         return """
 Planning guidelines (internal/private):
-- Internal vs Scene: The Goals, Milestones, Plan, and Current Focus you author here are internal behavioral guides, not scene-wide commitments. Use them to decide Actions; communicate only scene-appropriate content publicly.
+- The Goals, Milestones, Plan, and Current Focus you author here are internal behavioral guides, not scene-wide commitments. Use them to decide Actions;
 - Goals: stable end-states. Rarely change; name and describe them briefly.
 - Milestones: observable sub-results that indicate progress toward goals.
 - Current Focus: the single step you are executing now. Align Action with this.
@@ -202,7 +202,7 @@ Turn Flow:
 
 Your entire response MUST follow the format below. 
 For your first action in each turn, always include Thoughts, Plan, and Action. 
-For subsequent actions in the same turn , output only the Action element. omit Thoughts, Plan, and Plan Update.
+For subsequent actions, output only the Action element. omit Thoughts, Plan, and Plan Update.
 Include Plan Update only when you decide to modify the plan.
 
 --- Thoughts ---
@@ -220,9 +220,6 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 --- Action ---
 // Output exactly one Action XML element. No extra text.
 // Do not wrap the Action XML in code fences or other decorations.
-// Never include more than one Action element in a single response.
-// Language: Keep element and attribute names in English; localize only values.
-// You may take multiple actions in your turn, one at a time. When you are ready to yield the floor, output <Action name="yield"></Action>.
 // Example:
 // <Action name="send_message"><message>Hi everyone!</message></Action>
 
@@ -466,7 +463,9 @@ History:
             self.short_memory.append("user", hint)
             ctx.append({"role": "user", "content": hint})
 
+        # print(f"{self.name} context: {ctx}")
         llm_output = self.call_llm(clients, ctx)
+        # print(f"{self.name} LLM output:\n{llm_output}\n{'-' * 40}")
         thoughts, plan, action_block, plan_update_block = self._parse_full_response(
             llm_output
         )
