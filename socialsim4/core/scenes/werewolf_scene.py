@@ -234,56 +234,50 @@ class WerewolfScene(Scene):
     def get_agent_status_prompt(self, agent: Agent) -> str:
         if self.is_moderator(agent.name):
             return ""
-        role = self._role(agent.name) or (
-            "moderator" if self.is_moderator(agent.name) else "(unknown)"
-        )
         phase = self.state.get("phase", "night")
         day = self.state.get("day_count", 0)
         alive = self._is_alive(agent.name)
-        uses = self.state.get("witch_uses", {}).get(agent.name, {})
-        extra_lines = []
+        role = self._role(agent.name)
+
+        lines = [
+            "--- Status ---",
+            f"Phase: {phase} (day {day})",
+            f"Alive: {alive}",
+        ]
+
+        # Role-specific status (no guidance/tips)
         if role == "witch":
-            extra_lines.append(
-                f"Potions left (save/poison): {uses.get('heals_left', 0)}/{uses.get('poisons_left', 0)}"
+            uses = self.state.get("witch_uses", {}).get(agent.name, {})
+            lines.append(
+                f"Witch potions (save/poison): {uses.get('heals_left', 0)}/{uses.get('poisons_left', 0)}"
             )
             if phase == "night":
-                votes = self.state.get("night_kill_votes", {})
+                votes: Dict[str, str] = self.state.get("night_kill_votes", {})
                 filtered = {
                     v: t
                     for v, t in votes.items()
                     if self._is_alive(v) and self._role(v) == "werewolf"
                 }
-                likely = None
+                victim = "none"
+                first_night = self.state.get("day_count", 0) == 0
                 if filtered:
-                    most = Counter(filtered.values()).most_common(1)
-                    if most:
-                        likely = most[0][0]
-                extra_lines.append(
-                    f"Likely victim (so far): {likely if likely else 'unknown'}"
-                )
-        tips = []
-        if not alive:
-            tips.append("You are dead. You cannot act or speak.")
-        elif phase == "night":
-            tips_map = {
-                "werewolf": "Coordinate with wolves and cast night_kill.",
-                "seer": "Use inspect on one player.",
-                "witch": "You may witch_save tonight's victim and/or witch_poison another player (each once).",
-            }
-            tips.append(tips_map.get(role, "Stay quiet at night; await day."))
-        elif phase == "day_discussion":
-            tips.append("Discuss. Moderator will open voting.")
-        elif phase == "day_voting":
+                    counts = Counter(filtered.values())
+                    candidate = counts.most_common(1)[0][0]
+                    if (
+                        (not first_night)
+                        and self._is_alive(candidate)
+                        and self._role(candidate) != "werewolf"
+                    ):
+                        victim = candidate
+                lines.append(f"Tonight's victim: {victim}")
+        if phase == "day_voting":
             votes = self.state.get("lynch_votes", {})
-            if agent.name in votes and alive:
-                tips.append(
-                    f"Your vote: {votes.get(agent.name)}. You may revote or yield."
-                )
-            else:
-                tips.append("You haven't voted yet; cast your vote with vote_lynch.")
-        tip_text = " ".join(tips)
-        extra = ("\n" + "\n".join(extra_lines)) if extra_lines else ""
-        return f"--- Status ---\nPhase: {phase} (day {day})\nAlive: {alive}\n{tip_text}{extra}\n"
+            vote_str = (
+                votes.get(agent.name) if (agent.name in votes and alive) else "none"
+            )
+            lines.append(f"Vote: {vote_str}")
+
+        return "\n".join(lines) + "\n"
 
     def is_moderator(self, name: str) -> bool:
         return name in self.moderator_names or name.lower() == "moderator"
