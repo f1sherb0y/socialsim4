@@ -54,7 +54,19 @@ class LLMClient:
                     "presence_penalty": self.provider.presence_penalty,
                 },
             )
-            return resp.text.strip()
+            # Some responses may not populate resp.text; extract from candidates if present
+            text = ""
+            cands = getattr(resp, "candidates", None)
+            if cands:
+                first = cands[0] if len(cands) > 0 else None
+                if first is not None:
+                    content = getattr(first, "content", None)
+                    parts = (
+                        getattr(content, "parts", None) if content is not None else None
+                    )
+                    if parts:
+                        text = "".join([getattr(p, "text", "") for p in parts])
+            return text.strip()
         if self.provider.dialect == "mock":
             return self.client.chat(messages)
         raise ValueError(f"Unknown LLM dialect: {self.provider.dialect}")

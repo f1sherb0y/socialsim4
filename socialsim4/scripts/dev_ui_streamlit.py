@@ -1,5 +1,7 @@
+import json
 import os
 from typing import Dict, List
+from pathlib import Path
 
 import streamlit as st
 
@@ -10,6 +12,36 @@ from socialsim4.core.llm import create_llm_client
 from socialsim4.core.ordering import CycledOrdering
 from socialsim4.core.scenes.werewolf_scene import WerewolfScene
 from socialsim4.core.simulator import Simulator
+
+# Snapshot helpers available to _init_session and UI
+def build_snapshot(sim: Simulator, bus: 'DevEventBus', names: List[str]) -> Dict:
+    # Deep copy helpers via JSON encoding to freeze state
+    def _dc(x):
+        return json.loads(json.dumps(x))
+
+    agents = []
+    for nm in names:
+        ag = sim.agents[nm]
+        agents.append(
+            {
+                "name": nm,
+                "role": ag.properties.get("role"),
+                "plan_state": _dc(ag.plan_state),
+                "short_memory": _dc(ag.short_memory.get_all()),
+            }
+        )
+    return {
+        "turns": sim.turns,
+        "names": list(names),
+        "events": _dc(bus.history),
+        "agents": agents,
+    }
+
+
+def build_static_html_from_template(snapshot: Dict) -> str:
+    tpl_path = Path(__file__).parent / "static" / "snapshot_viewer.html"
+    tpl = tpl_path.read_text(encoding="utf-8")
+    return tpl.replace("__DATA__", json.dumps(snapshot))
 
 
 class DevEventBus:
@@ -24,10 +56,11 @@ class DevEventBus:
 
 
 class StepRunner:
-    def __init__(self, sim: Simulator):
+    def __init__(self, sim: Simulator, on_turn_callback=None):
         self.sim = sim
         self.order_iter = self.sim.ordering.iter()
         self.sim.emit_remaining_events()
+        self.on_turn_callback = on_turn_callback
 
     def step_turn(self):
         if self.sim.scene.is_complete():
@@ -102,6 +135,8 @@ class StepRunner:
         self.sim.emit_remaining_events()
         self.sim.ordering.post_turn(agent.name)
         self.sim.turns += 1
+        if self.on_turn_callback is not None:
+            self.on_turn_callback(self.sim)
 
     def step_n(self, n: int):
         for _ in range(n):
@@ -173,7 +208,8 @@ def build_werewolf_sim(bus: DevEventBus) -> tuple[Simulator, List[str]]:
                 "You are the Moderator. Your job is to direct the day flow fairly and clearly.\n"
                 "Behavioral guidelines:\n"
                 "- Neutrality: do not take sides or hint at hidden roles. Avoid speculation.\n"
-                "- Phase control: start with open discussion; each player may should send at most one message in discussion. When all have spoken or passed, begin the voting phase by open_voting action; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
+                "- Each day start with open discussion; each player should only speak once.\n"
+                "- After the discussion phase is the voting phase. Start it by open_voting action; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
                 "- Clarity: make brief, procedural reminders (e.g., 'Final statements', 'Voting soon', 'Please cast or update your vote'). Keep announcements short.\n"
                 "- Discipline: never reveal or summarize hidden information; do not speculate or pressure specific outcomes.\n"
             )
@@ -251,7 +287,13 @@ def _init_session():
         sim, names = build_werewolf_sim(st.session_state["bus"])
         st.session_state["sim"] = sim
         st.session_state["names"] = names
-        st.session_state["runner"] = StepRunner(sim)
+        # Initialize timeline with initial frame
+        st.session_state["timeline"] = []
+        def _record_frame(_):
+            st.session_state["timeline"].append(build_snapshot(sim, st.session_state["bus"], names))
+        st.session_state["runner"] = StepRunner(sim, on_turn_callback=_record_frame)
+        # record initial frame
+        _record_frame(sim)
         st.session_state["selected_agent"] = names[0]
 
 
@@ -275,9 +317,26 @@ with left:
     if b50.button("Run 50 turns"):
         runner.step_n(50)
 
-    # Render last 200 events in the original console_logger format
+    # Timeline slider
+    frames: List[Dict] = st.session_state.get("timeline", [])
+    if not frames:
+        frames = [build_snapshot(sim, bus, names)]
+    max_idx = max(0, len(frames) - 1)
+    default_idx = st.session_state.get("frame_idx", max_idx)
+    if default_idx > max_idx:
+        default_idx = max_idx
+    if max_idx > 0:
+        st.session_state["frame_idx"] = st.slider(
+            "Frame", 0, max_idx, value=default_idx, key="frame_slider"
+        )
+    else:
+        st.session_state["frame_idx"] = 0
+        st.caption("Frame: 0")
+    snap = frames[st.session_state["frame_idx"]]
+
+    # Render feed from snapshot in original console_logger format
     feed_lines: List[str] = []
-    for item in bus.history[-200:]:
+    for item in snap.get("events", []):
         t = item.get("type")
         d = item.get("data", {})
         if t == "system_broadcast":
@@ -289,6 +348,16 @@ with left:
                 feed_lines.append(f"[{action_data.get('action')}] {d.get('summary')}")
     st.code("\n".join(feed_lines) if feed_lines else "(no events yet)")
 
+    # Download snapshot button (left column, below feed)
+    bundle = {"timeline": frames}
+    html = build_static_html_from_template(bundle)
+    st.download_button(
+        label="Download static snapshot (HTML)",
+        data=html,
+        file_name="socialsim4_snapshot.html",
+        mime="text/html",
+    )
+
 with right:
     st.subheader("Agents")
     if "selected_agent" not in st.session_state:
@@ -299,15 +368,20 @@ with right:
         key="selected_agent",
         label_visibility="collapsed",
     )
-    a = sim.agents.get(st.session_state["selected_agent"])
-    st.caption(f"Role: {a.properties.get('role')}")
+    # Resolve selected agent from snapshot
+    sel_name = st.session_state["selected_agent"]
+    snap_agents = {a["name"]: a for a in snap.get("agents", [])}
+    a = snap_agents.get(sel_name)
+    st.caption(f"Role: {a.get('role')}")
     st.markdown("Plan State")
-    st.json(a.plan_state)
+    st.json(a.get("plan_state", {}))
     st.markdown("Full Context")
-    msgs = a.short_memory.get_all()
+    msgs = a.get("short_memory", [])
     if msgs:
         for m in msgs:
             st.markdown(f"- [{m['role']}]")
             st.code(m["content"])
     else:
         st.caption("(empty)")
+
+    # (snapshot export button is in the left column)

@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SocialSim4 Snapshot</title>
+  <style>
+    :root { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size: 16px; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: #0b0f19; color: #e6e6e6; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; /* height set via JS to fill below header */ }
+    header { padding: 10px 14px; background: #0f1526; border-bottom: 1px solid #1d2744; }
+    .pane { padding: 10px; overflow: hidden; height: 100%; }
+    .panel { background: #0f1526; border: 1px solid #1d2744; border-radius: 8px; display: flex; flex-direction: column; height: 100%; }
+    .feed { flex: 1; overflow: auto; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 14px; line-height: 1.4; }
+    .side { display: flex; flex-direction: column; height: 100%; }
+    .list { height: 180px; overflow: auto; border-bottom: 1px solid #1d2744; }
+    .agent { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #172140; }
+    .agent:hover { background: #162346; }
+    .agent.active { background: #1b2a54; }
+    .ctx { flex: 1; overflow: auto; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #0b1020; }
+    .pill { display: inline-block; padding: 2px 6px; margin-right: 6px; border-radius: 9999px; font-size: 12px; border: 1px solid #2c3b63; background: #1a2648; color: #d0d8ff; }
+    .evt { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>SocialSim4 – Snapshot</strong>
+    <span id="hdr" style="margin-left:12px; opacity:.8"></span>
+    <div style="float:right; display:flex; align-items:center; gap:8px;">
+      <label for="frameRange" style="font-size:14px; opacity:.8;">Frame</label>
+      <input id="frameRange" type="range" min="0" max="0" value="0" step="1" style="width:320px;" />
+      <span id="frameVal" style="width:40px; text-align:right; font-variant-numeric: tabular-nums;">0</span>
+    </div>
+  </header>
+  <div class="grid">
+    <div class="pane">
+      <div class="panel">
+        <div id="feed" class="feed"></div>
+      </div>
+    </div>
+    <div class="pane">
+      <div class="panel side">
+        <div id="agents" class="list"></div>
+        <div id="ctx" class="ctx"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function syncHeights() {
+      var header = document.querySelector('header');
+      var grid = document.querySelector('.grid');
+      var h = header ? header.offsetHeight : 0;
+      grid.style.height = 'calc(100vh - ' + h + 'px)';
+    }
+
+    window.addEventListener('load', syncHeights);
+    window.addEventListener('resize', syncHeights);
+    // Replaced by exporter: const data = __DATA__
+    const data = __DATA__;
+
+    const feed = document.getElementById('feed');
+    const agentsEl = document.getElementById('agents');
+    const ctxEl = document.getElementById('ctx');
+    let currentAgent = null;
+
+    function esc(s) { return ('' + s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+    function renderFeed() {
+      const snap = currentSnapshot();
+      const items = (snap && snap.events) ? snap.events : [];
+      const lines = [];
+      for (const item of items) {
+        const t = item.type; const d = item.data || {};
+        if (t === 'system_broadcast') {
+          if (d.sender === undefined || d.sender === null || d.sender === '') {
+            lines.push('[Public Event] ' + esc(d.text || ''));
+          }
+        } else if (t === 'action_end') {
+          const a = d.action || {};
+          if (a.action !== 'yield') {
+            lines.push('[' + esc(a.action) + '] ' + esc(d.summary || ''));
+          }
+        }
+      }
+      feed.innerHTML = '<pre>' + lines.join('\n') + '</pre>';
+      document.getElementById('hdr').textContent = 'turns: ' + ((data && data.turns) || 0);
+    }
+
+    function renderAgents() {
+      const snap = currentSnapshot();
+      const list = (snap && snap.names) ? snap.names : [];
+      agentsEl.innerHTML = '';
+      for (const name of list) {
+        const div = document.createElement('div');
+        div.className = 'agent' + (name === currentAgent ? ' active' : '');
+        div.textContent = name;
+        div.onclick = () => { currentAgent = name; renderContext(); Array.from(agentsEl.children).forEach(c => c.classList.remove('active')); div.classList.add('active'); };
+        agentsEl.appendChild(div);
+      }
+      if (!currentAgent && list.length) { currentAgent = list[0]; renderContext(); agentsEl.firstChild.classList.add('active'); }
+    }
+
+    function renderContext() {
+      const snap = currentSnapshot();
+      const arr = (snap && snap.agents) ? snap.agents : [];
+      const a = arr.find(x => x.name === currentAgent);
+      if (!a) { ctxEl.textContent = ''; return; }
+      const lines = [];
+      lines.push('<div><strong>' + esc(a.name) + '</strong> <span class="pill">' + esc(a.role || '') + '</span></div>');
+      lines.push('<div style="margin:8px 0"><em>Plan State</em></div>');
+      lines.push('<pre>' + esc(JSON.stringify(a.plan_state || {}, null, 2)) + '</pre>');
+      lines.push('<div style="margin:8px 0"><em>Full Context</em></div>');
+      const tail = a.short_memory || [];
+      lines.push('<pre>' + esc(tail.map(m => '- [' + (m.role || '') + ']\n' + (m.content || '')).join('\n\n')) + '</pre>');
+      ctxEl.innerHTML = lines.join('\n');
+    }
+
+    // Timeline / slider handling
+    const timeline = Array.isArray(data.timeline) ? data.timeline : [data];
+    let idx = timeline.length - 1;
+
+    function currentSnapshot() { return timeline[idx] || {}; }
+
+    function updateRange() {
+      const rng = document.getElementById('frameRange');
+      const val = document.getElementById('frameVal');
+      rng.max = Math.max(0, timeline.length - 1);
+      rng.value = idx;
+      val.textContent = String(idx);
+    }
+
+    function renderAll() {
+      renderFeed();
+      renderAgents();
+      renderContext();
+      const snap = currentSnapshot();
+      document.getElementById('hdr').textContent = 'turns: ' + (snap.turns || 0);
+    }
+
+    document.getElementById('frameRange').addEventListener('input', function(e) {
+      idx = parseInt(e.target.value || '0', 10) || 0;
+      updateRange();
+      renderAll();
+    });
+
+    updateRange();
+    renderAll();
+  </script>
+</body>
+</html>
