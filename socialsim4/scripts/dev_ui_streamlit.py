@@ -1,7 +1,7 @@
 import json
 import os
-from typing import Dict, List
 from pathlib import Path
+from typing import Dict, List
 
 import streamlit as st
 
@@ -13,29 +13,44 @@ from socialsim4.core.ordering import CycledOrdering
 from socialsim4.core.scenes.werewolf_scene import WerewolfScene
 from socialsim4.core.simulator import Simulator
 
+
 # Snapshot helpers available to _init_session and UI
-def build_snapshot(sim: Simulator, bus: 'DevEventBus', names: List[str]) -> Dict:
+def build_snapshot(
+    sim: Simulator, bus: "DevEventBus", names: List[str], offsets: Dict
+) -> tuple[Dict, Dict]:
     # Deep copy helpers via JSON encoding to freeze state
     def _dc(x):
         return json.loads(json.dumps(x))
 
+    # Compute deltas based on offsets
+    new_mem_offsets: Dict[str, int] = {}
     agents = []
     for nm in names:
         ag = sim.agents[nm]
+        mem_all = ag.short_memory.get_all()
+        last_idx = offsets["mem"].get(nm, 0)
+        delta_msgs = mem_all[last_idx:]
+        new_mem_offsets[nm] = len(mem_all)
         agents.append(
             {
                 "name": nm,
                 "role": ag.properties.get("role"),
                 "plan_state": _dc(ag.plan_state),
-                "short_memory": _dc(ag.short_memory.get_all()),
+                "context_delta": _dc(delta_msgs),
             }
         )
-    return {
-        "turns": sim.turns,
-        "names": list(names),
-        "events": _dc(bus.history),
-        "agents": agents,
-    }
+    last_event_idx = offsets["events"]
+    events_delta = _dc(bus.history[last_event_idx:])
+    new_offsets = {"events": len(bus.history), "mem": new_mem_offsets}
+    return (
+        {
+            "turns": sim.turns,
+            "names": list(names),
+            "events_delta": events_delta,
+            "agents": agents,
+        },
+        new_offsets,
+    )
 
 
 def build_static_html_from_template(snapshot: Dict) -> str:
@@ -192,9 +207,9 @@ def build_werewolf_sim(bus: DevEventBus) -> tuple[Simulator, List[str]]:
         "Niko",
     ]
     role_map = {
-        "Elena": "seer",
+        "Elena": "werewolf",
         "Bram": "witch",
-        "Ronan": "werewolf",
+        "Ronan": "seer",
         "Mira": "werewolf",
         "Pia": "villager",
         "Taro": "villager",
@@ -208,8 +223,9 @@ def build_werewolf_sim(bus: DevEventBus) -> tuple[Simulator, List[str]]:
                 "You are the Moderator. Your job is to direct the day flow fairly and clearly.\n"
                 "Behavioral guidelines:\n"
                 "- Neutrality: do not take sides or hint at hidden roles. Avoid speculation.\n"
-                "- Each day start with open discussion; each player should only speak once.\n"
-                "- After the discussion phase is the voting phase. Start it by open_voting action; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
+                "- You should remind the wolves to vote after their discussion.\n"
+                "- Phase control: start with open discussion; each player may should send at most one message in discussion. \n"
+                "- When all have spoken or passed, begin the voting phase by open_voting action; when everyone had a fair chance to vote or revote, close the voting and finish the day.\n"
                 "- Clarity: make brief, procedural reminders (e.g., 'Final statements', 'Voting soon', 'Please cast or update your vote'). Keep announcements short.\n"
                 "- Discipline: never reveal or summarize hidden information; do not speculate or pressure specific outcomes.\n"
             )
@@ -272,7 +288,9 @@ def build_werewolf_sim(bus: DevEventBus) -> tuple[Simulator, List[str]]:
         scene,
         clients,
         event_handler=event_handler,
-        ordering=CycledOrdering(wolves + wolves + seers + witches + names + names),
+        ordering=CycledOrdering(
+            wolves + wolves + seers + witches + names + names + ["Moderator"]
+        ),
     )
 
     # sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
@@ -289,8 +307,18 @@ def _init_session():
         st.session_state["names"] = names
         # Initialize timeline with initial frame
         st.session_state["timeline"] = []
+        st.session_state["offsets"] = {
+            "events": 0,
+            "mem": {nm: 0 for nm in names},
+        }
+
         def _record_frame(_):
-            st.session_state["timeline"].append(build_snapshot(sim, st.session_state["bus"], names))
+            snap, new_off = build_snapshot(
+                sim, st.session_state["bus"], names, st.session_state["offsets"]
+            )
+            st.session_state["timeline"].append(snap)
+            st.session_state["offsets"] = new_off
+
         st.session_state["runner"] = StepRunner(sim, on_turn_callback=_record_frame)
         # record initial frame
         _record_frame(sim)
@@ -320,7 +348,18 @@ with left:
     # Timeline slider
     frames: List[Dict] = st.session_state.get("timeline", [])
     if not frames:
-        frames = [build_snapshot(sim, bus, names)]
+        # Build an initial snapshot if missing
+        snap, new_off = build_snapshot(
+            sim,
+            bus,
+            names,
+            st.session_state.get(
+                "offsets", {"events": 0, "mem": {nm: 0 for nm in names}}
+            ),
+        )
+        frames = [snap]
+        st.session_state["timeline"] = frames
+        st.session_state["offsets"] = new_off
     max_idx = max(0, len(frames) - 1)
     default_idx = st.session_state.get("frame_idx", max_idx)
     if default_idx > max_idx:
@@ -332,11 +371,16 @@ with left:
     else:
         st.session_state["frame_idx"] = 0
         st.caption("Frame: 0")
-    snap = frames[st.session_state["frame_idx"]]
+    idx = st.session_state["frame_idx"]
+    snap = frames[idx]
 
     # Render feed from snapshot in original console_logger format
     feed_lines: List[str] = []
-    for item in snap.get("events", []):
+    # Aggregate events up to current frame for readability
+    items = []
+    for i in range(idx + 1):
+        items.extend(frames[i].get("events_delta", []))
+    for item in items:
         t = item.get("type")
         d = item.get("data", {})
         if t == "system_broadcast":
@@ -370,17 +414,23 @@ with right:
     )
     # Resolve selected agent from snapshot
     sel_name = st.session_state["selected_agent"]
+    # Resolve selected agent from current snapshot
     snap_agents = {a["name"]: a for a in snap.get("agents", [])}
     a = snap_agents.get(sel_name)
     st.caption(f"Role: {a.get('role')}")
     st.markdown("Plan State")
     st.json(a.get("plan_state", {}))
     st.markdown("Full Context")
-    msgs = a.get("short_memory", [])
-    if msgs:
-        for m in msgs:
+    # Rebuild full context by aggregating deltas up to current frame
+    full_msgs: List[Dict] = []
+    for i in range(idx + 1):
+        ags = {x["name"]: x for x in frames[i].get("agents", [])}
+        if sel_name in ags:
+            full_msgs.extend(ags[sel_name].get("context_delta", []))
+    if full_msgs:
+        for m in full_msgs:
             st.markdown(f"- [{m['role']}]")
-            st.code(m["content"])
+            st.text(m["content"])  # preserve newlines
     else:
         st.caption("(empty)")
 

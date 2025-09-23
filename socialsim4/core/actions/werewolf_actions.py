@@ -22,14 +22,26 @@ class VoteLynchAction(Action):
     def handle(self, action_data, agent, simulator, scene):
         if scene.state.get("phase") != "day_voting":
             agent.add_env_feedback("You can only vote during the voting phase.")
-            return False, {"error": "wrong_phase"}, f"{agent.name} failed to vote"
+            return (
+                False,
+                {"error": "wrong_phase"},
+                f"{agent.name} failed to vote: {action_data}",
+            )
         if not _is_alive(scene, agent.name):
             agent.add_env_feedback("You are dead and cannot act.")
-            return False, {"error": "dead"}, f"{agent.name} failed to vote"
+            return (
+                False,
+                {"error": "dead"},
+                f"{agent.name} failed to vote: {action_data}",
+            )
         target = action_data.get("target")
         if not target or not _is_alive(scene, target):
             agent.add_env_feedback("Provide a living 'target' to vote.")
-            return False, {"error": "invalid_target"}, f"{agent.name} failed to vote"
+            return (
+                False,
+                {"error": "invalid_target"},
+                f"{agent.name} failed to vote: {action_data}",
+            )
 
         votes = scene.state.setdefault("lynch_votes", {})
         votes[agent.name] = target
@@ -233,7 +245,7 @@ class WitchPoisonAction(Action):
 
 class OpenVotingAction(Action):
     NAME = "open_voting"
-    DESC = "Moderator opens the voting phase."
+    DESC = "Moderator should use this action to open voting after discussion."
     INSTRUCTION = """- Moderator: open voting after discussion:
 <Action name=\"open_voting\" />
 """

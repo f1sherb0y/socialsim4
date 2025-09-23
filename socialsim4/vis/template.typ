@@ -25,8 +25,7 @@
 #let message-block = (sender, msg, colors: theme) => [
   #text(fill: colors.message-tag)[[message]]
   #h(8pt)
-  #text(fill: colors.sender)[#sender]
-  #text(fill: colors.content)[:]
+  #text(fill: colors.sender)[#sender :]
   #linebreak()
   #h(16pt)
   #render-multiline(msg, fill: colors.content)
@@ -74,7 +73,18 @@
           sender = "Unknown" // Fallback for malformed message
           buf = content
         }
-      } else {
+      } else if tag == "speak" {
+        kind = "message"
+        let sender_match = content.match(re-sender-msg)
+        if sender_match != none {
+          sender = sender_match.captures.at(0).trim()
+          buf = sender_match.captures.at(1).trim()
+        } else {
+          sender = "Unknown" // Fallback for malformed message
+          buf = content
+        }
+      } 
+      else {
         kind = "event"
         event_type = tag
         buf = content

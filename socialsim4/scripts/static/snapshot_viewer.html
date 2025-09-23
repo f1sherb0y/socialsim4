@@ -5,23 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SocialSim4 Snapshot</title>
   <style>
-    :root { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size: 16px; }
+    :root { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size: 14px; }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body { margin: 0; background: #0b0f19; color: #e6e6e6; }
-    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; /* height set via JS to fill below header */ }
-    header { padding: 10px 14px; background: #0f1526; border-bottom: 1px solid #1d2744; }
-    .pane { padding: 10px; overflow: hidden; height: 100%; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; /* height set via JS to fill below header */ }
+    header { padding: 8px 12px; background: #0f1526; border-bottom: 1px solid #1d2744; }
+    .pane { padding: 8px; overflow: hidden; height: 100%; }
     .panel { background: #0f1526; border: 1px solid #1d2744; border-radius: 8px; display: flex; flex-direction: column; height: 100%; }
-    .feed { flex: 1; overflow: auto; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 14px; line-height: 1.4; }
+    .feed { flex: 1; overflow: auto; padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.35; }
     .side { display: flex; flex-direction: column; height: 100%; }
-    .list { height: 180px; overflow: auto; border-bottom: 1px solid #1d2744; }
-    .agent { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #172140; }
+    .list { height: 160px; overflow: auto; border-bottom: 1px solid #1d2744; }
+    .agent { padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #172140; font-size: 13px; }
     .agent:hover { background: #162346; }
     .agent.active { background: #1b2a54; }
-    .ctx { flex: 1; overflow: auto; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #0b1020; }
-    .pill { display: inline-block; padding: 2px 6px; margin-right: 6px; border-radius: 9999px; font-size: 12px; border: 1px solid #2c3b63; background: #1a2648; color: #d0d8ff; }
-    .evt { margin-bottom: 8px; }
+    .ctx { flex: 1; overflow: auto; padding: 8px; background: #0b1020; }
+    .ctx h4 { margin: 6px 0 4px; font-size: 13px; font-weight: 600; opacity: .9; }
+    details { border: 1px solid #1b2a3f; background: #0e162e; border-radius: 6px; padding: 4px 6px; margin: 4px 0 8px; }
+    details > summary { cursor: pointer; outline: none; font-size: 12px; color: #c3cffc; }
+    details pre { margin: 6px 0 4px; font-size: 12px; }
+    .pill { display: inline-block; padding: 2px 6px; margin-left: 6px; border-radius: 9999px; font-size: 11px; border: 1px solid #2c3b63; background: #1a2648; color: #d0d8ff; }
+    .evt { margin-bottom: 6px; }
+    .msg { padding: 6px 8px; border: 1px solid #1b2a3f; background: #0e162e; border-radius: 6px; margin: 4px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.35; white-space: pre-wrap; }
+    .msg .role { opacity: .8; margin-right: 6px; color: #c3cffc; }
   </style>
 </head>
 <body>
@@ -67,9 +73,17 @@
 
     function esc(s) { return ('' + s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
+    function aggregateEvents() {
+      const items = [];
+      for (let i = 0; i <= idx; i++) {
+        const s = timeline[i];
+        if (s && Array.isArray(s.events_delta)) items.push(...s.events_delta);
+      }
+      return items;
+    }
+
     function renderFeed() {
-      const snap = currentSnapshot();
-      const items = (snap && snap.events) ? snap.events : [];
+      const items = aggregateEvents();
       const lines = [];
       for (const item of items) {
         const t = item.type; const d = item.data || {};
@@ -85,7 +99,8 @@
         }
       }
       feed.innerHTML = '<pre>' + lines.join('\n') + '</pre>';
-      document.getElementById('hdr').textContent = 'turns: ' + ((data && data.turns) || 0);
+      const snap = currentSnapshot();
+      document.getElementById('hdr').textContent = 'turns: ' + ((snap && snap.turns) || 0);
     }
 
     function renderAgents() {
@@ -102,19 +117,39 @@
       if (!currentAgent && list.length) { currentAgent = list[0]; renderContext(); agentsEl.firstChild.classList.add('active'); }
     }
 
+    function aggregateContextFor(name) {
+      const msgs = [];
+      for (let i = 0; i <= idx; i++) {
+        const s = timeline[i];
+        const arr = (s && s.agents) ? s.agents : [];
+        for (const a of arr) {
+          if (a.name === name && Array.isArray(a.context_delta)) msgs.push(...a.context_delta);
+        }
+      }
+      return msgs;
+    }
+
     function renderContext() {
       const snap = currentSnapshot();
       const arr = (snap && snap.agents) ? snap.agents : [];
       const a = arr.find(x => x.name === currentAgent);
       if (!a) { ctxEl.textContent = ''; return; }
-      const lines = [];
-      lines.push('<div><strong>' + esc(a.name) + '</strong> <span class="pill">' + esc(a.role || '') + '</span></div>');
-      lines.push('<div style="margin:8px 0"><em>Plan State</em></div>');
-      lines.push('<pre>' + esc(JSON.stringify(a.plan_state || {}, null, 2)) + '</pre>');
-      lines.push('<div style="margin:8px 0"><em>Full Context</em></div>');
-      const tail = a.short_memory || [];
-      lines.push('<pre>' + esc(tail.map(m => '- [' + (m.role || '') + ']\n' + (m.content || '')).join('\n\n')) + '</pre>');
-      ctxEl.innerHTML = lines.join('\n');
+      const plan = a.plan_state || {};
+      const msgs = aggregateContextFor(a.name);
+      const buf = [];
+      buf.push('<div><strong>' + esc(a.name) + '</strong><span class="pill">' + esc(a.role || '') + '</span></div>');
+      buf.push('<details><summary>Plan State</summary><pre>' + esc(JSON.stringify(plan, null, 2)) + '</pre></details>');
+      buf.push('<h4>Full Context</h4>');
+      if (msgs.length === 0) {
+        buf.push('<div style="opacity:.7; font-size:12px;">(empty)</div>');
+      } else {
+        for (const m of msgs) {
+          const role = esc(m.role || '');
+          const content = esc(m.content || '');
+          buf.push('<div class="msg"><span class="role">[' + role + ']</span>' + content + '</div>');
+        }
+      }
+      ctxEl.innerHTML = buf.join('');
     }
 
     // Timeline / slider handling
@@ -136,7 +171,7 @@
       renderAgents();
       renderContext();
       const snap = currentSnapshot();
-      document.getElementById('hdr').textContent = 'turns: ' + (snap.turns || 0);
+      document.getElementById('hdr').textContent = 'turns: ' + ((snap && snap.turns) || 0);
     }
 
     document.getElementById('frameRange').addEventListener('input', function(e) {

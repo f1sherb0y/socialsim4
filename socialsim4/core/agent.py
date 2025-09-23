@@ -1,4 +1,3 @@
-import json
 import re
 import xml.etree.ElementTree as ET
 
@@ -41,7 +40,6 @@ class Agent:
         self.plan_state = {
             "goals": [],
             "milestones": [],
-            "current_focus": {},
             "strategy": "",
             "notes": "",
         }
@@ -50,12 +48,12 @@ class Agent:
         # Render plan state for inclusion in system prompt
         def _fmt_list(items):
             if not items:
-                return "- (none)"
+                return "(none)"
             return "\n".join([f"- {item}" for item in items])
 
         def _fmt_goals(goals):
             if not goals:
-                return "- (none)"
+                return "(none)"
             lines = []
             for g in goals:
                 gid = g.get("id", "?")
@@ -67,7 +65,7 @@ class Agent:
 
         def _fmt_milestones(milestones):
             if not milestones:
-                return "- (none)"
+                return "(none)"
             lines = []
             for m in milestones:
                 mid = m.get("id", "?")
@@ -77,15 +75,12 @@ class Agent:
             return "\n".join(lines)
 
         plan_state_block = f"""
-Internal Plan State (private, behavioral; propose updates via Plan Update):
+Internal Plan State:
 Internal Goals:
 {_fmt_goals(self.plan_state.get("goals"))}
 
 Internal Milestones:
 {_fmt_milestones(self.plan_state.get("milestones"))}
-
-Internal Current Focus:
-{self.plan_state.get("current_focus", {})}
 
 Internal Strategy:
 {self.plan_state.get("strategy", "")}
@@ -96,41 +91,9 @@ Internal Notes:
 
         # If plan_state is empty, explicitly ask the model to initialize it
         if not self.plan_state or (
-            not self.plan_state.get("goals")
-            and not self.plan_state.get("milestones")
-            and not self.plan_state.get("current_focus")
+            not self.plan_state.get("goals") and not self.plan_state.get("milestones")
         ):
-            plan_state_block += "\nPlan State is currently empty. In this turn, include a '--- Plan Update ---' section with a JSON object using 'replace' to initialize goals, milestones (based on your Plan steps), current_focus, and a brief strategy. Keep it concise.\n"
-
-        planning_guidelines = """
-Internal Planning Principles (behavioral/private):
-- Internal vs Scene: These Goals, Milestones, Current Focus, Strategy, and Notes are your internal behavioral guides. They are distinct from scene objectives and public plans; use them to steer your Actions rather than stating them as external commitments.
-- Goals are stable; modify only when genuinely necessary.
-- Use your own milestones to track observable progress.
-- Keep a single Current Focus and align your Action to it.
-- Prefer minimal coherent changes; when adapting, preserve unaffected goals and milestones and state what remains unchanged.
-
-Plan State JSON Schema (reference):
-{
-  "goals": [
-    {"id": "g1", "desc": "...", "priority": "low|normal|high", "status": "pending|current|done"}
-  ],
-  "milestones": [
-    {"id": "m1", "desc": "...", "status": "pending|done"}
-  ],
-  "current_focus": {"goal_id": "g1", "step": "..."},
-  "strategy": "...",
-  "notes": "..."
-}
-
-Plan Update JSON Format (you emit this ONLY if changing the plan):
-- Use exactly one of:
-  1) Replace the entire plan_state:
-     {"justification":"...", "replace": {PLAN_STATE_OBJECT}}
-  2) Patch fields (arrays replace entirely):
-     {"justification":"...", "patch": {"goals":[...], "milestones":[...], "current_focus":{...}, "strategy":"...", "notes":"..."}}
-- Missing fields mean no change. Unknown keys are ignored. Output valid JSON only (no comments).
-"""
+            plan_state_block += "\nPlan State is empty. In this turn, include a plan update block using tags to initialize numbered Goals and Milestones.\n"
 
         # Build action catalog and usage
         action_catalog = "\n".join(
@@ -153,19 +116,15 @@ You speak in a {self.style} style.
 
 {plan_state_block}
 
-{planning_guidelines}
-
 Language Policy:
 - Output all public messages in {self.language}.
 - Keep Action XML element and attribute names in English; localize only values (e.g., <message>…</message>).
-- Plan Update JSON keys remain English; values may be written in {self.language}.
+- Plan Update tag names remain English; content may be written in {self.language}.
 - Do not switch languages unless explicitly asked.
 
 {scene.get_scenario_description() if scene else ""}
 
 {scene.get_behavior_guidelines() if scene else ""}
-
-{self.get_output_format()}
 
 Action Space:
 
@@ -179,6 +138,9 @@ Usage:
 {("Here are some examples:\n" + scene.get_examples()) if (scene and scene.get_examples() != "") else ""}
 
 
+{self.get_output_format()}
+
+
 Initial instruction:
 {self.initial_instruction}
 """
@@ -186,8 +148,8 @@ Initial instruction:
 
     def get_output_format(self):
         return """
-Planning guidelines (internal/private):
-- The Goals, Milestones, Plan, and Current Focus you author here are internal behavioral guides, not scene-wide commitments. Use them to decide Actions;
+Planning guidelines:
+- The Goals, Milestones, Plan, and Current Focus you author here are your inner behavioral plans, not scene-wide commitments. Use them to decide Actions;
 - Goals: stable end-states. Rarely change; name and describe them briefly.
 - Milestones: observable sub-results that indicate progress toward goals.
 - Current Focus: the single step you are executing now. Align Action with this.
@@ -196,6 +158,7 @@ Planning guidelines (internal/private):
 
 Turn Flow:
 - Output exactly one Thoughts/Plan/Action block per response.
+- Each time you can choose one action from the Action Space to execute.
 - Some actions may return immediate results (e.g., briefs, searches). Incorporate them and proceed;
 - Some actions may require multiple steps (e.g., complex messages, multi-step tasks), do not yield the floor. The system will schedule your next turn.
 - If the next step is clear, take it; when finished, yield the floor with <Action name="yield"></Action>.
@@ -203,7 +166,7 @@ Turn Flow:
 Your entire response MUST follow the format below. 
 For your first action in each turn, always include Thoughts, Plan, and Action. 
 For subsequent actions, output only the Action element. omit Thoughts, Plan, and Plan Update.
-Include Plan Update only when you decide to modify the plan.
+Include Plan Update in the end, only when you decide to modify the plan.
 
 --- Thoughts ---
 Your internal monologue. Analyze the current situation, your persona, your long-term goals, and the information you have.
@@ -220,25 +183,18 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 --- Action ---
 // Output exactly one Action XML element. No extra text.
 // Do not wrap the Action XML in code fences or other decorations.
-// Example:
-// <Action name="send_message"><message>Hi everyone!</message></Action>
+// Use one of the actions listed in Available Actions.
+// If no avaliable actions, yield.
 
 --- Plan Update ---
 // Optional. Include ONLY if you are changing the plan.
-// Output either:
-// - no change
-// - or a JSON object with either a full `replace` or a partial `patch`, plus an optional natural-language `justification`.
-// Example (patch):
-// {"justification":"...","patch":{"current_focus":{"goal_id":"g1","step":"..."},"notes":"..."}}
-// Example (replace):
-// {"justification":"...","replace":{"goals":[...],"milestones":[...],"current_focus":{...},"strategy":"...","notes":"..."}}
-// Plan State schema reference:
-// {"goals":[{"id":"g1","desc":"...","priority":"low|normal|high","status":"pending|current|done"}],
-//  "milestones":[{"id":"m1","desc":"...","status":"pending|done"}],
-//  "current_focus":{"goal_id":"g1","step":"..."},
-//  "strategy":"...",
-//  "notes":"..."}
-// JSON must be valid (no comments or trailing commas). If Plan State is empty, initialize it using a `replace`.
+// Output either "no change"
+// or one or more of these tags (no extra text, no code fences):
+//   <Goals>\n1. ...\n2. ... [CURRENT]\n</Goals>
+//   <Milestones>\n1. ... [DONE]\n</Milestones>
+//   <Strategy>...</Strategy>
+//   <Notes>...</Notes>
+// Use numbered lists for Goals and Milestones.
 """
 
     def call_llm(self, clients, messages, client_name="chat"):
@@ -302,107 +258,115 @@ History:
         return thoughts, plan, action, plan_update_block
 
     def _parse_plan_update(self, block):
-        """Parse Plan Update block; returns dict with 'replace' or 'patch', and optional 'justification'.
-        Accepts 'no change' (case-insensitive) or JSON optionally wrapped in fences.
+        """Parse Plan Update block in strict tag format.
+        Returns a plan_state dict or None (for 'no change').
         """
         if not block:
             return None
         text = block.strip()
         if text.lower().startswith("no change"):
             return None
-        # Strip common code fences
-        if text.startswith("```"):
-            # remove first fence line and trailing fence
-            text = re.sub(r"^```[a-zA-Z0-9_-]*\n", "", text)
-            text = re.sub(r"\n```\s*$", "", text)
-        # Try to locate JSON
-        m = re.search(r"\{.*\}", text, re.DOTALL)
-        if not m:
+        xml_text = "<Update>" + text + "</Update>"
+        root = ET.fromstring(xml_text)
+        if root.tag != "Update":
             return None
-        data = json.loads(m.group(0))
-        if "replace" in data or "patch" in data:
-            return data
-        return None
 
-    def _apply_plan_update(self, update):
-        """Apply plan update: either full replace or shallow patch with list replacement."""
-        if not update:
-            return False
-        justification = update.get("justification", "")
-        if "replace" in update:
-            self.plan_state = update["replace"]
-            if self.log_event:
-                self.log_event(
-                    "plan_update_applied",
-                    {
-                        "agent": self.name,
-                        "kind": "replace",
-                        "justification": justification,
-                    },
-                )
-            return True
-        if "patch" in update:
-            patch = update["patch"]
-            for k, v in patch.items():
-                self.plan_state[k] = v
-            if self.log_event:
-                self.log_event(
-                    "plan_update_applied",
-                    {
-                        "agent": self.name,
-                        "kind": "patch",
-                        "justification": justification,
-                    },
-                )
-            return True
-        return False
+        goals_el = None
+        milestones_el = None
+        strategy_el = None
+        notes_el = None
+        for child in list(root):
+            t = child.tag
+            if t == "Goals":
+                goals_el = child
+            elif t == "Milestones":
+                milestones_el = child
+            elif t == "Strategy":
+                strategy_el = child
+            elif t == "Notes":
+                notes_el = child
+            else:
+                raise ValueError(f"Unknown Plan Update tag: {t}")
 
-    def _infer_initial_plan_from_plan_text(self, plan_text: str):
-        """Infer a minimal initial plan_state from the textual Plan when no Plan Update
-        was provided and the plan_state is empty."""
-        lines = [l.strip() for l in plan_text.splitlines() if l.strip()]
-        steps = []
-        current_idx = None
-        for l in lines:
-            m = re.match(r"\d+\.\s*(.*)", l)
-            if m:
-                text = m.group(1)
-                if "[CURRENT]" in text:
-                    text = text.replace("[CURRENT]", "").strip()
-                    if current_idx is None:
-                        current_idx = len(steps)
-                steps.append(text)
-        if not steps:
-            return False
-        milestones = [
-            {"id": f"m{i + 1}", "desc": s, "status": "pending"}
-            for i, s in enumerate(steps)
-        ]
-        focus_step = steps[current_idx] if current_idx is not None else steps[0]
-        self.plan_state = {
-            "goals": [
-                {
-                    "id": "g1",
-                    "desc": "Execute the current multi-step plan",
-                    "priority": "normal",
-                    "status": "current",
-                }
-            ],
-            "milestones": milestones,
-            "current_focus": {"goal_id": "g1", "step": focus_step},
+        def _parse_numbered_lines(txt):
+            if txt.strip() == "" or txt.strip().lower() == "(none)":
+                return []
+            items = []
+            lines = [l.strip() for l in (txt or "").splitlines() if l.strip()]
+            for l in lines:
+                m = re.match(r"^(\d+)\.\s*(.*)$", l)
+                if not m:
+                    raise ValueError("Malformed Plan Update list line: " + l)
+                items.append(m.group(2).strip())
+            return items
+
+        result = {
+            "goals": [],
+            "milestones": [],
             "strategy": "",
             "notes": "",
         }
+
+        current_idx = None
+        if goals_el is not None:
+            items = _parse_numbered_lines(goals_el.text or "")
+            goals = []
+            for i, desc in enumerate(items):
+                is_cur = "[CURRENT]" in desc
+                clean = desc.replace("[CURRENT]", "").strip()
+                gid = f"g{i + 1}"
+                goals.append(
+                    {
+                        "id": gid,
+                        "desc": clean,
+                        "priority": "normal",
+                        "status": "current" if is_cur else "pending",
+                    }
+                )
+                if is_cur:
+                    if current_idx is not None:
+                        raise ValueError("Multiple [CURRENT] markers in Goals")
+                    current_idx = i
+            result["goals"] = goals
+
+        if milestones_el is not None:
+            items = _parse_numbered_lines(milestones_el.text or "")
+            ms = []
+            for i, desc in enumerate(items):
+                done = "[DONE]" in desc
+                clean = desc.replace("[DONE]", "").strip()
+                ms.append(
+                    {
+                        "id": f"m{i + 1}",
+                        "desc": clean,
+                        "status": "done" if done else "pending",
+                    }
+                )
+            result["milestones"] = ms
+
+        if strategy_el is not None:
+            result["strategy"] = (strategy_el.text or "").strip()
+        if notes_el is not None:
+            result["notes"] = (notes_el.text or "").strip()
+
+        return result
+
+    def _apply_plan_update(self, update):
+        """Apply plan update by full replace with the provided plan_state dict."""
+        if not update:
+            return False
+        self.plan_state = update
         if self.log_event:
             self.log_event(
-                "plan_update_inferred",
+                "plan_update_applied",
                 {
                     "agent": self.name,
-                    "source": "plan_text",
-                    "milestones": len(milestones),
+                    "kind": "replace",
                 },
             )
         return True
+
+    # Removed: JSON/heuristic inference of plan from free-form Plan text; plan updates are tag-based and replace-only.
 
     def _parse_actions(self, action_block):
         """Parses the Action XML block and returns a single action dict.
@@ -415,6 +379,16 @@ History:
         if not action_block:
             return []
         text = action_block.strip()
+        # Strip the content before < and after >
+        # help me write it: Strip the content before < and after >
+        m1 = re.search(r"<Action.*?>.*</Action>", text, re.DOTALL)
+        m2 = re.search(r"<Action.*?/>", text, re.DOTALL)
+        m = m1 or m2
+        if m:
+            text = m.group(0).strip()
+        else:
+            return []
+
         # Strip code fences
         if text.startswith("```xml") and text.endswith("```"):
             text = text[6:-3].strip()
@@ -469,21 +443,19 @@ History:
         thoughts, plan, action_block, plan_update_block = self._parse_full_response(
             llm_output
         )
-        action_data = self._parse_actions(action_block) or self._parse_actions(
-            llm_output
-        )
-        plan_update = self._parse_plan_update(plan_update_block)
+        try:
+            action_data = self._parse_actions(action_block) or self._parse_actions(
+                llm_output
+            )
+
+            plan_update = self._parse_plan_update(plan_update_block)
+        except Exception as e:
+            action_data = []
+            print(f"{self.name} action parse error: {e}")
+            print(f"LLM output:\n{llm_output}\n{'-' * 40}")
+            raise e
         if plan_update:
             self._apply_plan_update(plan_update)
-        elif (
-            not self.plan_state
-            or (
-                not self.plan_state.get("goals")
-                and not self.plan_state.get("milestones")
-                and not self.plan_state.get("current_focus")
-            )
-        ) and plan:
-            self._infer_initial_plan_from_plan_text(plan)
 
         self.short_memory.append("assistant", llm_output)
         self.last_history_length = len(self.short_memory)
@@ -544,7 +516,6 @@ History:
             {
                 "goals": [],
                 "milestones": [],
-                "current_focus": {},
                 "strategy": "",
                 "notes": "",
             },

@@ -4,10 +4,10 @@
 
 
 // === Replace the content in `context` with any new transcript ===
-#let ctx = read("council.txt")
+#let ctx = read("werewolf.txt")
 
 #set heading(numbering: none)
 
-= Legislative Council
+= Werewolf
 
 #parse-transcript(ctx, colors: theme)

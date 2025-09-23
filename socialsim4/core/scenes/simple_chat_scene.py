@@ -24,28 +24,32 @@ Act like a real person in the chat:
 
 - You can choose not to send a message.
 - If a message is not relevant, not addressed to you, or boring, you might ignore it.
+
+Fact-checking with web tools:
+- When news, claims, or factual questions arise, prefer using actions over speculation.
+- Use `web_search` to find up-to-date information with a concrete query.
+- Optionally follow up with `view_page` to skim a promising source before commenting.
+- Summarize findings briefly when you speak.
 """
 
     def get_examples(self):
         return """
---- Thoughts ---
-I think I'll say hello to everyone.
+I want to quickly verify a claim by searching the web first.
 
 --- Plan ---
-1. Send a greeting message.
+1. Search the web for the claim.
 
 --- Action ---
-<Action name="send_message"><message>Hi everyone!</message></Action>
+<Action name="web_search"><query>AI creative writing benchmark human-level 2025 study</query><max_results>3</max_results></Action>
 
 --- Thoughts ---
-I want to quickly check recent news about electric cars.
+Open a promising result and skim the content to extract key points.
 
 --- Plan ---
-1. Search the web for electric car news.
-2. Open one promising result to skim content.
+1. View the first promising result.
 
 --- Action ---
-<Action name="web_search"><query>latest news electric cars 2025</query><max_results>3</max_results></Action>
+<Action name="view_page"><url>https://example.com/article</url><max_chars>2000</max_chars></Action>
 """
 
     def get_scene_actions(self, agent):
