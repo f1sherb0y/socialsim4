@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createSim, runSim, type Offsets, spawnSimFromTree } from '../api/client'
+import { getSnapshot, type Offsets, spawnSimFromTree } from '../api/client'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 export default function Simulation() {
@@ -10,7 +10,7 @@ export default function Simulation() {
   const [offsets, setOffsets] = useState<Offsets | null>(null)
   const [timeline, setTimeline] = useState<any[]>([])
   const [selected, setSelected] = useState<string>('')
-  const [isRunning, setIsRunning] = useState(false)
+  // SimTree controls execution; this page is read-only view
 
   const initOffsets = useMemo<Offsets | null>(() => {
     if (!names.length) return null
@@ -19,15 +19,7 @@ export default function Simulation() {
     return { events: 0, mem }
   }, [names])
 
-  async function create() {
-    const r = await createSim()
-    setSimId(r.id)
-    setNames(r.names)
-    setSelected(r.names[0] || "")
-    const off: Offsets = { events: 0, mem: {} as any }
-    r.names.forEach((n) => (off.mem[n] = { count: 0, last_len: 0 }))
-    setOffsets(off)
-  }
+  // no local create
 
   // If route has :treeId, spawn a sim from that tree (optionally with ?node=)
   useEffect(() => {
@@ -41,18 +33,15 @@ export default function Simulation() {
       setSelected(r.names[0] || "")
       const off: Offsets = { events: 0, mem: {} as any }
       r.names.forEach((n) => (off.mem[n] = { count: 0, last_len: 0 }))
-      setOffsets(off)
+      // fetch one snapshot immediately for initial view
+      const s = await getSnapshot(r.sim_id, off)
+      setTimeline((t) => [...t, s.snapshot])
+      setOffsets(s.offsets)
     }
     init()
   }, [params.treeId])
 
-  async function step(n: number) {
-    if (simId == null || offsets == null) return
-    setIsRunning(true)
-    await runSim(simId, n)
-    if ((fallbackRef as any).current) clearTimeout((fallbackRef as any).current)
-      ; (fallbackRef as any).current = setTimeout(() => setIsRunning(false), 1500)
-  }
+  // no local step
 
   useEffect(() => {
     if (offsets == null && initOffsets) setOffsets(initOffsets)
@@ -90,8 +79,7 @@ export default function Simulation() {
 
   // WebSocket live updates + running spinner settle
   const wsRef = useRef<WebSocket | null>(null)
-  const settleRef = useRef<any>(null)
-  const fallbackRef = useRef<any>(null)
+  // passive WS (optional)
   useEffect(() => {
     if (simId == null || offsets == null) return
     if (wsRef.current) return
@@ -103,37 +91,15 @@ export default function Simulation() {
       const msg = JSON.parse(ev.data)
       setTimeline((t) => [...t, msg.snapshot])
       setOffsets(msg.offsets)
-      if (settleRef.current) clearTimeout(settleRef.current)
-      if (fallbackRef.current) clearTimeout(fallbackRef.current)
-      settleRef.current = setTimeout(() => setIsRunning(false), 300)
+      // passive stream only
     }
     wsRef.current = ws
     return () => {
       ws.close()
       wsRef.current = null
-      if (settleRef.current) clearTimeout(settleRef.current)
-      if (fallbackRef.current) clearTimeout(fallbackRef.current)
+      // no timers
     }
   }, [simId, offsets])
-
-  // Simple inline spinner style
-  const spinner = (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <span
-        style={{
-          width: 16,
-          height: 16,
-          border: '2px solid #999',
-          borderTopColor: '#333',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-          display: 'inline-block',
-        }}
-      />
-      <span style={{ color: '#555', fontSize: 12 }}>Running…</span>
-      <style>{'@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}'}</style>
-    </div>
-  )
 
   // Auto-stick to bottom when new content arrives
   const [stickBottom, setStickBottom] = useState(true)
@@ -169,18 +135,11 @@ export default function Simulation() {
           <Link to="/simtree">树</Link>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <button onClick={create} disabled={simId != null}>Create simple_chat</button>
-          <button onClick={() => step(1)} disabled={simId == null}>Run 1 turn</button>
-          <button onClick={() => step(10)} disabled={simId == null}>Run 10 turns</button>
-          <button onClick={() => step(50)} disabled={simId == null}>Run 50 turns</button>
-        </div>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <label style={{ fontSize: 12, color: '#555' }}>
             <input type="checkbox" checked={stickBottom} onChange={(e) => setStickBottom(e.target.checked)} /> stick to bottom
           </label>
-          {isRunning && spinner}
         </div>
       </div>
 
