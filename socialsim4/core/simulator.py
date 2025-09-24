@@ -33,8 +33,6 @@ class Simulator:
         # No round concept: keep only per-turn limits
         self.max_steps_per_turn = max_steps_per_turn
         # Build ordering (class or instance); keep it simple
-        if ordering is None:
-            ordering: Ordering = SequentialOrdering()
         self.ordering = ordering
         self.ordering.set_simulation(self)
         self.event_queue = Queue()
@@ -139,7 +137,7 @@ class Simulator:
             clients=clients,
             broadcast_initial=False,  # Don't rebroadcast initial event
             max_steps_per_turn=data.get("max_steps_per_turn", 5),
-            ordering=ordering_cls,
+            ordering=ordering_cls(),
         )
         return simulator
 
