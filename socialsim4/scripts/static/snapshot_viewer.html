@@ -35,6 +35,9 @@
     <strong>SocialSim4 – Snapshot</strong>
     <span id="hdr" style="margin-left:12px; opacity:.8"></span>
     <div style="float:right; display:flex; align-items:center; gap:8px;">
+      <label for="stickBottom" style="font-size:14px; opacity:.8; display:flex; align-items:center; gap:6px;">
+        <input id="stickBottom" type="checkbox" /> stick to bottom
+      </label>
       <label for="frameRange" style="font-size:14px; opacity:.8;">Frame</label>
       <input id="frameRange" type="range" min="0" max="0" value="0" step="1" style="width:320px;" />
       <span id="frameVal" style="width:40px; text-align:right; font-variant-numeric: tabular-nums;">0</span>
@@ -69,7 +72,9 @@
     const feed = document.getElementById('feed');
     const agentsEl = document.getElementById('agents');
     const ctxEl = document.getElementById('ctx');
+    const stickEl = document.getElementById('stickBottom');
     let currentAgent = null;
+    let stickBottom = false;
 
     function esc(s) { return ('' + s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
@@ -99,6 +104,7 @@
         }
       }
       feed.innerHTML = '<pre>' + lines.join('\n') + '</pre>';
+      if (stickBottom) feed.scrollTop = feed.scrollHeight;
       const snap = currentSnapshot();
       document.getElementById('hdr').textContent = 'turns: ' + ((snap && snap.turns) || 0);
     }
@@ -150,6 +156,7 @@
         }
       }
       ctxEl.innerHTML = buf.join('');
+      if (stickBottom) ctxEl.scrollTop = ctxEl.scrollHeight;
     }
 
     // Timeline / slider handling
@@ -178,6 +185,15 @@
       idx = parseInt(e.target.value || '0', 10) || 0;
       updateRange();
       renderAll();
+    });
+
+    stickEl.addEventListener('change', function(e) {
+      stickBottom = !!e.target.checked;
+      if (stickBottom) {
+        // Snap immediately to bottom for both panes
+        feed.scrollTop = feed.scrollHeight;
+        ctxEl.scrollTop = ctxEl.scrollHeight;
+      }
     });
 
     updateRange();

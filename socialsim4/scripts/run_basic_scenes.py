@@ -42,6 +42,7 @@ def console_logger(event_type: str, data):
         print("[Deal] Bottom:", " ".join(bottom))
         for name, toks in players.items():
             print(f"[Deal] {name}:", " ".join(toks))
+    # landlord_play event removed from actions; summaries now include details
 
 
 def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
@@ -105,8 +106,7 @@ def make_clients() -> Dict[str, object]:
     return {provider.name: create_llm_client(provider)}
 
 
-def run_landlord_scene():
-    print("=== LandlordPokerScene (Dou Dizhu, 4p, 1 deck, call/rob + doubling) ===")
+def build_landlord_sim(num_decks: int = 1) -> Simulator:
     # Four configured players with distinct styles/prompts
     agents = [
         Agent.from_dict(
@@ -177,7 +177,8 @@ def run_landlord_scene():
     ]
     scene = LandlordPokerScene(
         "landlord",
-        "New game: Dou Dizhu (4 players, one deck). Call/rob bidding, doubling stage, full combos.",
+        "New game: Dou Dizhu (4 players). Call/rob bidding, doubling stage, full combos.",
+        num_decks=num_decks,
     )
     clients = make_clients()
 
@@ -227,11 +228,17 @@ def run_landlord_scene():
         max_steps_per_turn=3,
     )
     sim.broadcast(PublicEvent("Players: " + ", ".join([a.name for a in agents])))
+    return sim
+
+
+def run_landlord_scene():
+    print("=== LandlordPokerScene (Dou Dizhu) ===")
+    decks = int(os.getenv("LDDZ_DECKS", "2"))
+    sim = build_landlord_sim(num_decks=decks)
     sim.run(max_turns=200)
 
 
-def run_simple_chat():
-    print("=== SimpleChatScene ===")
+def build_simple_chat_sim() -> Simulator:
     # agents = make_agents(["Host", "Alice", "Bob"], ["send_message", "yield"])
     agents = [
         Agent.from_dict(
@@ -279,22 +286,22 @@ def run_simple_chat():
         ordering=SequentialOrdering(),
         event_handler=console_logger,
     )
-
-    # Participants announcement before other messages
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
-
-    # Broadcast a public announcement before starting the simulation
     sim.broadcast(
         PublicEvent(
             "News: A new study suggests AI models now match human-level performance in several creative writing benchmarks."
         )
     )
+    return sim
 
+
+def run_simple_chat():
+    print("=== SimpleChatScene ===")
+    sim = build_simple_chat_sim()
     sim.run(max_turns=50)
 
 
-def run_council():
-    print("=== CouncilScene ===")
+def build_council_sim() -> Simulator:
     # Six participants: a Host + five representatives with realistic profiles
     reps: List[Agent] = [
         Agent.from_dict(
@@ -428,11 +435,16 @@ def run_council():
     )
     # Participants announcement at start
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in reps])))
+    return sim
+
+
+def run_council():
+    print("=== CouncilScene ===")
+    sim = build_council_sim()
     sim.run(max_turns=120)
 
 
-def run_village():
-    print("=== VillageScene ===")
+def build_village_sim() -> Simulator:
     agents = [
         Agent.from_dict(
             {
@@ -530,18 +542,21 @@ def run_village():
 
     # Participants announcement at start
     sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
-
     sim.broadcast(
         PublicEvent(
             "At sunrise, word spreads in the village_center: the well's flow is weak, and a faint humming has been heard near the ancient_ruins after dusk."
         )
     )
+    return sim
 
+
+def run_village():
+    print("=== VillageScene ===")
+    sim = build_village_sim()
     sim.run(max_turns=40)
 
 
-def run_werewolf():
-    print("=== WerewolfScene ===")
+def build_werewolf_sim() -> Simulator:
     # Define a fixed cast and roles for determinism in the demo
     names = [
         "Moderator",
@@ -642,13 +657,19 @@ def run_werewolf():
             wolves + wolves + seers + witches + names + names + ["Moderator"]
         ),
     )
+    return sim
+
+
+def run_werewolf():
+    print("=== WerewolfScene ===")
+    sim = build_werewolf_sim()
     sim.run(max_turns=400)
 
 
 if __name__ == "__main__":
-    # run_simple_chat()
+    run_simple_chat()
     # run_council()
     # run_village()
 
     # run_werewolf()
-    run_landlord_scene()
+    # run_landlord_scene()

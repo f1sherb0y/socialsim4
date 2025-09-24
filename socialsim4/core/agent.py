@@ -268,6 +268,12 @@ History:
         if text.lower().startswith("no change"):
             return None
         xml_text = "<Update>" + text + "</Update>"
+        # Normalize bare ampersands so XML parser won't choke on plain '&'
+        xml_text = re.sub(
+            r"&(?!#\d+;|#x[0-9A-Fa-f]+;|[A-Za-z][A-Za-z0-9]*;)",
+            "&amp;",
+            xml_text,
+        )
         root = ET.fromstring(xml_text)
         if root.tag != "Update":
             return None
@@ -399,6 +405,13 @@ History:
             text = text.strip("`")
         text = text.strip("`")
 
+        # Normalize bare ampersands so XML parser won't choke on plain '&'
+        text = re.sub(
+            r"&(?!#\d+;|#x[0-9A-Fa-f]+;|[A-Za-z][A-Za-z0-9]*;)",
+            "&amp;",
+            text,
+        )
+
         # Parse as a single Action element
         root = ET.fromstring(text)
 
@@ -420,7 +433,6 @@ History:
         current_length = len(self.short_memory)
         if current_length == self.last_history_length and not initiative:
             # 没有新事件，无反应
-            # print(f"No new messages for {self.name}, skipping")
             return {}
 
         # 检查并总结如果需要
@@ -434,7 +446,7 @@ History:
         # Non-ephemeral action-only nudge for intra-turn calls or when last was assistant
         last_role = ctx[-1].get("role") if len(ctx) > 1 else None
         if initiative or last_role == "assistant":
-            hint = "Action only. One XML Action; no code fences."
+            hint = "Continue."
             self.short_memory.append("user", hint)
             ctx.append({"role": "user", "content": hint})
 

@@ -38,6 +38,7 @@ class Simulator:
         self.ordering = ordering
         self.ordering.set_simulation(self)
         self.event_queue = Queue()
+        self.order_iter = self.ordering.iter()
 
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
@@ -143,8 +144,6 @@ class Simulator:
         return simulator
 
     def run(self, max_turns=1000):
-        print("--- Simulation Start ---")
-        order_iter = self.ordering.iter()
         turns = 0
 
         while turns < max_turns:
@@ -152,12 +151,11 @@ class Simulator:
                 print("Scenario complete. Simulation ends.")
                 break
 
-            agent_name = next(order_iter)
+            agent_name = next(self.order_iter)
 
             agent = self.agents.get(agent_name)
             if not agent:
                 continue
-
             # Optional: provide a status prompt at the start of each turn
             status_prompt = self.scene.get_agent_status_prompt(agent)
             if status_prompt:
@@ -175,16 +173,16 @@ class Simulator:
 
             # Intra-turn loop (bounded by global cap)
             steps = 0
-            first_step = True
             continue_turn = True
             self.emit_remaining_events()
+
             while continue_turn and steps < self.max_steps_per_turn:
                 self.emit_event(
                     "agent_process_start", {"agent": agent.name, "step": steps + 1}
                 )
                 action_datas = agent.process(
                     self.clients,
-                    initiative=(turns == 0 or not first_step),
+                    initiative=False,
                     scene=self.scene,
                 )
                 self.emit_event(
@@ -226,7 +224,6 @@ class Simulator:
                         break
 
                 steps += 1
-                first_step = False
                 if yielded:
                     continue_turn = False
 
@@ -236,5 +233,3 @@ class Simulator:
             self.ordering.post_turn(agent.name)
             turns += 1
             self.turns = turns
-
-        print("--- Simulation Complete ---")

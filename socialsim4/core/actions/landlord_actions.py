@@ -137,28 +137,56 @@ Available tokens: 3 4 5 6 7 8 9 10 J Q K A 2 SJ BJ
 """
 
     def handle(self, action_data, agent, simulator, scene):
+        # Helpers
+        def _hand_tokens(name: str) -> List[str]:
+            h = scene.state.get("hands", {}).get(name, {})
+            order = ["3","4","5","6","7","8","9","10","J","Q","K","A","2","SJ","BJ"]
+            toks: List[str] = []
+            for r in order:
+                c = h.get(r, 0)
+                if c:
+                    toks.extend([r] * c)
+            return toks
+
+        cards_str = action_data.get("cards")
+        attempted = [t for t in (cards_str or "").strip().split() if t]
+
         if scene.state.get("phase") != "playing":
             agent.add_env_feedback("You can only play during the playing phase.")
-            return False, {"error": "wrong_phase"}, f"{agent.name} play_cards failed", {}, False
-        cards_str = action_data.get("cards")
+            remaining_str = " ".join(_hand_tokens(agent.name))
+            attempt_str = " ".join(attempted) if attempted else "(none)"
+            summary = f"{agent.name} tried: {attempt_str} -> wrong_phase | remaining: {remaining_str}"
+            return False, {"error": "wrong_phase"}, summary, {}, False
         if not cards_str or not cards_str.strip():
             agent.add_env_feedback("Provide cards to play.")
-            return False, {"error": "missing_cards"}, f"{agent.name} play_cards failed", {}, False
+            remaining_str = " ".join(_hand_tokens(agent.name))
+            summary = f"{agent.name} tried: (none) -> missing_cards | remaining: {remaining_str}"
+            return False, {"error": "missing_cards"}, summary, {}, False
 
         tokens = scene._parse_cards_str(cards_str)
+        attempted = list(tokens)
         if not scene._has_cards(agent.name, tokens):
             agent.add_env_feedback("You don't have those cards.")
-            return False, {"error": "not_in_hand"}, f"{agent.name} play_cards failed", {}, False
+            remaining_str = " ".join(_hand_tokens(agent.name))
+            attempt_str = " ".join(attempted)
+            summary = f"{agent.name} tried: {attempt_str} -> not_in_hand | remaining: {remaining_str}"
+            return False, {"error": "not_in_hand"}, summary, {}, False
 
         combo = scene._evaluate_combo(tokens)
         if combo is None:
             agent.add_env_feedback("Invalid combination.")
-            return False, {"error": "invalid_combo"}, f"{agent.name} play_cards failed", {}, False
+            remaining_str = " ".join(_hand_tokens(agent.name))
+            attempt_str = " ".join(attempted)
+            summary = f"{agent.name} tried: {attempt_str} -> invalid_combo | remaining: {remaining_str}"
+            return False, {"error": "invalid_combo"}, summary, {}, False
 
         lead = scene.state.get("leading_combo")
         if lead is not None and not scene._can_beat(combo, lead):
             agent.add_env_feedback("Your play does not beat the current lead.")
-            return False, {"error": "not_beating"}, f"{agent.name} play_cards failed", {}, False
+            remaining_str = " ".join(_hand_tokens(agent.name))
+            attempt_str = " ".join(attempted)
+            summary = f"{agent.name} tried: {attempt_str} -> not_beating | remaining: {remaining_str}"
+            return False, {"error": "not_beating"}, summary, {}, False
 
         # Accept play
         scene._remove_cards(agent.name, tokens)
@@ -171,18 +199,22 @@ Available tokens: 3 4 5 6 7 8 9 10 J Q K A 2 SJ BJ
                 int(scene.state.get("score_multiplier", 1)) * 2
             )
 
-        simulator.broadcast(
-            PublicEvent(f"{agent.name} played: {cards_str} ({combo['type']}).")
-        )
+        simulator.broadcast(PublicEvent(f"{agent.name} played: {cards_str} ({combo['type']})."))
 
         # Win check
         if scene._hand_size(agent.name) == 0:
             scene._on_player_won(agent.name, simulator)
-            return True, {"played": tokens, "win": True}, f"{agent.name} went out", {}, True
+            remaining_str = " ".join(_hand_tokens(agent.name)) or "(empty)"
+            attempt_str = " ".join(attempted)
+            summary = f"{agent.name} played: {attempt_str} ({combo['type']}), remaining: {remaining_str} [WIN]"
+            return True, {"played": tokens, "win": True}, summary, {}, True
 
         # Advance turn on successful play
         scene._advance_turn()
-        return True, {"played": tokens}, f"{agent.name} played cards", {}, True
+        remaining_str = " ".join(_hand_tokens(agent.name))
+        attempt_str = " ".join(attempted)
+        summary = f"{agent.name} played: {attempt_str} ({combo['type']}), remaining: {remaining_str}"
+        return True, {"played": tokens}, summary, {}, True
 
 
 class DoubleAction(Action):
