@@ -460,13 +460,25 @@ History:
             action_data = self._parse_actions(action_block) or self._parse_actions(
                 llm_output
             )
-
             plan_update = self._parse_plan_update(plan_update_block)
         except Exception as e:
-            action_data = []
-            print(f"{self.name} action parse error: {e}")
-            print(f"LLM output:\n{llm_output}\n{'-' * 40}")
-            raise e
+            # Simple retry: make one more LLM call and re-parse
+            print(f"{self.name} action parse error: {e}; retrying call_llm once...")
+            llm_output_retry = self.call_llm(clients, ctx)
+            thoughts, plan, action_block, plan_update_block = self._parse_full_response(
+                llm_output_retry
+            )
+            try:
+                action_data = self._parse_actions(action_block) or self._parse_actions(
+                    llm_output_retry
+                )
+                plan_update = self._parse_plan_update(plan_update_block)
+                llm_output = llm_output_retry
+            except Exception as e2:
+                action_data = []
+                print(f"{self.name} action parse error after retry: {e2}")
+                print(f"LLM output (retry):\n{llm_output_retry}\n{'-' * 40}")
+                raise e2
         if plan_update:
             self._apply_plan_update(plan_update)
 
