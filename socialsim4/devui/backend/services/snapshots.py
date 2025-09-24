@@ -6,21 +6,11 @@ class DevEventBus:
     def __init__(self, max_history: int = 5000):
         self.history: List[dict] = []
         self.max_history = max_history
-        self.subs = []
-
-    def subscribe(self, fn):
-        self.subs.append(fn)
-
-    def unsubscribe(self, fn):
-        if fn in self.subs:
-            self.subs.remove(fn)
 
     def publish(self, event_type: str, data: dict):
         self.history.append({"type": event_type, "data": data})
         if len(self.history) > self.max_history:
             self.history = self.history[-self.max_history :]
-        for fn in self.subs:
-            fn(event_type, data)
 
 
 def build_snapshot(sim, bus: DevEventBus, names: List[str], offsets: Dict) -> Tuple[Dict, Dict]:

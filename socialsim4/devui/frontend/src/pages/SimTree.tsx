@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createTree, getTreeGraph, treeAdvance, treeAdvanceFrontier, treeAdvanceMulti, treeAdvanceChain, treeBranchPublic, treeDeleteSubtree } from '../api/client'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow'
 import { graphlib, layout } from 'dagre'
 import 'reactflow/dist/style.css'
@@ -8,6 +8,7 @@ import 'reactflow/dist/style.css'
 type Graph = { root: number; frontier: number[]; running?: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }
 
 export default function SimTree() {
+  const params = useParams()
   const navigate = useNavigate()
   const [treeId, setTreeId] = useState<number | null>(null)
   const [graph, setGraph] = useState<Graph | null>(null)
@@ -21,25 +22,8 @@ export default function SimTree() {
 
   async function create() {
     const r = await createTree()
-    setTreeId(r.id)
-    setSelected(r.root)
-    const g = await getTreeGraph(r.id)
-    setGraph(g)
-    // open WS
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
-    const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${r.id}/events`)
-    ws.onopen = () => {
-      setWsReady(true)
-      ws.send('ready')
-    }
-    ws.onmessage = (ev) => {
-      const data = JSON.parse(ev.data)
-      setGraph(data)
-    }
-    wsRef.current = ws
+    localStorage.setItem('devui:lastTreeId', String(r.id))
+    navigate(`/simtree/${r.id}`)
   }
 
   async function refresh() {
@@ -56,6 +40,34 @@ export default function SimTree() {
       }
     }
   }, [])
+
+  // Auto-connect tree by route param or lastTreeId
+  useEffect(() => {
+    const idStr = params.treeId || localStorage.getItem('devui:lastTreeId')
+    if (!idStr) return
+    const id = Number(idStr)
+    if (!id) return
+    setTreeId(id)
+    ;(async () => {
+      const g = await getTreeGraph(id)
+      setGraph(g)
+      setSelected(g.root)
+    })()
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
+    const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${id}/events`)
+    ws.onopen = () => {
+      setWsReady(true)
+      ws.send('ready')
+    }
+    ws.onmessage = (ev) => {
+      const data = JSON.parse(ev.data)
+      setGraph(data)
+    }
+    wsRef.current = ws
+  }, [params.treeId])
 
   async function advanceSel() {
     if (treeId == null || selected == null) return
@@ -96,6 +108,7 @@ export default function SimTree() {
 
     const nodes: Node[] = []
     const edges: Edge[] = []
+    const fromSet = new Set(graph.edges.map((e) => e.from))
     const color = (t: string) => {
       if (t === 'advance') return '#000'
       if (t === 'agent_ctx') return '#1b5e20'
@@ -107,7 +120,8 @@ export default function SimTree() {
     }
     for (const n of graph.nodes) {
       const pos = g.node(String(n.id))
-      const bg = n.id === graph.root ? '#69f' : graph.frontier.includes(n.id) ? '#7c7' : '#fff'
+      const isLeaf = !fromSet.has(n.id)
+      const bg = n.id === graph.root ? '#69f' : isLeaf ? '#7c7' : '#fff'
       const running = (graph.running || []).includes(n.id)
       nodes.push({
         id: String(n.id),
@@ -132,73 +146,76 @@ export default function SimTree() {
   }, [graph, selected])
 
   return (
-    <div style={{ padding: 24, fontFamily: 'sans-serif', width: '100%', boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>SimTree Panel</h3>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Link to="/">首页</Link>
-          <Link to="/simtree">树</Link>
+    <div style={{ height: '100vh', width: '100%', display: 'grid', gridTemplateRows: 'auto 1fr', boxSizing: 'border-box', overflow: 'hidden', fontFamily: 'sans-serif' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', borderBottom: '1px solid #eee' }}>
+        <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ margin: 0 }}>SimTree Panel</h3>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Link to="/">首页</Link>
+            <Link to="/simtree">树</Link>
+          </div>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 16 }}>
-        <button onClick={create} disabled={treeId != null}>Create (simple_chat)</button>
-        <button onClick={refresh} disabled={treeId == null}>Refresh</button>
       </div>
 
-      {graph && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginTop: 16 }}>
-          <div>
-            <h4>Graph</h4>
-            <div style={{ width: '100%', height: 420, border: '1px solid #ddd' }}>
-              <style>{'@keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,0,0,.4)}to{box-shadow:0 0 8px 4px rgba(255,0,0,.2)}}'}</style>
-              <ReactFlow nodes={rf.nodes} edges={rf.edges} fitView onNodeClick={(_, n) => setSelected(Number(n.id))}>
-                <MiniMap pannable zoomable />
-                <Controls />
-                <Background />
-              </ReactFlow>
-            </div>
-            <div style={{ marginTop: 8, color: '#666' }}>Selected: {selected ?? '-'} | Edges: {graph.edges.length} | Frontier: [{graph.frontier.join(', ')}]</div>
+      <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 16, alignItems: 'stretch', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <h4 style={{ margin: '0 0 8px 0' }}>Graph</h4>
+          <div style={{ width: '100%', flex: 1, minHeight: 0, border: '1px solid #ddd' }}>
+            <style>{'@keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,0,0,.4)}to{box-shadow:0 0 8px 4px rgba(255,0,0,.2)}}'}</style>
+            <ReactFlow nodes={rf.nodes} edges={rf.edges} fitView onNodeClick={(_, n) => setSelected(Number(n.id))}>
+              <MiniMap pannable zoomable />
+              <Controls />
+              <Background />
+            </ReactFlow>
           </div>
-          <div>
-            <h4>Ops</h4>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={advanceSel} disabled={treeId == null || selected == null}>Advance selected</button>
-              <button onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
+          {graph && (<div style={{ marginTop: 8, color: '#666' }}>Selected: {selected ?? '-'} | Edges: {graph.edges.length}</div>)}
+        </div>
+
+        <div style={{ height: '100%', overflowY: 'auto' }}>
+          <h4>Tree</h4>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <button onClick={create} disabled={treeId != null}>Create (simple_chat)</button>
+            <button onClick={refresh} disabled={treeId == null}>Refresh</button>
+            <button onClick={create}>Reset</button>
+          </div>
+          <h4>Ops</h4>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={advanceSel} disabled={treeId == null || selected == null}>Advance selected</button>
+            <button onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 12, alignItems: 'end' }}>
+            <div>
+              <label>Multi turns</label>
+              <input type="number" min={1} value={multiTurns} onChange={(e) => setMultiTurns(Number(e.target.value))} style={{ width: '100%' }} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 12, alignItems: 'end' }}>
-              <div>
-                <label>Multi turns</label>
-                <input type="number" min={1} value={multiTurns} onChange={(e) => setMultiTurns(Number(e.target.value))} style={{ width: '100%' }} />
-              </div>
-              <div>
-                <label>Count</label>
-                <input type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(Number(e.target.value))} style={{ width: '100%' }} />
-              </div>
-              <button onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurns, multiCount)} disabled={treeId == null || selected == null}>Advance N copies</button>
+            <div>
+              <label>Count</label>
+              <input type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(Number(e.target.value))} style={{ width: '100%' }} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12, alignItems: 'end' }}>
-              <div>
-                <label>Chain turns</label>
-                <input type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(Number(e.target.value))} style={{ width: '100%' }} />
-              </div>
-              <button onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurns)} disabled={treeId == null || selected == null}>Advance chain</button>
+            <button onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurns, multiCount)} disabled={treeId == null || selected == null}>Advance N copies</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12, alignItems: 'end' }}>
+            <div>
+              <label>Chain turns</label>
+              <input type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(Number(e.target.value))} style={{ width: '100%' }} />
             </div>
-            <div style={{ marginTop: 12 }}>
-              <div>进入 /sim 页面（基于此树）</div>
-              <button onClick={() => treeId != null && selected != null && navigate(`/sim/${treeId}?node=${selected}`)} disabled={treeId == null || selected == null}>进入</button>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <div>public_broadcast:</div>
-              <input value={text} onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} />
-              <button onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>Apply</button>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <div>Delete subtree (root disabled)</div>
-              <button onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>Delete</button>
-            </div>
+            <button onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurns)} disabled={treeId == null || selected == null}>Advance chain</button>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div>进入 /sim 页面（基于此树）</div>
+            <button onClick={() => treeId != null && selected != null && navigate(`/sim/${treeId}?node=${selected}`)} disabled={treeId == null || selected == null}>进入</button>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div>public_broadcast:</div>
+            <input value={text} onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} />
+            <button onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>Apply</button>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div>Delete subtree (root disabled)</div>
+            <button onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>Delete</button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

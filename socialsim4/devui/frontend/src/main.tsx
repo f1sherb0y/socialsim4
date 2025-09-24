@@ -9,6 +9,7 @@ const router = createBrowserRouter([
   { path: '/', element: <App /> },
   { path: '/sim/:treeId?', element: <Simulation /> },
   { path: '/simtree', element: <SimTree /> },
+  { path: '/simtree/:treeId', element: <SimTree /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

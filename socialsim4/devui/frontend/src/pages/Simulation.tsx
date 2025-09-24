@@ -48,8 +48,9 @@ export default function Simulation() {
 
   const events = useMemo(() => {
     const lines: string[] = []
-    for (const frame of timeline) {
-      for (const it of frame.events_delta as any[]) {
+    const last = timeline.length ? (timeline[timeline.length - 1] as any) : null
+    if (last) {
+      for (const it of (last.events_delta as any[]) || []) {
         const t = it.type
         const d = it.data
         if (t === 'system_broadcast') {
@@ -59,21 +60,27 @@ export default function Simulation() {
           if (action.action !== 'yield') lines.push(`[${action.action}] ${d.summary}`)
         }
       }
+      if (lines.length === 0) {
+        const ags = (last.agents as any[]) || []
+        if (ags.length > 0) {
+          const msgs = (ags[0].context_delta as any[]) || []
+          for (const m of msgs) {
+            const c = String(m.content || '')
+            if (c.startsWith('[Public Event]')) lines.push(c)
+          }
+        }
+      }
     }
     return lines
   }, [timeline])
 
   const agentDelta = useMemo(() => {
     if (!selected) return [] as { role: string; content: string }[]
-    const out: { role: string; content: string }[] = []
-    for (const frame of timeline) {
-      const m = (frame.agents as any[]).find((a) => a.name === selected)
-      if (!m) continue
-      for (const msg of m.context_delta as any[]) {
-        out.push({ role: msg.role, content: msg.content })
-      }
-    }
-    return out
+    const last = timeline.length ? (timeline[timeline.length - 1] as any) : null
+    if (!last) return []
+    const ag = ((last.agents as any[]) || []).find((a) => a.name === selected)
+    const msgs = (ag?.context_delta as any[]) || []
+    return msgs.map((m: any) => ({ role: String(m.role || ''), content: String(m.content || '') }))
   }, [timeline, selected])
 
   // No WebSocket: this viewer is static after initial snapshot
@@ -96,89 +103,82 @@ export default function Simulation() {
   }, [agentDelta, selected, stickBottom])
 
   return (
-    <div
-      style={{
-        padding: 24,
-        fontFamily: 'sans-serif',
-        width: '100%',
-        boxSizing: 'border-box',
-        overflowX: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>Simulation Panel</h3>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Link to="/">首页</Link>
-          <Link to="/simtree">树</Link>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'flex-end' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <label style={{ fontSize: 12, color: '#555' }}>
-            <input type="checkbox" checked={stickBottom} onChange={(e) => setStickBottom(e.target.checked)} /> stick to bottom
-          </label>
+    <div style={{ height: '100vh', width: '100%', display: 'grid', gridTemplateRows: 'auto 1fr', boxSizing: 'border-box', overflow: 'hidden', fontFamily: 'sans-serif' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', borderBottom: '1px solid #eee' }}>
+        <div style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0 }}>Simulation Panel</h3>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <Link to="/">首页</Link>
+            <Link to="/simtree">树</Link>
+          </div>
         </div>
       </div>
 
-      {simId != null && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 16, marginTop: 16, alignItems: 'stretch', minHeight: 'calc(100vh - 160px)' }}>
-          <div>
-            <h4>Events</h4>
-            <div ref={eventsRef}
-              style={{
-                background: '#0b0b0b',
-                color: '#c7f7c7',
-                padding: 12,
-                height: '100%',
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                overflowWrap: 'anywhere',
-                lineHeight: 1.4,
-                borderRadius: 6,
-                maxWidth: '100%',
-              }}
-            >
-              {events.length ? events.map((line, i) => (
-                <div key={i} style={{ padding: '2px 0', borderBottom: '1px dashed #223', opacity: 0.95 }}>
-                  {line}
-                </div>
-              )) : <div style={{ opacity: 0.6 }}>(no events yet)</div>}
-            </div>
-          </div>
-          <div>
-            <h4>Agent</h4>
-            <select value={selected} onChange={(e) => setSelected(e.target.value)} style={{ maxWidth: '100%' }}>
-              {names.map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-            <div ref={agentRef}
-              style={{
-                background: '#f5f5f5',
-                padding: 12,
-                height: '100%',
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                overflowWrap: 'anywhere',
-                borderRadius: 6,
-                maxWidth: '100%',
-              }}
-            >
-              {agentDelta.length ? (
-                <ul style={{ margin: 0, paddingLeft: 16 }}>
-                  {agentDelta.map((m, i) => (
-                    <li key={i}><span style={{ opacity: 0.7 }}>[{m.role}]</span> {m.content}</li>
-                  ))}
-                </ul>
-              ) : (
-                <div style={{ opacity: 0.6 }}>(empty)</div>
-              )}
-            </div>
+      <div style={{ padding: '0 16px 16px 16px', display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 16, alignItems: 'stretch', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <h4 style={{ margin: '8px 0 8px 0' }}>Events</h4>
+          <div ref={eventsRef}
+            style={{
+              background: '#0b0b0b',
+              color: '#c7f7c7',
+              padding: 12,
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              lineHeight: 1.4,
+              borderRadius: 6,
+              maxWidth: '100%',
+            }}
+          >
+            {events.length ? events.map((line, i) => (
+              <div key={i} style={{ padding: '2px 0', borderBottom: '1px dashed #223', opacity: 0.95 }}>
+                {line}
+              </div>
+            )) : <div style={{ opacity: 0.6 }}>(no events yet)</div>}
           </div>
         </div>
-      )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 8px 0' }}>
+            <h4 style={{ margin: 0 }}>Agent</h4>
+            <label style={{ fontSize: 12, color: '#555' }}>
+              <input type="checkbox" checked={stickBottom} onChange={(e) => setStickBottom(e.target.checked)} /> stick to bottom
+            </label>
+          </div>
+          <select value={selected} onChange={(e) => setSelected(e.target.value)} style={{ maxWidth: '100%', marginBottom: 8 }}>
+            {names.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <div ref={agentRef}
+            style={{
+              background: '#f5f5f5',
+              padding: 12,
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              borderRadius: 6,
+              maxWidth: '100%',
+            }}
+          >
+            {agentDelta.length ? (
+              <ul style={{ margin: 0, paddingLeft: 16 }}>
+                {agentDelta.map((m, i) => (
+                  <li key={i}><span style={{ opacity: 0.7 }}>[{m.role}]</span> {m.content}</li>
+                ))}
+              </ul>
+            ) : (
+              <div style={{ opacity: 0.6 }}>(empty)</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
