@@ -451,34 +451,37 @@ History:
             ctx.append({"role": "user", "content": hint})
 
         # print(f"{self.name} context: {ctx}")
-        llm_output = self.call_llm(clients, ctx)
-        # print(f"{self.name} LLM output:\n{llm_output}\n{'-' * 40}")
-        thoughts, plan, action_block, plan_update_block = self._parse_full_response(
-            llm_output
-        )
-        try:
-            action_data = self._parse_actions(action_block) or self._parse_actions(
-                llm_output
-            )
-            plan_update = self._parse_plan_update(plan_update_block)
-        except Exception as e:
-            # Simple retry: make one more LLM call and re-parse
-            print(f"{self.name} action parse error: {e}; retrying call_llm once...")
-            llm_output_retry = self.call_llm(clients, ctx)
+        # Retry policy: total attempts = 1 + max_repeat (from env/config)
+        attempts = int(getattr(self, "max_repeat", 0) or 0) + 1
+        plan_update = None
+        action_data = []
+        llm_output = ""
+        last_exc = None
+        for i in range(attempts):
+            llm_output = self.call_llm(clients, ctx)
+            # print(f"{self.name} LLM output:\n{llm_output}\n{'-' * 40}")
             thoughts, plan, action_block, plan_update_block = self._parse_full_response(
-                llm_output_retry
+                llm_output
             )
             try:
                 action_data = self._parse_actions(action_block) or self._parse_actions(
-                    llm_output_retry
+                    llm_output
                 )
                 plan_update = self._parse_plan_update(plan_update_block)
-                llm_output = llm_output_retry
-            except Exception as e2:
-                action_data = []
-                print(f"{self.name} action parse error after retry: {e2}")
-                print(f"LLM output (retry):\n{llm_output_retry}\n{'-' * 40}")
-                raise e2
+                last_exc = None
+                break
+            except Exception as e:
+                last_exc = e
+                if i < attempts - 1:
+                    print(
+                        f"{self.name} action parse error: {e}; retry {i+1}/{attempts-1}..."
+                    )
+                    continue
+                print(
+                    f"{self.name} action parse error after {attempts} attempts: {e}"
+                )
+                print(f"LLM output (last):\n{llm_output}\n{'-' * 40}")
+                raise e
         if plan_update:
             self._apply_plan_update(plan_update)
 
