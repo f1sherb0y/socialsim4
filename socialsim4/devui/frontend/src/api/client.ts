@@ -38,12 +38,12 @@ export async function createTree(): Promise<{ id: number; root: number }> {
   return res.json()
 }
 
-export async function getTreeGraph(id: number): Promise<{ root: number; frontier: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }>{
+export async function getTreeGraph(id: number): Promise<{ root: number; frontier: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }> {
   const res = await fetch(`/devui/simtree/${id}/graph`)
   return res.json()
 }
 
-export async function treeAdvance(id: number, parent: number, turns: number): Promise<{ child: number }>{
+export async function treeAdvance(id: number, parent: number, turns: number): Promise<{ child: number }> {
   const res = await fetch(`/devui/simtree/${id}/advance`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,16 +52,16 @@ export async function treeAdvance(id: number, parent: number, turns: number): Pr
   return res.json()
 }
 
-export async function treeAdvanceFrontier(id: number, turns: number): Promise<{ children: number[] }>{
+export async function treeAdvanceFrontier(id: number, turns: number, onlyMaxDepth = false): Promise<{ children: number[] }> {
   const res = await fetch(`/devui/simtree/${id}/advance_frontier`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ turns, only_max_depth: true }),
+    body: JSON.stringify({ turns, only_max_depth: onlyMaxDepth }),
   })
   return res.json()
 }
 
-export async function treeBranchPublic(id: number, parent: number, text: string): Promise<{ child: number }>{
+export async function treeBranchPublic(id: number, parent: number, text: string): Promise<{ child: number }> {
   const res = await fetch(`/devui/simtree/${id}/branch`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -70,8 +70,34 @@ export async function treeBranchPublic(id: number, parent: number, text: string)
   return res.json()
 }
 
-export async function treeDeleteSubtree(id: number, nodeId: number): Promise<{ ok: boolean }>{
+export async function treeDeleteSubtree(id: number, nodeId: number): Promise<{ ok: boolean }> {
   const res = await fetch(`/devui/simtree/${id}/node/${nodeId}`, { method: 'DELETE' })
   return res.json()
 }
 
+export async function spawnSimFromTree(treeId: number, node: number): Promise<{ sim_id: number; names: string[] }> {
+  const res = await fetch(`/devui/simtree/${treeId}/spawn_sim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ node }),
+  })
+  return res.json()
+}
+
+export async function treeAdvanceMulti(id: number, parent: number, turns: number, count: number): Promise<{ children: number[] }> {
+  const res = await fetch(`/devui/simtree/${id}/advance_multi`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parent, turns, count }),
+  })
+  return res.json()
+}
+
+export async function treeAdvanceChain(id: number, parent: number, turns: number): Promise<{ child: number }> {
+  const res = await fetch(`/devui/simtree/${id}/advance_chain`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parent, turns }),
+  })
+  return res.json()
+}

@@ -126,3 +126,33 @@ This document summarizes the coding requirements, conventions, and the project�
 - API layer still wraps some exceptions for HTTP semantics; core is strict.
 - If expanding features later, maintain the strict style unless explicitly decided otherwise.
 
+## New: Simulation Tree (SimTree)
+
+- Purpose: causal exploration via branching timelines. Each node stores a live `Simulator` cloned by `to_dict()` → `from_dict(...)`.
+- IDs: integer, root = 0. Each node has `{id, parent, depth, edge_type, ops, sim, logs}`.
+- Edge types: `advance`, `agent_ctx`, `agent_plan`, `agent_props`, `scene_state`, `public_event`, `multi`.
+- Operations:
+  - `advance(parent, turns)` → child by running `sim.run(max_turns=turns)`.
+  - `branch(parent, ops[])` → apply strict ops in order; no fallbacks.
+  - `advance_selected(parents[], turns)` → multiple advances.
+  - `advance_frontier(turns, only_max_depth)` → advance leaves (or frontier if `only_max_depth=true`).
+  - `advance_multi(parent, turns, count)` → N parallel children from one parent.
+  - `advance_chain(parent, turns)` → one child after running multiple steps.
+  - `delete_subtree(node)` → remove node and all descendants (root protected).
+- Logs: each child node records logs emitted during its creation (via `event_handler` wired into `Simulator.from_dict(..., log_handler)` and `sim.emit_remaining_events()`).
+
+## New: DevUI (prototype)
+
+- Location: `socialsim4/devui`.
+- Backend: FastAPI, in‑memory stores (no persistence), strict request models.
+  - Simulation routes: create/run/snapshot (WS `/devui/sim/{id}/events`).
+  - SimTree routes: create/graph/summaries, advance/branch/delete, parallel advance, `spawn_sim` from a tree node, WS `/devui/simtree/{id}/events`.
+  - SimTree WS payload includes `running` node ids for UI animation.
+- Frontend: Vite + React + TypeScript.
+  - Simulation panel: per‑event WS stream, events feed, agent context deltas with tail‑growth handling, stick‑to‑bottom option.
+  - SimTree panel: React Flow + dagre auto‑layout; color‑coded edges; running nodes pulse; ops panel for advance/branch/multi/chain/delete; deep‑link to `/sim/:treeId?node=...`.
+- Conventions: keep inputs strict, no try/except in core paths; fail fast.
+
+## Parser note
+
+- Action/Plan Update XML parsing normalizes bare `&` to `&amp;` before XML parse to avoid crashes on LLM outputs containing raw ampersands. Parsing remains strict otherwise.

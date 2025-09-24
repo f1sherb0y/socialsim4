@@ -107,7 +107,7 @@ class Simulator:
         }
 
     @classmethod
-    def from_dict(cls, data, clients):
+    def from_dict(cls, data, clients, log_handler=None):
         # Note: clients are not serialized and must be passed in.
         scenario_data = data["scene"]
         # This is a simplified example. In a real application, you would
@@ -138,6 +138,7 @@ class Simulator:
             broadcast_initial=False,  # Don't rebroadcast initial event
             max_steps_per_turn=data.get("max_steps_per_turn", 5),
             ordering=ordering_cls(),
+            event_handler=log_handler,
         )
         return simulator
 

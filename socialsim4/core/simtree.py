@@ -18,7 +18,7 @@ class SimTree:
         root_id = tree._next_id()
         # Store a live simulator object on the node; clone via serialize->deserialize
         snap = sim.to_dict()
-        sim_clone = Simulator.from_dict(snap, clients)
+        sim_clone = Simulator.from_dict(snap, clients, log_handler=None)
         tree.nodes[root_id] = {
             "id": root_id,
             "parent": None,
@@ -26,6 +26,7 @@ class SimTree:
             "edge_type": "root",
             "ops": [],
             "sim": sim_clone,
+            "logs": [],
         }
         tree.children[root_id] = []
         tree.root = root_id
@@ -36,13 +37,28 @@ class SimTree:
         self._seq = i + 1
         return i
 
-    def _restore_sim(self, node_id: int) -> Simulator:
+    def _restore_sim(
+        self, node_id: int, logs: Optional[List[dict]] = None
+    ) -> Simulator:
         # Clone the simulator by snapshotting the node's live sim
         base = self.nodes[node_id]["sim"]
         snap = base.to_dict()
-        return Simulator.from_dict(snap, self.clients)
+        if logs is None:
+            return Simulator.from_dict(snap, self.clients, log_handler=None)
 
-    def _save_child(self, parent_id: int, edge_type: str, ops: List[dict], sim: Simulator) -> int:
+        def _lh(event_type: str, data: dict):
+            logs.append({"type": event_type, "data": data})
+
+        return Simulator.from_dict(snap, self.clients, log_handler=_lh)
+
+    def _save_child(
+        self,
+        parent_id: int,
+        edge_type: str,
+        ops: List[dict],
+        sim: Simulator,
+        logs: Optional[List[dict]] = None,
+    ) -> int:
         nid = self._next_id()
         parent = self.nodes[parent_id]
         node = {
@@ -53,6 +69,7 @@ class SimTree:
             "ops": ops,
             # Store the live simulator for this node
             "sim": sim,
+            "logs": list(logs or []),
         }
         self.nodes[nid] = node
         if parent_id not in self.children:
@@ -62,12 +79,16 @@ class SimTree:
         return nid
 
     def advance(self, parent_id: int, turns: int = 1) -> int:
-        sim = self._restore_sim(parent_id)
+        logs: List[dict] = []
+        sim = self._restore_sim(parent_id, logs)
         sim.run(max_turns=int(turns))
-        return self._save_child(parent_id, "advance", [{"op": "advance", "turns": int(turns)}], sim)
+        return self._save_child(
+            parent_id, "advance", [{"op": "advance", "turns": int(turns)}], sim, logs
+        )
 
     def branch(self, parent_id: int, ops: List[dict]) -> int:
-        sim = self._restore_sim(parent_id)
+        logs: List[dict] = []
+        sim = self._restore_sim(parent_id, logs)
         for op in ops:
             name = op["op"]
             if name == "agent_ctx_append":
@@ -90,6 +111,9 @@ class SimTree:
             else:
                 raise ValueError("Unknown op: " + name)
 
+        # Flush any queued events to logs
+        sim.emit_remaining_events()
+
         et = "multi"
         if len(ops) == 1:
             m = ops[0]["op"]
@@ -103,11 +127,11 @@ class SimTree:
                 et = "scene_state"
             elif m == "public_broadcast":
                 et = "public_event"
-        return self._save_child(parent_id, et, ops, sim)
+        return self._save_child(parent_id, et, ops, sim, logs)
 
     def lca(self, a: int, b: int) -> int:
         da = int(self.nodes[a]["depth"])
-        db = int(self.nodes[b]["depth"]) 
+        db = int(self.nodes[b]["depth"])
         na = a
         nb = b
         while da > db:
@@ -174,7 +198,9 @@ class SimTree:
                 res.append(nid)
         return res
 
-    def advance_frontier(self, turns: int = 1, only_max_depth: bool = True) -> List[int]:
+    def advance_frontier(
+        self, turns: int = 1, only_max_depth: bool = True
+    ) -> List[int]:
         res: List[int] = []
         for pid in self.frontier(only_max_depth=only_max_depth):
             cid = self.advance(pid, turns=int(turns))
