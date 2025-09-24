@@ -29,7 +29,7 @@ export default function Simulation() {
         const d = it.data || {}
         if (t === 'system_broadcast') {
           if (!d.sender) {
-            const s = `[Public Event] ${d.text}`
+            const s = `${d.text}`
             if (!seen.has(s)) { seen.add(s); lines.push(s) }
           }
         } else if (t === 'action_end') {
@@ -70,7 +70,7 @@ export default function Simulation() {
         const d = it.data
         if (t === 'system_broadcast') {
           if (!d.sender) {
-            const s = `[Public Event] ${d.text}`
+            const s = `${d.text}`
             if (!seen.has(s)) { seen.add(s); lines.push(s) }
           }
         } else if (t === 'action_end') {
