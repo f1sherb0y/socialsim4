@@ -27,15 +27,39 @@ def build_snapshot(
     def _dc(x):
         return json.loads(json.dumps(x))
 
-    # Compute deltas based on offsets
-    new_mem_offsets: Dict[str, int] = {}
+    # Compute deltas based on offsets.
+    # Offsets schema (strict):
+    #   offsets = {
+    #     "events": int,
+    #     "mem": { name: {"count": int, "last_len": int}, ... }
+    #   }
+    new_mem_offsets: Dict[str, Dict[str, int]] = {}
     agents = []
     for nm in names:
         ag = sim.agents[nm]
         mem_all = ag.short_memory.get_all()
-        last_idx = offsets["mem"].get(nm, 0)
-        delta_msgs = mem_all[last_idx:]
-        new_mem_offsets[nm] = len(mem_all)
+        prev = offsets["mem"].get(nm, {"count": 0, "last_len": 0})
+        cnt = len(mem_all)
+
+        delta_msgs = []
+        if cnt == 0:
+            new_last_len = 0
+        elif cnt > int(prev.get("count", 0)):
+            # New entries appended; take them whole
+            delta_msgs = mem_all[int(prev.get("count", 0)) :]
+            new_last_len = len(mem_all[-1]["content"])
+        else:
+            # Same count: if last message grew (merge-on-same-role), emit the appended tail as a logical delta
+            last_content = mem_all[-1]["content"]
+            prev_last_len = int(prev.get("last_len", 0))
+            if len(last_content) > prev_last_len:
+                appended = last_content[prev_last_len:]
+                delta_msgs = [
+                    {"role": mem_all[-1]["role"], "content": appended}
+                ]
+            new_last_len = len(last_content)
+
+        new_mem_offsets[nm] = {"count": cnt, "last_len": new_last_len}
         agents.append(
             {
                 "name": nm,
@@ -94,7 +118,10 @@ def run_dev_ui(sim: Simulator):
         st.session_state["sim"] = sim
         st.session_state["names"] = names
         st.session_state["timeline"] = []
-        st.session_state["offsets"] = {"events": 0, "mem": {nm: 0 for nm in names}}
+        st.session_state["offsets"] = {
+            "events": 0,
+            "mem": {nm: {"count": 0, "last_len": 0} for nm in names},
+        }
         st.session_state["selected_agent"] = names[0]
 
         # Wire a wrapper log handler: publish to bus and append a snapshot
@@ -138,7 +165,11 @@ def run_dev_ui(sim: Simulator):
                 bus,
                 names,
                 st.session_state.get(
-                    "offsets", {"events": 0, "mem": {nm: 0 for nm in names}}
+                    "offsets",
+                    {
+                        "events": 0,
+                        "mem": {nm: {"count": 0, "last_len": 0} for nm in names},
+                    },
                 ),
             )
             frames = [snap]
