@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getSnapshot, type Offsets, spawnSimFromTree } from '../api/client'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 
 export default function Simulation() {
   const params = useParams()
-  const navigate = useNavigate()
   const [simId, setSimId] = useState<number | null>(null)
   const [names, setNames] = useState<string[]>([])
   const [offsets, setOffsets] = useState<Offsets | null>(null)
@@ -77,29 +76,7 @@ export default function Simulation() {
     return out
   }, [timeline, selected])
 
-  // WebSocket live updates + running spinner settle
-  const wsRef = useRef<WebSocket | null>(null)
-  // passive WS (optional)
-  useEffect(() => {
-    if (simId == null || offsets == null) return
-    if (wsRef.current) return
-    const ws = new WebSocket(`ws://localhost:8090/devui/sim/${simId}/events`)
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ offsets }))
-    }
-    ws.onmessage = (ev) => {
-      const msg = JSON.parse(ev.data)
-      setTimeline((t) => [...t, msg.snapshot])
-      setOffsets(msg.offsets)
-      // passive stream only
-    }
-    wsRef.current = ws
-    return () => {
-      ws.close()
-      wsRef.current = null
-      // no timers
-    }
-  }, [simId, offsets])
+  // No WebSocket: this viewer is static after initial snapshot
 
   // Auto-stick to bottom when new content arrives
   const [stickBottom, setStickBottom] = useState(true)
