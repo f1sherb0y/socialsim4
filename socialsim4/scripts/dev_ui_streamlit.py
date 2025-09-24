@@ -20,8 +20,9 @@ from socialsim4.scripts.run_basic_scenes import (
 def build_snapshot(
     sim: Simulator, bus: "DevEventBus", names: List[str], offsets: Dict
 ) -> tuple[Dict, Dict]:
-    sim.emit_remaining_events()
-
+    # Do NOT call sim.emit_remaining_events() here when invoked from
+    # the log handler to avoid recursion. Snapshots now capture the
+    # state incrementally per published event.
     # Deep copy helpers via JSON encoding to freeze state
     def _dc(x):
         return json.loads(json.dumps(x))
@@ -76,23 +77,11 @@ class DevEventBus:
 
 def _do_steps(n: int):
     sim: Simulator = st.session_state["sim"]
-    bus: DevEventBus = st.session_state["bus"]
-    names: List[str] = st.session_state["names"]
     for _ in range(n):
         if sim.scene.is_complete():
             break
         sim.run(max_turns=1)
-        snap, new_off = build_snapshot(sim, bus, names, st.session_state["offsets"])
-        st.session_state["timeline"].append(snap)
-        st.session_state["offsets"] = new_off
-
-
-def _attach_bus(sim: Simulator, bus: DevEventBus) -> Simulator:
-    # Attach event bus to simulator and agents
-    sim.log_event = bus.publish
-    for a in sim.agents.values():
-        a.log_event = bus.publish
-    return sim
+        # Snapshotting is now handled by the log handler per publish
 
 
 def run_dev_ui(sim: Simulator):
@@ -100,17 +89,33 @@ def run_dev_ui(sim: Simulator):
     if "bus" not in st.session_state:
         st.session_state["bus"] = DevEventBus()
     bus = st.session_state["bus"]
-    _attach_bus(sim, bus)
     names = list(sim.agents.keys())
     if "sim" not in st.session_state:
         st.session_state["sim"] = sim
         st.session_state["names"] = names
         st.session_state["timeline"] = []
         st.session_state["offsets"] = {"events": 0, "mem": {nm: 0 for nm in names}}
+        st.session_state["selected_agent"] = names[0]
+
+        # Wire a wrapper log handler: publish to bus and append a snapshot
+        def log_and_snapshot(event_type: str, data: dict):
+            bus.publish(event_type, data)
+            snap, new_off = build_snapshot(
+                sim, bus, st.session_state["names"], st.session_state["offsets"]
+            )
+            st.session_state["timeline"].append(snap)
+            st.session_state["offsets"] = new_off
+
+        # Attach after session state is initialized to avoid None references
+        sim.log_event = log_and_snapshot
+        for a in sim.agents.values():
+            a.log_event = log_and_snapshot
+
+        # Initial snapshot (before any further events)
         snap, new_off = build_snapshot(sim, bus, names, st.session_state["offsets"])
         st.session_state["timeline"].append(snap)
         st.session_state["offsets"] = new_off
-        st.session_state["selected_agent"] = names[0]
+        sim.emit_remaining_events()
 
     sim = st.session_state["sim"]
     names = st.session_state["names"]
@@ -213,7 +218,7 @@ def run_dev_ui(sim: Simulator):
 
 
 def main():
-    sim = build_simple_chat_sim()
+    sim = build_landlord_sim()
     run_dev_ui(sim)
 
 

@@ -474,12 +474,10 @@ History:
                 last_exc = e
                 if i < attempts - 1:
                     print(
-                        f"{self.name} action parse error: {e}; retry {i+1}/{attempts-1}..."
+                        f"{self.name} action parse error: {e}; retry {i + 1}/{attempts - 1}..."
                     )
                     continue
-                print(
-                    f"{self.name} action parse error after {attempts} attempts: {e}"
-                )
+                print(f"{self.name} action parse error after {attempts} attempts: {e}")
                 print(f"LLM output (last):\n{llm_output}\n{'-' * 40}")
                 raise e
         if plan_update:
