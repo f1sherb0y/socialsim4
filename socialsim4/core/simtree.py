@@ -1,3 +1,4 @@
+import json
 from typing import Dict, List, Optional
 
 from socialsim4.core.event import PublicEvent
@@ -13,7 +14,7 @@ class SimTree:
         self._seq: int = 0
 
     @classmethod
-    def new(cls, sim: Simulator, clients: Dict[str, object]):
+    def new(cls, sim: Simulator, clients: Dict[str, object], initial_logs: Optional[List[dict]] = None):
         tree = cls(clients)
         root_id = tree._next_id()
         # Store a live simulator object on the node; clone via serialize->deserialize
@@ -26,7 +27,7 @@ class SimTree:
             "edge_type": "root",
             "ops": [],
             "sim": sim_clone,
-            "logs": [],
+            "logs": list(initial_logs or []),
         }
         tree.children[root_id] = []
         tree.root = root_id
@@ -37,19 +38,21 @@ class SimTree:
         self._seq = i + 1
         return i
 
-    def _restore_sim(
-        self, node_id: int, logs: Optional[List[dict]] = None
-    ) -> Simulator:
+    def copy_sim(self, node_id: int) -> Simulator:
         # Clone the simulator by snapshotting the node's live sim
         base = self.nodes[node_id]["sim"]
         snap = base.to_dict()
-        if logs is None:
-            return Simulator.from_dict(snap, self.clients, log_handler=None)
+        # Deep-copy the snapshot to avoid sharing nested lists/dicts
+        deep = json.loads(json.dumps(snap))
+        return Simulator.from_dict(deep, self.clients, log_handler=None)
 
+    def _set_log_handler(self, sim: Simulator, logs: List[dict]) -> None:
         def _lh(event_type: str, data: dict):
             logs.append({"type": event_type, "data": data})
 
-        return Simulator.from_dict(snap, self.clients, log_handler=_lh)
+        sim.log_event = _lh
+        for a in sim.agents.values():
+            a.log_event = _lh
 
     def _save_child(
         self,
@@ -61,6 +64,7 @@ class SimTree:
     ) -> int:
         nid = self._next_id()
         parent = self.nodes[parent_id]
+        combined_logs = list(parent.get("logs", [])) + list(logs or [])
         node = {
             "id": nid,
             "parent": parent_id,
@@ -69,7 +73,7 @@ class SimTree:
             "ops": ops,
             # Store the live simulator for this node
             "sim": sim,
-            "logs": list(logs or []),
+            "logs": combined_logs,
         }
         self.nodes[nid] = node
         if parent_id not in self.children:
@@ -80,7 +84,8 @@ class SimTree:
 
     def advance(self, parent_id: int, turns: int = 1) -> int:
         logs: List[dict] = []
-        sim = self._restore_sim(parent_id, logs)
+        sim = self.copy_sim(parent_id)
+        self._set_log_handler(sim, logs)
         sim.run(max_turns=int(turns))
         return self._save_child(
             parent_id, "advance", [{"op": "advance", "turns": int(turns)}], sim, logs
@@ -88,7 +93,8 @@ class SimTree:
 
     def branch(self, parent_id: int, ops: List[dict]) -> int:
         logs: List[dict] = []
-        sim = self._restore_sim(parent_id, logs)
+        sim = self.copy_sim(parent_id)
+        self._set_log_handler(sim, logs)
         for op in ops:
             name = op["op"]
             if name == "agent_ctx_append":

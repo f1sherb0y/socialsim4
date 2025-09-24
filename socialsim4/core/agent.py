@@ -1,4 +1,5 @@
 import re
+import json
 import xml.etree.ElementTree as ET
 
 from socialsim4.api.config import MAX_REPEAT
@@ -502,6 +503,13 @@ History:
         return self.add_env_feedback(content)
 
     def to_dict(self):
+        # Deep-copy dict/list fields to avoid sharing across snapshots
+        mem = [
+            {"role": m.get("role"), "content": m.get("content")}
+            for m in self.short_memory.get_all()
+        ]
+        props = json.loads(json.dumps(self.properties))
+        plan = json.loads(json.dumps(self.plan_state))
         return {
             "name": self.name,
             "user_profile": self.user_profile,
@@ -510,17 +518,18 @@ History:
             "role_prompt": self.role_prompt,
             "language": self.language,
             "action_space": [action.NAME for action in self.action_space],
-            "short_memory": self.short_memory.get_all(),
+            "short_memory": mem,
             "last_history_length": self.last_history_length,
             "max_repeat": self.max_repeat,
-            "properties": self.properties,
-            "plan_state": self.plan_state,
+            "properties": props,
+            "plan_state": plan,
         }
 
     @classmethod
     def from_dict(cls, data, event_handler=None):
         from .registry import ACTION_SPACE_MAP
 
+        props = json.loads(json.dumps(data.get("properties", {})))
         agent = cls(
             name=data["name"],
             user_profile=data["user_profile"],
@@ -533,17 +542,21 @@ History:
             ],
             max_repeat=data.get("max_repeat", MAX_REPEAT),
             event_handler=event_handler,
-            **data.get("properties", {}),
+            **props,
         )
-        agent.short_memory.history = data.get("short_memory", [])
+        agent.short_memory.history = json.loads(json.dumps(data.get("short_memory", [])))
         agent.last_history_length = data.get("last_history_length", 0)
-        agent.plan_state = data.get(
-            "plan_state",
-            {
-                "goals": [],
-                "milestones": [],
-                "strategy": "",
-                "notes": "",
-            },
+        agent.plan_state = json.loads(
+            json.dumps(
+                data.get(
+                    "plan_state",
+                    {
+                        "goals": [],
+                        "milestones": [],
+                        "strategy": "",
+                        "notes": "",
+                    },
+                )
+            )
         )
         return agent

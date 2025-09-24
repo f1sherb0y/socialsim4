@@ -1,72 +1,96 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getSnapshot, type Offsets, spawnSimFromTree } from '../api/client'
+import { getSimEvents, getSimState } from '../api/client'
 import { Link, useParams } from 'react-router-dom'
 
 export default function Simulation() {
   const params = useParams()
-  const [simId, setSimId] = useState<number | null>(null)
   const [names, setNames] = useState<string[]>([])
-  const [offsets, setOffsets] = useState<Offsets | null>(null)
   const [timeline, setTimeline] = useState<any[]>([])
   const [selected, setSelected] = useState<string>('')
   // SimTree controls execution; this page is read-only view
-
-  const initOffsets = useMemo<Offsets | null>(() => {
-    if (!names.length) return null
-    const mem: Offsets['mem'] = {}
-    names.forEach((n) => (mem[n] = { count: 0, last_len: 0 }))
-    return { events: 0, mem }
-  }, [names])
 
   // no local create
 
   // If route has :treeId, spawn a sim from that tree (optionally with ?node=)
   useEffect(() => {
     const init = async () => {
-      const tid = params.treeId ? Number(params.treeId) : null
-      if (!tid || simId != null) return
-      const node = new URLSearchParams(location.search).get('node')
-      const r = await spawnSimFromTree(tid, node ? Number(node) : 0)
-      setSimId(r.sim_id)
-      setNames(r.names)
-      setSelected(r.names[0] || "")
-      const off: Offsets = { events: 0, mem: {} as any }
-      r.names.forEach((n) => (off.mem[n] = { count: 0, last_len: 0 }))
-      // fetch one snapshot immediately for initial view
-      const s = await getSnapshot(r.sim_id, off)
-      setTimeline((t) => [...t, s.snapshot])
-      setOffsets(s.offsets)
+      if (params.treeId == null) return
+      const tid = Number(params.treeId)
+      if (Number.isNaN(tid)) return
+      const qs = new URLSearchParams(location.search)
+      const simParam = qs.get('sim') || qs.get('node')
+      const nid = simParam ? Number(simParam) : 0
+      // Logs → Events panel
+      const lines: string[] = []
+      const seen = new Set<string>()
+      const logs = await getSimEvents(tid, nid)
+      for (const it of logs || []) {
+        const t = it.type
+        const d = it.data || {}
+        if (t === 'system_broadcast') {
+          if (!d.sender) {
+            const s = `[Public Event] ${d.text}`
+            if (!seen.has(s)) { seen.add(s); lines.push(s) }
+          }
+        } else if (t === 'action_end') {
+          const action = d.action || {}
+          if (action.action !== 'yield') {
+            const s = `[${action.action}] ${d.summary}`
+            if (!seen.has(s)) { seen.add(s); lines.push(s) }
+          }
+        }
+      }
+      // Node state for agents/plan/memory
+      const st = await getSimState(tid, nid)
+      const agentNames = st.agents.map((a: any) => a.name)
+      setNames(agentNames)
+      setSelected(agentNames[0] || "")
+      // Build a single timeline frame compatible with renderer
+      const frame = {
+        events_delta: lines.map((text) => ({ type: 'system_broadcast', data: { text, sender: null } })),
+        agents: st.agents.map((a: any) => ({ name: a.name, role: a.role, plan_state: a.plan_state, context_delta: a.short_memory })),
+        turns: st.turns,
+      }
+      setTimeline([frame])
     }
     init()
   }, [params.treeId])
 
   // no local step
 
-  useEffect(() => {
-    if (offsets == null && initOffsets) setOffsets(initOffsets)
-  }, [initOffsets, offsets])
+  // no offsets needed
 
   const events = useMemo(() => {
     const lines: string[] = []
+    const seen = new Set<string>()
     const last = timeline.length ? (timeline[timeline.length - 1] as any) : null
     if (last) {
       for (const it of (last.events_delta as any[]) || []) {
         const t = it.type
         const d = it.data
         if (t === 'system_broadcast') {
-          if (!d.sender) lines.push(`[Public Event] ${d.text}`)
+          if (!d.sender) {
+            const s = `[Public Event] ${d.text}`
+            if (!seen.has(s)) { seen.add(s); lines.push(s) }
+          }
         } else if (t === 'action_end') {
           const action = d.action
-          if (action.action !== 'yield') lines.push(`[${action.action}] ${d.summary}`)
+          if (action.action !== 'yield') {
+            const s = `[${action.action}] ${d.summary}`
+            if (!seen.has(s)) { seen.add(s); lines.push(s) }
+          }
         }
       }
       if (lines.length === 0) {
         const ags = (last.agents as any[]) || []
-        if (ags.length > 0) {
-          const msgs = (ags[0].context_delta as any[]) || []
+        for (const a of ags) {
+          const msgs = (a.context_delta as any[]) || []
           for (const m of msgs) {
             const c = String(m.content || '')
-            if (c.startsWith('[Public Event]')) lines.push(c)
+            if (c.includes('Public Event:')) {
+              const s = c.replace(/^\s+/, '')
+              if (!seen.has(s)) { seen.add(s); lines.push(s) }
+            }
           }
         }
       }

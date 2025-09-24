@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createTree, getTreeGraph, treeAdvance, treeAdvanceFrontier, treeAdvanceMulti, treeAdvanceChain, treeBranchPublic, treeDeleteSubtree } from '../api/client'
+import { createTree, getTreeGraph, treeAdvance, treeAdvanceFrontier, treeAdvanceMulti, treeAdvanceChain, treeBranchPublic, treeDeleteSubtree, Graph } from '../api/client'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow'
 import { graphlib, layout } from 'dagre'
 import 'reactflow/dist/style.css'
-
-type Graph = { root: number; frontier: number[]; running?: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }
 
 export default function SimTree() {
   const params = useParams()
@@ -14,7 +12,6 @@ export default function SimTree() {
   const [graph, setGraph] = useState<Graph | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const [text, setText] = useState('(announcement)')
-  const [wsReady, setWsReady] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const [multiTurns, setMultiTurns] = useState(1)
   const [multiCount, setMultiCount] = useState(2)
@@ -29,6 +26,12 @@ export default function SimTree() {
   async function refresh() {
     if (treeId == null) return
     const g = await getTreeGraph(treeId)
+    if (g == null) {
+      // tree gone; disable controls and allow only create
+      setGraph(null)
+      setTreeId(null)
+      return
+    }
     setGraph(g)
   }
 
@@ -46,27 +49,34 @@ export default function SimTree() {
     const idStr = params.treeId || localStorage.getItem('devui:lastTreeId')
     if (!idStr) return
     const id = Number(idStr)
-    if (!id) return
-    setTreeId(id)
+    if (Number.isNaN(id)) return
     ;(async () => {
       const g = await getTreeGraph(id)
+      if (g == null) {
+        // Not found: clear last id and do not open WS
+        localStorage.removeItem('devui:lastTreeId')
+        setTreeId(null)
+        setGraph(null)
+        setSelected(null)
+        return
+      }
+      setTreeId(id)
       setGraph(g)
       setSelected(g.root)
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${id}/events`)
+      ws.onopen = () => {
+        ws.send('ready')
+      }
+      ws.onmessage = (ev) => {
+        const data = JSON.parse(ev.data)
+        setGraph(data)
+      }
+      wsRef.current = ws
     })()
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
-    const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${id}/events`)
-    ws.onopen = () => {
-      setWsReady(true)
-      ws.send('ready')
-    }
-    ws.onmessage = (ev) => {
-      const data = JSON.parse(ev.data)
-      setGraph(data)
-    }
-    wsRef.current = ws
   }, [params.treeId])
 
   async function advanceSel() {

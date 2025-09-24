@@ -369,14 +369,26 @@ class _MockModel:
             return f"--- Thoughts ---\n{thought}\n\n--- Plan ---\n{plan}\n\n--- Action ---\n{xml}\n\n--- Plan Update ---\n{plan_update}"
 
         else:  # simple chat
-            if call_n == 1:
-                action = {"action": "send_message", "message": f"Hi, I'm {agent_name}."}
-                thought = "Introduce myself briefly."
-                plan = "1. Say hello. [CURRENT]"
-            else:
+            # One sentence per turn: if this is an intra-turn continuation (agent was nudged with 'Continue.'), then yield.
+            last_user = None
+            for m in reversed(messages):
+                if m.get("role") == "user":
+                    last_user = (m.get("content") or "").strip()
+                    break
+            is_continuation = (last_user == "Continue.")
+            if is_continuation:
                 action = {"action": "yield"}
-                thought = "Conversation is stable; yield."
+                thought = "Already spoke this turn; yield."
                 plan = "1. Yield. [CURRENT]"
+            else:
+                # Speak exactly once per turn
+                idx = self.agent_calls.get(agent_name, 1)
+                action = {
+                    "action": "send_message",
+                    "message": f"[{idx}] Hello from {agent_name}.",
+                }
+                thought = "Say one line this turn."
+                plan = "1. Speak once. [CURRENT]"
             plan_update = "no change"
 
         # Compose full response with XML Action

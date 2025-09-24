@@ -1,32 +1,3 @@
-export type Offsets = { events: number; mem: Record<string, { count: number; last_len: number }> }
-
-export async function createSim(): Promise<{ id: number; names: string[] }> {
-  const res = await fetch('/devui/sim', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scenario: 'simple_chat' }),
-  })
-  return res.json()
-}
-
-export async function runSim(id: number, turns: number): Promise<{ ok: boolean }> {
-  const res = await fetch(`/devui/sim/${id}/run`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ turns }),
-  })
-  return res.json()
-}
-
-export async function getSnapshot(id: number, offsets: Offsets): Promise<{ snapshot: any; offsets: Offsets }> {
-  const res = await fetch(`/devui/sim/${id}/snapshot`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ offsets }),
-  })
-  return res.json()
-}
-
 // --- SimTree ---
 
 export async function createTree(): Promise<{ id: number; root: number }> {
@@ -38,8 +9,11 @@ export async function createTree(): Promise<{ id: number; root: number }> {
   return res.json()
 }
 
-export async function getTreeGraph(id: number): Promise<{ root: number; frontier: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }> {
+export type Graph = { root: number; frontier: number[]; running?: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }
+
+export async function getTreeGraph(id: number): Promise<Graph | null> {
   const res = await fetch(`/devui/simtree/${id}/graph`)
+  if (res.status === 404) return null
   return res.json()
 }
 
@@ -75,12 +49,14 @@ export async function treeDeleteSubtree(id: number, nodeId: number): Promise<{ o
   return res.json()
 }
 
-export async function spawnSimFromTree(treeId: number, node: number): Promise<{ sim_id: number; names: string[] }> {
-  const res = await fetch(`/devui/simtree/${treeId}/spawn_sim`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ node }),
-  })
+// Sim-scoped (alias of node) endpoints: use treeId + simId and return full results
+export async function getSimEvents(treeId: number, simId: number): Promise<any[]> {
+  const res = await fetch(`/devui/simtree/${treeId}/sim/${simId}/events`)
+  return res.json()
+}
+
+export async function getSimState(treeId: number, simId: number): Promise<{ turns: number; agents: { name: string; role?: string; plan_state: any; short_memory: { role: string; content: string }[] }[] }>{
+  const res = await fetch(`/devui/simtree/${treeId}/sim/${simId}/state`)
   return res.json()
 }
 
