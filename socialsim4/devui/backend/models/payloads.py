@@ -33,3 +33,6 @@ class SimTreeAdvanceMultiPayload(BaseModel):
     parent: int
     turns: int
     count: int
+class SimTreeAdvanceChainPayload(BaseModel):
+    parent: int
+    turns: int

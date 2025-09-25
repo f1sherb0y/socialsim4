@@ -76,3 +76,11 @@ export async function treeAdvanceMulti(id: number, parent: number, turns: number
 }
 
 // advance_chain and advance_selected removed; use advance_multi / advance_frontier
+export async function treeAdvanceChain(id: number, parent: number, turns: number): Promise<{ child: number }> {
+  const res = await fetch(`/devui/simtree/${id}/advance_chain`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parent, turns }),
+  })
+  return res.json()
+}

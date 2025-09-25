@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createTree, getTreeGraph, treeAdvanceFrontier, treeAdvanceMulti, treeBranchPublic, treeDeleteSubtree, Graph } from '../api/client'
+import { createTree, getTreeGraph, treeAdvanceFrontier, treeAdvanceMulti, treeAdvanceChain, treeBranchPublic, treeDeleteSubtree, Graph } from '../api/client'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactFlow, { Background, Controls, MiniMap, type Node as RFNode, type Edge as RFEdge } from 'reactflow'
 import * as Toast from '@radix-ui/react-toast'
@@ -17,8 +17,12 @@ export default function SimTree() {
   const wsRef = useRef<WebSocket | null>(null)
   const [multiTurns, setMultiTurns] = useState<string>('1')
   const [multiCount, setMultiCount] = useState<string>('2')
+  const [chainTurns, setChainTurns] = useState<string>('5')
+  const [frontierTurns, setFrontierTurns] = useState<string>('1')
   const multiTurnsNum = Math.max(1, parseInt(multiTurns || '1', 10) || 1)
   const multiCountNum = Math.max(1, parseInt(multiCount || '2', 10) || 1)
+  const chainTurnsNum = Math.max(1, parseInt(chainTurns || '5', 10) || 1)
+  const frontierTurnsNum = Math.max(1, parseInt(frontierTurns || '1', 10) || 1)
   // Toasts for run lifecycle
   const [toasts, setToasts] = useState<{ id: number; text: string }[]>([])
   const toastSeq = useRef(0)
@@ -164,7 +168,7 @@ export default function SimTree() {
 
   async function advanceFrontier() {
     if (treeId == null) return
-    await treeAdvanceFrontier(treeId, 1, false)
+    await treeAdvanceFrontier(treeId, frontierTurnsNum, false)
     await refresh()
   }
 
@@ -292,6 +296,14 @@ export default function SimTree() {
           <div className="row" style={{ flexWrap: 'wrap' }}>
             <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
+            <label className="label" style={{ alignSelf: 'end' }}>Leaves turns</label>
+            <label style={{ visibility: 'hidden' }}>&nbsp;</label>
+            <input className="input" type="number" min={1} value={frontierTurns} onChange={(e) => setFrontierTurns(e.target.value)} style={{ width: '100%' }} />
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
+            </div>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
             <label className="label" style={{ alignSelf: 'end' }}>Multi turns</label>
             <label className="label" style={{ alignSelf: 'end' }}>Count</label>
@@ -300,6 +312,14 @@ export default function SimTree() {
             <input className="input" type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(e.target.value)} style={{ width: '100%' }} />
             <div className="row" style={{ justifyContent: 'flex-end' }}>
               <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurnsNum, multiCountNum)} disabled={treeId == null || selected == null}>Advance N copies</button>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
+            <label className="label" style={{ alignSelf: 'end' }}>Chain steps</label>
+            <label style={{ visibility: 'hidden' }}>&nbsp;</label>
+            <input className="input" type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(e.target.value)} style={{ width: '100%' }} />
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurnsNum)} disabled={treeId == null || selected == null}>Advance chain</button>
             </div>
           </div>
           <div style={{ marginTop: 12 }}>

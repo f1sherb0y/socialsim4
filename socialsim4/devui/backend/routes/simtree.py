@@ -219,6 +219,53 @@ async def tree_advance_frontier(tree_id: int, payload: SimTreeAdvanceFrontierPay
     return {"children": kids}
 
 
+@router.post("/simtree/{tree_id}/advance_chain")
+async def tree_advance_chain(tree_id: int, payload: SimTreeAdvanceChainPayload):
+    """Advance one step at a time for N steps, each step creates a new child."""
+    if tree_id not in TREES:
+        raise HTTPException(status_code=404, detail="simtree not found")
+    rec: SimTreeRecord = TREES[tree_id]
+    t: SimTree = rec.tree
+    parent = int(payload.parent)
+    steps = max(1, int(payload.turns))
+
+    last_cid = parent
+    for _ in range(steps):
+        cid = t.copy_sim(last_cid)
+        # Attach node (advance turns=1)
+        t.attach(last_cid, [{"op": "advance", "turns": 1}], cid)
+        for q in rec.subs:
+            q.put_nowait(
+                {
+                    "type": "attached",
+                    "data": {
+                        "node": int(cid),
+                        "parent": int(last_cid),
+                        "depth": int(t.nodes[cid]["depth"]),
+                        "edge_type": t.nodes[cid]["edge_type"],
+                        "ops": t.nodes[cid]["ops"],
+                    },
+                }
+            )
+        rec.running.add(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
+
+        def _run_one():
+            sim = t.nodes[cid]["sim"]
+            sim.run(max_turns=1)
+            return cid
+
+        cid = await asyncio.to_thread(_run_one)
+        if cid in rec.running:
+            rec.running.remove(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
+        last_cid = cid
+
+    return {"child": last_cid}
+
+
 @router.post("/simtree/{tree_id}/branch")
 def tree_branch(tree_id: int, payload: SimTreeBranchPayload):
     if tree_id not in TREES:
