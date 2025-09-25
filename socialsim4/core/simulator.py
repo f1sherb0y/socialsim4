@@ -54,7 +54,9 @@ class Simulator:
         if broadcast_initial:
             self.broadcast(self.scene.initial_event)
 
-        self.scene.pre_run(self)
+        # Only run scene.pre_run for fresh simulations; skip during clones/deserialization
+        if broadcast_initial:
+            self.scene.pre_run(self)
         self.started = True
 
     # ----- Event plumbing: forward to ordering and external handler -----
