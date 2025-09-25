@@ -473,9 +473,7 @@ export default function Studio() {
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>
-              <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
-              </div>
+              
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
                 <label className="label" style={{ alignSelf: 'end' }}>Leaves turns</label>
                 <label style={{ visibility: 'hidden' }}>&nbsp;</label>

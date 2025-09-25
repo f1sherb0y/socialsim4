@@ -293,9 +293,6 @@ export default function SimTree() {
             <button className="btn" onClick={refresh} disabled={treeId == null}>Refresh</button>
           </div>
           <h4 className="section-title">Ops</h4>
-          <div className="row" style={{ flexWrap: 'wrap' }}>
-            <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
-          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
             <label className="label" style={{ alignSelf: 'end' }}>Leaves turns</label>
             <label style={{ visibility: 'hidden' }}>&nbsp;</label>
