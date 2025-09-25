@@ -470,8 +470,8 @@ export default function Studio() {
                   }}
                 />
               </div>
-              <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} w={160} />
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr auto auto', columnGap: 8, alignItems: 'end', marginBottom: 8 }}>
+                <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} mb={0} />
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>
@@ -561,7 +561,7 @@ export default function Studio() {
   )
 }
 
-function CompactSelect({ options, value, onChange, onOpen, w }: { options: string[]; value: string; onChange: (v: string) => void; onOpen?: () => void; w?: number }) {
+function CompactSelect({ options, value, onChange, onOpen, w, mb }: { options: string[]; value: string; onChange: (v: string) => void; onOpen?: () => void; w?: number; mb?: number }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
@@ -576,13 +576,14 @@ function CompactSelect({ options, value, onChange, onOpen, w }: { options: strin
   }, [])
   const label = options.length === 0 ? '(none)' : (value || (options[0] || ''))
   return (
-    <div className="select" ref={ref} style={{ marginBottom: 8, width: w }}>
+    <div className="select" ref={ref} style={{ marginBottom: mb ?? 8, width: w ?? '100%' }}>
       <button
         type="button"
         className="input select-btn"
         onClick={() => setOpen((v) => { const nv = !v; if (nv && onOpen) onOpen(); return nv })}
         aria-haspopup="listbox"
         aria-expanded={open}
+        style={{ width: '100%' }}
       >
         <span>{label}</span>
         <span className="select-caret">▾</span>

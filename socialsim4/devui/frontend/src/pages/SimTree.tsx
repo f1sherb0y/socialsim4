@@ -287,8 +287,8 @@ export default function SimTree() {
 
         <div className="scroll" style={{ height: '100%' }}>
           <h4 className="section-title">Tree</h4>
-          <div className="row" style={{ flexWrap: 'wrap', marginBottom: 8, gap: 8 }}>
-            <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} w={180} />
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr auto auto', columnGap: 8, alignItems: 'end', marginBottom: 8 }}>
+            <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} mb={0} />
             <button className="btn" onClick={create}>Create</button>
             <button className="btn" onClick={refresh} disabled={treeId == null}>Refresh</button>
           </div>
@@ -346,7 +346,7 @@ export default function SimTree() {
   )
 }
 
-function CompactSelect({ options, value, onChange, w }: { options: string[]; value: string; onChange: (v: string) => void; w?: number }) {
+function CompactSelect({ options, value, onChange, w, mb }: { options: string[]; value: string; onChange: (v: string) => void; w?: number; mb?: number }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
@@ -361,8 +361,8 @@ function CompactSelect({ options, value, onChange, w }: { options: string[]; val
   }, [])
   const label = options.length === 0 ? '(none)' : (value || (options[0] || ''))
   return (
-    <div className="select" ref={ref} style={{ marginBottom: 8, width: w }}>
-      <button type="button" className="input select-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+    <div className="select" ref={ref} style={{ marginBottom: mb ?? 8, width: w ?? '100%' }}>
+      <button type="button" className="input select-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open} style={{ width: '100%' }}>
         <span>{label}</span>
         <span className="select-caret">▾</span>
       </button>
