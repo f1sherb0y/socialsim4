@@ -199,15 +199,24 @@ export default function Studio() {
     })
   }
 
+  async function fetchGraphWithRetry(id: number, tries = 6, delayMs = 300): Promise<Graph | null> {
+    for (let i = 0; i < tries; i++) {
+      const g = await getTreeGraph(id)
+      if (g) return g
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+    return null
+  }
+
   async function connectToTree(id: number) {
     setTreeId(id)
-    try {
-      const g = await getTreeGraph(id)
-      if (g) {
-        setGraph(g)
-        setSelected(g.root)
-      }
-    } catch {}
+    const g = await fetchGraphWithRetry(id)
+    if (!g) {
+      // Graph doesn't exist yet; don't open WS
+      return
+    }
+    setGraph(g)
+    setSelected(g.root)
     if (wsRef.current) {
       wsRef.current.close()
       wsRef.current = null
@@ -333,7 +342,7 @@ export default function Studio() {
           </div>
         </div>
 
-        <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr)', gap: 12, alignItems: 'stretch', overflow: 'hidden', height: '100%', boxSizing: 'border-box' }}>
+        <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'stretch', overflow: 'hidden', height: '100%', boxSizing: 'border-box' }}>
           {/* Left: Graph + Ops */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <h4 className="section-title">Graph</h4>
@@ -488,4 +497,3 @@ function CompactSelect({ options, value, onChange }: { options: string[]; value:
     </div>
   )
 }
-

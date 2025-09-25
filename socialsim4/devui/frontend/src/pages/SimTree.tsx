@@ -65,15 +65,21 @@ export default function SimTree() {
     }
   }, [])
 
+  async function fetchGraphWithRetry(id: number, tries = 6, delayMs = 300): Promise<Graph | null> {
+    for (let i = 0; i < tries; i++) {
+      const g = await getTreeGraph(id)
+      if (g) return g
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+    return null
+  }
+
   async function connectToTree(id: number) {
     setTreeId(id)
-    try {
-      const g = await getTreeGraph(id)
-      if (g) {
-        setGraph(g)
-        setSelected(g.root)
-      }
-    } catch {}
+    const g = await fetchGraphWithRetry(id)
+    if (!g) return
+    setGraph(g)
+    setSelected(g.root)
     if (wsRef.current) {
       wsRef.current.close()
       wsRef.current = null
