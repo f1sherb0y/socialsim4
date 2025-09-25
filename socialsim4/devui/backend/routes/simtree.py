@@ -17,17 +17,33 @@ from socialsim4.devui.backend.services.registry import (
     SimTreeRecord,
     next_tree_id,
 )
-from socialsim4.scripts.run_basic_scenes import build_simple_chat_sim
+from socialsim4.scripts.run_basic_scenes import (
+    build_simple_chat_sim,
+    build_council_sim,
+    build_werewolf_sim,
+    build_landlord_sim,
+    # build_village_sim,  # village not tested by default
+)
 
 router = APIRouter(tags=["simtree"])
 
 
 @router.post("/simtree", response_model=SimTreeCreateResult)
 def create_tree(payload: SimTreeCreatePayload):
-    if payload.scenario == "simple_chat":
+    sc = payload.scenario
+    if sc == "simple_chat":
         sim = build_simple_chat_sim()
+    elif sc == "council":
+        sim = build_council_sim()
+    elif sc == "werewolf":
+        sim = build_werewolf_sim()
+    elif sc == "landlord":
+        sim = build_landlord_sim()
+    elif sc == "village":
+        from socialsim4.scripts.run_basic_scenes import build_village_sim
+        sim = build_village_sim()
     else:
-        raise ValueError("Unknown scenario: " + str(payload.scenario))
+        raise ValueError("Unknown scenario: " + str(sc))
 
     tree = SimTree.new(sim, sim.clients)
     tree_id = next_tree_id()

@@ -1,4 +1,4 @@
-from .actions.base_actions import SendMessageAction, TalkToAction, YieldAction
+from .actions.base_actions import SendMessageAction, TalkToAction, YieldAction, SpeakAction
 from .actions.council_actions import (
     FinishMeetingAction,
     RequestBriefAction,
@@ -41,6 +41,7 @@ from .scenes.village_scene import VillageScene
 from .scenes.werewolf_scene import WerewolfScene
 
 ACTION_SPACE_MAP = {
+    "speak": SpeakAction(),
     "send_message": SendMessageAction(),
     # "speak": removed in favor of targeted talk_to
     "talk_to": TalkToAction(),

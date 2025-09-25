@@ -141,6 +141,12 @@ class Simulator:
             if ordering_state and isinstance(ordering_state, dict):
                 names = list(ordering_state.get("names", []))
             ordering = ordering_cls(names)
+        elif ordering_name == "controlled":
+            # Rebuild with a scene-aware next_fn to preserve behavior after deserialization
+            def _next(sim):
+                return sim.scene.get_controlled_next(sim)
+
+            ordering = ordering_cls(next_fn=_next)
         else:
             ordering = ordering_cls()
 

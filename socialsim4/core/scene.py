@@ -86,6 +86,10 @@ class Scene:
         """
         return [YieldAction()]
 
+    # For ControlledOrdering reconstruction after deserialize
+    def get_controlled_next(self, simulator: 'Simulator') -> str | None:
+        return None
+
     def serialize(self):
         # Unified serialization shape with scene-specific config under "config"
         return {

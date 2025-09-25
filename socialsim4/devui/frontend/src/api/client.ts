@@ -1,10 +1,10 @@
 // --- SimTree ---
 
-export async function createTree(): Promise<{ id: number; root: number }> {
+export async function createTree(scenario: 'simple_chat' | 'council' | 'werewolf' | 'landlord' | 'village' = 'simple_chat'): Promise<{ id: number; root: number }> {
   const res = await fetch('/devui/simtree', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scenario: 'simple_chat' }),
+    body: JSON.stringify({ scenario }),
   })
   return res.json()
 }

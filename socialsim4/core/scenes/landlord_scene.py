@@ -185,6 +185,41 @@ class LandlordPokerScene(Scene):
             lines.append("Hand counts: " + " | ".join(counts))
         return "\n".join(lines) + "\n"
 
+    def get_controlled_next(self, simulator: Simulator) -> str | None:
+        s = self.state
+        p = s.get("phase")
+        if p == "bidding":
+            if s.get("bidding_stage") == "call":
+                i = s.get("bid_turn_index")
+                return (s.get("players") or [None])[i] if i is not None else None
+            # rob stage: find next eligible who hasn't acted
+            elig = list(s.get("rob_eligible") or [])
+            acted = dict(s.get("rob_acted") or {})
+            if not elig:
+                return None
+            names = list(s.get("players") or [])
+            start = s.get("bid_turn_index") or 0
+            n = len(names)
+            for off in range(n):
+                idx = (start + off) % n
+                nm = names[idx]
+                if nm in elig and not bool(acted.get(nm, False)):
+                    return nm
+            return None
+        if p == "doubling":
+            order = list(s.get("doubling_order") or [])
+            acted = dict(s.get("doubling_acted") or {})
+            if not order:
+                return None
+            for nm in order:
+                if not bool(acted.get(nm, False)):
+                    return nm
+            return None
+        if p == "playing":
+            i = s.get("current_turn") or 0
+            return (s.get("players") or [None])[i] if i is not None else None
+        return None
+
     def parse_and_handle_action(self, action_data, agent: Agent, simulator: Simulator):
         # Enforce: at most one message per turn per agent
         if action_data and action_data.get("action") == "send_message":

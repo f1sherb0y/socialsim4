@@ -85,7 +85,28 @@ export default function Studio() {
           </div>
         )
       }
+      // Show other actions (except yield) with summary
+      if (action.action && action.action !== 'yield') {
+        const label = String(action.action)
+        const text = String(d.summary || '')
+        return (
+          <div key={idx} className="event-line">
+            <span className="event-label" style={{ color: '#6b7280' }}>[Action {label}]</span>{' '}
+            {text}
+          </div>
+        )
+      }
       return null
+    }
+    if (t === 'landlord_deal') {
+      const dd = msg.data || {}
+      const bottom = (dd.bottom || []) as string[]
+      return (
+        <div key={idx} className="event-line">
+          <span className="event-label" style={{ color: '#1e4976' }}>[Deal]</span>{' '}
+          Bottom: {bottom.join(' ')}
+        </div>
+      )
     }
     return null
   }
@@ -104,8 +125,10 @@ export default function Studio() {
     }
   }, [selectedAgent, agents, stickBottom])
 
+  const [scenario, setScenario] = useState<'simple_chat' | 'council' | 'werewolf' | 'landlord' | 'village'>('simple_chat')
+
   async function create() {
-    const r = await createTree()
+    const r = await createTree(scenario)
     localStorage.setItem('devui:lastTreeId', String(r.id))
     navigate(`/studio/${r.id}`)
     await connectToTree(r.id)
@@ -441,6 +464,13 @@ export default function Studio() {
                     }
                   }}
                 />
+                <select className="input" value={scenario} onChange={(e) => setScenario(e.target.value as any)} style={{ width: 160 }}>
+                  <option value="simple_chat">simple_chat</option>
+                  <option value="council">council</option>
+                  <option value="werewolf">werewolf</option>
+                  <option value="landlord">landlord</option>
+                  <option value="village">village</option>
+                </select>
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>

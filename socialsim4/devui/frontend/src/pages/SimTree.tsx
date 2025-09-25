@@ -30,8 +30,10 @@ export default function SimTree() {
     }, 2500)
   }
 
+  const [scenario, setScenario] = useState<'simple_chat' | 'council' | 'werewolf' | 'landlord' | 'village'>('simple_chat')
+
   async function create() {
-    const r = await createTree()
+    const r = await createTree(scenario)
     localStorage.setItem('devui:lastTreeId', String(r.id))
     navigate(`/simtree/${r.id}`)
     await connectToTree(r.id)
@@ -281,10 +283,16 @@ export default function SimTree() {
 
         <div className="scroll" style={{ height: '100%' }}>
           <h4 className="section-title">Tree</h4>
-          <div className="row" style={{ flexWrap: 'wrap', marginBottom: 8 }}>
-            <button className="btn" onClick={create} disabled={treeId != null}>Create (simple_chat)</button>
+          <div className="row" style={{ flexWrap: 'wrap', marginBottom: 8, gap: 8 }}>
+            <select className="input" value={scenario} onChange={(e) => setScenario(e.target.value as any)} style={{ width: 180 }}>
+              <option value="simple_chat">simple_chat</option>
+              <option value="council">council</option>
+              <option value="werewolf">werewolf</option>
+              <option value="landlord">landlord</option>
+              <option value="village">village</option>
+            </select>
+            <button className="btn" onClick={create}>Create</button>
             <button className="btn" onClick={refresh} disabled={treeId == null}>Refresh</button>
-            <button className="btn" onClick={create}>Reset</button>
           </div>
           <h4 className="section-title">Ops</h4>
           <div className="row" style={{ flexWrap: 'wrap' }}>

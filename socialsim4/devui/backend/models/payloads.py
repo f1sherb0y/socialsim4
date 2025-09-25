@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class SimTreeCreatePayload(BaseModel):
-    scenario: Literal["simple_chat"]
+    scenario: Literal["simple_chat", "council", "werewolf", "landlord", "village"]
 
 
 class SimTreeCreateResult(BaseModel):
@@ -33,4 +33,3 @@ class SimTreeAdvanceMultiPayload(BaseModel):
     parent: int
     turns: int
     count: int
-
