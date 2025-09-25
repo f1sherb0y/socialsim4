@@ -391,3 +391,26 @@ async def simtree_events(tree_id: int, ws: WebSocket):
             await ws.send_text(json.dumps(ev))
     finally:
         rec.subs.remove(q)
+
+
+@router.websocket("/simtree/{tree_id}/sim/{node_id}/events")
+async def sim_node_events(tree_id: int, node_id: int, ws: WebSocket):
+    await ws.accept()
+    if tree_id not in TREES:
+        await ws.close(code=1008)
+        return
+    rec: SimTreeRecord = TREES[tree_id]
+    t: SimTree = rec.tree
+    if node_id not in t.nodes:
+        await ws.close(code=1008)
+        return
+    q: asyncio.Queue = asyncio.Queue()
+    t.add_node_sub(node_id, q)
+    try:
+        await ws.receive_text()
+        # No initial full sync; client should have fetched baseline via HTTP
+        while True:
+            ev = await q.get()
+            await ws.send_text(json.dumps(ev))
+    finally:
+        t.remove_node_sub(node_id, q)

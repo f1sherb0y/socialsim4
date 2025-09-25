@@ -18,6 +18,8 @@ import {
   listTrees,
 } from '../api/client'
 
+type AgentInfo = { name: string; role?: string; plan_state: any; short_memory: { role: string; content: string }[] }
+
 export default function Studio() {
   const params = useParams()
   const navigate = useNavigate()
@@ -27,10 +29,11 @@ export default function Studio() {
   const [graph, setGraph] = useState<Graph | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
+  const nodeWsRef = useRef<WebSocket | null>(null)
 
   // Events/agents state for selected node
   const [events, setEvents] = useState<any[]>([])
-  const [agents, setAgents] = useState<{ name: string; role?: string; plan_state: any; short_memory: { role: string; content: string }[] }[]>([])
+  const [agents, setAgents] = useState<AgentInfo[]>([])
   const [turns, setTurns] = useState<number>(0)
   const [selectedAgent, setSelectedAgent] = useState<string>('')
   const [stickBottom, setStickBottom] = useState(true)
@@ -198,6 +201,30 @@ export default function Studio() {
     })
   }
 
+  function onNodeWsMessage(ev: MessageEvent) {
+    const msg = JSON.parse(ev.data)
+    const t = msg.type
+    if (t === 'agent_ctx_delta') {
+      const d = msg.data || {}
+      const name = String(d.agent || '')
+      const role = String(d.role || '')
+      const content = String(d.content || '')
+      setAgents((ags) => {
+        const idx = ags.findIndex((a) => a.name === name)
+        if (idx === -1) return ags
+        const copy: AgentInfo[] = ags.slice()
+        const original = copy[idx]!
+        const mem = (original.short_memory ?? []) as { role: string; content: string }[]
+        const updated: AgentInfo = { ...original, short_memory: [...mem, { role, content }] }
+        copy[idx] = updated
+        return copy
+      })
+      return
+    }
+    // Append all other deltas to events for formatting
+    setEvents((evs) => [...evs, msg])
+  }
+
   async function fetchGraphWithRetry(id: number, tries = 6, delayMs = 300): Promise<Graph | null> {
     for (let i = 0; i < tries; i++) {
       const g = await getTreeGraph(id)
@@ -226,11 +253,26 @@ export default function Studio() {
     wsRef.current = ws
   }
 
+  function connectNodeWS(id: number, node: number) {
+    if (nodeWsRef.current) {
+      nodeWsRef.current.close()
+      nodeWsRef.current = null
+    }
+    const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${id}/sim/${node}/events`)
+    ws.onopen = () => ws.send('ready')
+    ws.onmessage = onNodeWsMessage
+    nodeWsRef.current = ws
+  }
+
   useEffect(() => {
     return () => {
       if (wsRef.current) {
         wsRef.current.close()
         wsRef.current = null
+      }
+      if (nodeWsRef.current) {
+        nodeWsRef.current.close()
+        nodeWsRef.current = null
       }
     }
   }, [])
@@ -256,6 +298,10 @@ export default function Studio() {
   // Refresh middle/right when selected changes
   useEffect(() => {
     if (treeId != null && selected != null) refreshSelected()
+  }, [treeId, selected])
+
+  useEffect(() => {
+    if (treeId != null && selected != null) connectNodeWS(treeId, selected)
   }, [treeId, selected])
 
   async function advanceFrontier() {
@@ -483,7 +529,7 @@ function CompactSelect({ options, value, onChange, onOpen }: { options: string[]
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [])
-  const label = value || (options[0] || '')
+  const label = options.length === 0 ? '(none)' : (value || (options[0] || ''))
   return (
     <div className="select" ref={ref} style={{ marginBottom: 8 }}>
       <button
@@ -493,7 +539,7 @@ function CompactSelect({ options, value, onChange, onOpen }: { options: string[]
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span>{label || '(none)'}</span>
+        <span>{label}</span>
         <span className="select-caret">▾</span>
       </button>
       {open && (

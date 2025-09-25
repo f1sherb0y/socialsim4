@@ -485,6 +485,8 @@ History:
             self._apply_plan_update(plan_update)
 
         self.short_memory.append("assistant", llm_output)
+        if self.log_event:
+            self.log_event("agent_ctx_delta", {"agent": self.name, "role": "assistant", "content": llm_output})
         self.last_history_length = len(self.short_memory)
 
         return action_data
@@ -497,6 +499,8 @@ History:
         scene messages.
         """
         self.short_memory.append("user", content)
+        if self.log_event:
+            self.log_event("agent_ctx_delta", {"agent": self.name, "role": "user", "content": content})
 
     def append_env_message(self, content):
         """Deprecated: use add_env_feedback(). Kept for compatibility."""

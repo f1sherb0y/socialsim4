@@ -12,6 +12,7 @@ class SimTree:
         self.children: Dict[int, List[int]] = {}
         self.root: Optional[int] = None
         self._seq: int = 0
+        self._node_subs: Dict[int, List[object]] = {}
 
     @classmethod
     def new(
@@ -36,7 +37,7 @@ class SimTree:
             "logs": root_logs,
         }
         # Attach log handler so future events at root accumulate into root logs
-        tree._attach_log_handler(sim_clone, root_logs)
+        tree._attach_log_handler(root_id, sim_clone, root_logs)
         sim_clone.emit_remaining_events()
         tree.children[root_id] = []
         tree.root = root_id
@@ -60,7 +61,6 @@ class SimTree:
         parent_logs = list(self.nodes[node_id].get("logs", []))
         # Deep copy parent's logs so child does not share dict references
         child_logs: List[dict] = json.loads(json.dumps(parent_logs))
-        print(f"Copying. Parent logs: {parent_logs}")
         node = {
             "id": nid,
             "parent": None,
@@ -71,18 +71,37 @@ class SimTree:
             "logs": child_logs,
         }
 
-        self._attach_log_handler(sim_copy, child_logs)
+        self._attach_log_handler(nid, sim_copy, child_logs)
         self.nodes[nid] = node
         self.children[nid] = []
         return nid
 
-    def _attach_log_handler(self, sim: Simulator, logs: List[dict]) -> None:
+    def _attach_log_handler(self, node_id: int, sim: Simulator, logs: List[dict]) -> None:
         def _lh(kind, data):
-            logs.append({"type": kind, "data": data})
+            entry = {"type": kind, "data": data}
+            logs.append(entry)
+            subs = self._node_subs.get(node_id) or []
+            for q in subs:
+                q.put_nowait(entry)
 
         sim.log_event = _lh
         for a in sim.agents.values():
             a.log_event = _lh
+
+    # Per-node subscription for delta streaming (used by DevUI WS)
+    def add_node_sub(self, node_id: int, q: object) -> None:
+        lst = self._node_subs.get(node_id)
+        if lst is None:
+            lst = []
+            self._node_subs[node_id] = lst
+        lst.append(q)
+
+    def remove_node_sub(self, node_id: int, q: object) -> None:
+        lst = self._node_subs.get(node_id)
+        if lst is None:
+            return
+        if q in lst:
+            lst.remove(q)
 
     def attach(self, parent_id: int, ops: List[dict], cid: int) -> int:
         parent = self.nodes[parent_id]
