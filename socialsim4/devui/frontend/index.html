@@ -1,13 +1,49 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SocialSim4 DevUI</title>
+    <!-- Using Radix UI primitives via React packages; CSS base is our own. -->
     <style>
       html, body, #root { height: 100%; margin: 0; }
       body { overflow: hidden; box-sizing: border-box; }
       *, *::before, *::after { box-sizing: inherit; }
+      /* Compact controls and consistent heights */
+      button, .button, input[type="button"], input[type="submit"], input[type="reset"] {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.9rem;
+        line-height: 1.2;
+        border-radius: 8px;
+        min-height: 2.2rem;
+      }
+      input, select, textarea {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.9rem;
+        line-height: 1.2;
+        border-radius: 8px;
+        min-height: 2.2rem;
+        background: #fff !important;
+        color: #111 !important;
+        border: 0.75px solid #e6e8eb !important;
+      }
+      label { font-size: 0.85rem; }
+
+      /* Reduce overall font scale */
+      html { font-size: 14px; }
+      body { line-height: 1.45; }
+      h1 { font-size: 1.25rem; }
+      h2 { font-size: 1.15rem; }
+      h3 { font-size: 1.05rem; }
+      h4 { font-size: 1rem; }
+      p, li, a { font-size: 0.95rem; }
+
+      /* Dark theme overrides */
+      html[data-theme='dark'] body { background: #0f1115; color: #e5e7eb; }
+      html[data-theme='dark'] a { color: #93c5fd; }
+      html[data-theme='dark'] input, html[data-theme='dark'] select, html[data-theme='dark'] textarea {
+        background: #1f2937 !important; color: #e5e7eb !important; border: 1px solid #374151 !important;
+      }
     </style>
   </head>
   <body>

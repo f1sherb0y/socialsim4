@@ -386,9 +386,12 @@ async def tree_advance_multi(tree_id: int, payload: SimTreeAdvanceMultiPayload):
             q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
 
     def _run_one(i: int):
-        cid = cids[i]
-        sim = t.nodes[cid]["sim"]
-        sim.run(max_turns=turns)
+        try:
+            cid = cids[i]
+            sim = t.nodes[cid]["sim"]
+            sim.run(max_turns=turns)
+        except Exception as e:
+            print(f"Run one exception: {e}")
         return cid
 
     tasks = [asyncio.to_thread(_run_one, i) for i in range(count)]

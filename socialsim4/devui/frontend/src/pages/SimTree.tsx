@@ -2,20 +2,25 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createTree, getTreeGraph, treeAdvance, treeAdvanceFrontier, treeAdvanceMulti, treeAdvanceChain, treeBranchPublic, treeDeleteSubtree, Graph } from '../api/client'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow'
+import * as Toast from '@radix-ui/react-toast'
 import { graphlib, layout } from 'dagre'
 import 'reactflow/dist/style.css'
 
 export default function SimTree() {
   const params = useParams()
   const navigate = useNavigate()
+  const [theme, setTheme] = useState<string>(() => localStorage.getItem('devui:theme') || 'light')
   const [treeId, setTreeId] = useState<number | null>(null)
   const [graph, setGraph] = useState<Graph | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const [text, setText] = useState('(announcement)')
   const wsRef = useRef<WebSocket | null>(null)
-  const [multiTurns, setMultiTurns] = useState(1)
-  const [multiCount, setMultiCount] = useState(2)
-  const [chainTurns, setChainTurns] = useState(5)
+  const [multiTurns, setMultiTurns] = useState<string>('1')
+  const [multiCount, setMultiCount] = useState<string>('2')
+  const [chainTurns, setChainTurns] = useState<string>('5')
+  const multiTurnsNum = Math.max(1, parseInt(multiTurns || '1', 10) || 1)
+  const multiCountNum = Math.max(1, parseInt(multiCount || '2', 10) || 1)
+  const chainTurnsNum = Math.max(1, parseInt(chainTurns || '5', 10) || 1)
   // Toasts for run lifecycle
   const [toasts, setToasts] = useState<{ id: number; text: string }[]>([])
   const toastSeq = useRef(0)
@@ -31,19 +36,25 @@ export default function SimTree() {
     const r = await createTree()
     localStorage.setItem('devui:lastTreeId', String(r.id))
     navigate(`/simtree/${r.id}`)
+    await connectToTree(r.id)
   }
 
   async function refresh() {
     if (treeId == null) return
     const g = await getTreeGraph(treeId)
     if (g == null) {
-      // tree gone; disable controls and allow only create
-      setGraph(null)
-      setTreeId(null)
+      // Tree may not be immediately available; keep current state
       return
     }
     setGraph(g)
   }
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    const darkLink = document.getElementById('sl-theme-dark') as HTMLLinkElement | null
+    if (darkLink) darkLink.disabled = theme !== 'dark'
+    localStorage.setItem('devui:theme', theme)
+  }, [theme])
 
   useEffect(() => {
     return () => {
@@ -54,97 +65,95 @@ export default function SimTree() {
     }
   }, [])
 
+  async function connectToTree(id: number) {
+    setTreeId(id)
+    try {
+      const g = await getTreeGraph(id)
+      if (g) {
+        setGraph(g)
+        setSelected(g.root)
+      }
+    } catch {}
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
+    const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${id}/events`)
+    ws.onopen = () => {
+      ws.send('ready')
+    }
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data)
+      setGraph((g) => {
+        if (!g) {
+          if (msg.type === 'attached') {
+            const d = msg.data || {}
+            const node = Number(d.node)
+            const depth = Number(d.depth)
+            return { root: node, frontier: [], nodes: [{ id: node, depth }], edges: [], running: [] }
+          }
+          return g
+        }
+        const type = msg.type
+        const d = msg.data || {}
+        if (type === 'attached') {
+          const node = Number(d.node)
+          const parentVal = d.parent
+          const parent = (parentVal === null || parentVal === undefined) ? null : Number(parentVal)
+          const depth = Number(d.depth)
+          const edge_type = String(d.edge_type || 'advance')
+          const nodes = g.nodes.some((n) => n.id === node) ? g.nodes : [...g.nodes, { id: node, depth }]
+          const edges = parent == null ? g.edges : [...g.edges, { from: parent, to: node, type: edge_type }]
+          return { ...g, nodes, edges }
+        }
+        if (type === 'run_start') {
+          const node = Number(d.node)
+          const running = new Set(g.running || [])
+          running.add(node)
+          addToast(`Node ${node} started`)
+          return { ...g, running: Array.from(running) }
+        }
+        if (type === 'run_finish') {
+          const node = Number(d.node)
+          const running = new Set(g.running || [])
+          running.delete(node)
+          addToast(`Node ${node} finished`)
+          return { ...g, running: Array.from(running) }
+        }
+        if (type === 'deleted') {
+          const rootDel = Number(d.node)
+          const toDelete = new Set<number>()
+          const children = new Map<number, number[]>()
+          for (const e of g.edges) {
+            if (!children.has(e.from)) children.set(e.from, [])
+            children.get(e.from)!.push(e.to)
+          }
+          const stack = [rootDel]
+          while (stack.length) {
+            const cur = stack.pop()!
+            if (toDelete.has(cur)) continue
+            toDelete.add(cur)
+            const ch = children.get(cur) || []
+            for (const c of ch) stack.push(c)
+          }
+          const nodes = g.nodes.filter((n) => !toDelete.has(n.id))
+          const edges = g.edges.filter((e) => !toDelete.has(e.from) && !toDelete.has(e.to))
+          const running = (g.running || []).filter((r) => !toDelete.has(r))
+          return { ...g, nodes, edges, running }
+        }
+        return g
+      })
+    }
+    wsRef.current = ws
+  }
+
   // Auto-connect tree by route param or lastTreeId
   useEffect(() => {
     const idStr = params.treeId || localStorage.getItem('devui:lastTreeId')
     if (!idStr) return
     const id = Number(idStr)
     if (Number.isNaN(id)) return
-    ;(async () => {
-      const g = await getTreeGraph(id)
-      if (g == null) {
-        // Not found: clear last id and do not open WS
-        localStorage.removeItem('devui:lastTreeId')
-        setTreeId(null)
-        setGraph(null)
-        setSelected(null)
-        return
-      }
-      setTreeId(id)
-      setGraph(g)
-      setSelected(g.root)
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
-      const ws = new WebSocket(`ws://localhost:8090/devui/simtree/${id}/events`)
-      ws.onopen = () => {
-        ws.send('ready')
-      }
-      ws.onmessage = (ev) => {
-        const msg = JSON.parse(ev.data)
-        setGraph((g) => {
-          if (!g) {
-            if (msg.type === 'attached') {
-              const d = msg.data || {}
-              const node = Number(d.node)
-              const depth = Number(d.depth)
-              return { root: node, frontier: [], nodes: [{ id: node, depth }], edges: [], running: [] }
-            }
-            return g
-          }
-          const type = msg.type
-          const d = msg.data || {}
-          if (type === 'attached') {
-            const node = Number(d.node)
-            const parentVal = d.parent
-            const parent = (parentVal === null || parentVal === undefined) ? null : Number(parentVal)
-            const depth = Number(d.depth)
-            const edge_type = String(d.edge_type || 'advance')
-            const nodes = g.nodes.some((n) => n.id === node) ? g.nodes : [...g.nodes, { id: node, depth }]
-            const edges = parent == null ? g.edges : [...g.edges, { from: parent, to: node, type: edge_type }]
-            return { ...g, nodes, edges }
-          }
-          if (type === 'run_start') {
-            const node = Number(d.node)
-            const running = new Set(g.running || [])
-            running.add(node)
-            addToast(`Node ${node} started`)
-            return { ...g, running: Array.from(running) }
-          }
-          if (type === 'run_finish') {
-            const node = Number(d.node)
-            const running = new Set(g.running || [])
-            running.delete(node)
-            addToast(`Node ${node} finished`)
-            return { ...g, running: Array.from(running) }
-          }
-          if (type === 'deleted') {
-            const rootDel = Number(d.node)
-            const toDelete = new Set<number>()
-            const children = new Map<number, number[]>()
-            for (const e of g.edges) {
-              if (!children.has(e.from)) children.set(e.from, [])
-              children.get(e.from)!.push(e.to)
-            }
-            const stack = [rootDel]
-            while (stack.length) {
-              const cur = stack.pop()!
-              if (toDelete.has(cur)) continue
-              toDelete.add(cur)
-              const ch = children.get(cur) || []
-              for (const c of ch) stack.push(c)
-            }
-            const nodes = g.nodes.filter((n) => !toDelete.has(n.id))
-            const edges = g.edges.filter((e) => !toDelete.has(e.from) && !toDelete.has(e.to))
-            const running = (g.running || []).filter((r) => !toDelete.has(r))
-            return { ...g, nodes, edges, running }
-          }
-          return g
-        })
-      }
-      wsRef.current = ws
-    })()
+    connectToTree(id)
   }, [params.treeId])
 
   async function advanceSel() {
@@ -224,84 +233,107 @@ export default function SimTree() {
   }, [graph, selected])
 
   return (
-    <div style={{ height: '100vh', width: '100%', display: 'grid', gridTemplateRows: 'auto 1fr', boxSizing: 'border-box', overflow: 'hidden', fontFamily: 'sans-serif' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', borderBottom: '1px solid #eee' }}>
-        <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0 }}>SimTree Panel</h3>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Link to="/">首页</Link>
-            <Link to="/simtree">树</Link>
+    <Toast.Provider swipeDirection="right">
+    <div className="page">
+      <div className="header">
+        <div className="header-inner">
+          <h3 className="title">SimTree</h3>
+          <div className="row">
+            <nav className="nav row">
+              <Link to="/">首页</Link>
+              <Link to={treeId != null ? `/simtree/${treeId}` : '/simtree'}>树</Link>
+            </nav>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 16, alignItems: 'stretch', overflow: 'hidden' }}>
+      <div className="content-grid">
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <h4 style={{ margin: '0 0 8px 0' }}>Graph</h4>
-          <div style={{ width: '100%', flex: 1, minHeight: 0, border: '1px solid #ddd' }}>
-            <style>{'@keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,0,0,.4)}to{box-shadow:0 0 8px 4px rgba(255,0,0,.2)}}'}</style>
+          <h4 className="section-title">Graph</h4>
+          <div className="card" style={{ width: '100%', flex: 1, minHeight: 0 }}>
+            <style>{`@keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,0,0,.4)}to{box-shadow:0 0 8px 4px rgba(255,0,0,.2)}}`}</style>
             <ReactFlow nodes={rf.nodes} edges={rf.edges} fitView onNodeClick={(_, n) => setSelected(Number(n.id))}>
               <MiniMap pannable zoomable />
-              <Controls />
+              <Controls position="bottom-left" />
               <Background />
             </ReactFlow>
           </div>
-          {graph && (<div style={{ marginTop: 8, color: '#666' }}>Selected: {selected ?? '-'} | Edges: {graph.edges.length}</div>)}
+          {graph && (
+            <div className="stats">
+              <div>Selected: {selected ?? '-'}</div>
+              <div>Nodes: {graph.nodes.length} · Edges: {graph.edges.length} · Running: {(graph.running || []).length}</div>
+            </div>
+          )}
+          <div className="legend" style={{ marginTop: 8 }}>
+            {([
+              ['advance', '#000'],
+              ['agent_ctx', '#1b5e20'],
+              ['agent_plan', '#e65100'],
+              ['agent_props', '#5e35b1'],
+              ['scene_state', '#6d4c41'],
+              ['public_event', '#1e4976'],
+            ] as const).map(([label, color]) => (
+              <span key={label} className="badge">
+                <span className="dot" style={{ background: color }} />
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div style={{ height: '100%', overflowY: 'auto' }}>
-          <h4>Tree</h4>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            <button onClick={create} disabled={treeId != null}>Create (simple_chat)</button>
-            <button onClick={refresh} disabled={treeId == null}>Refresh</button>
-            <button onClick={create}>Reset</button>
+        <div className="scroll" style={{ height: '100%' }}>
+          <h4 className="section-title">Tree</h4>
+          <div className="row" style={{ flexWrap: 'wrap', marginBottom: 8 }}>
+            <button className="btn" onClick={create} disabled={treeId != null}>Create (simple_chat)</button>
+            <button className="btn" onClick={refresh} disabled={treeId == null}>Refresh</button>
+            <button className="btn" onClick={create}>Reset</button>
           </div>
-          <h4>Ops</h4>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={advanceSel} disabled={treeId == null || selected == null}>Advance selected</button>
-            <button onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
+          <h4 className="section-title">Ops</h4>
+          <div className="row" style={{ flexWrap: 'wrap' }}>
+            <button className="btn" onClick={advanceSel} disabled={treeId == null || selected == null}>Advance selected</button>
+            <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 12, alignItems: 'end' }}>
-            <div>
-              <label>Multi turns</label>
-              <input type="number" min={1} value={multiTurns} onChange={(e) => setMultiTurns(Number(e.target.value))} style={{ width: '100%' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
+            <label className="label" style={{ alignSelf: 'end' }}>Multi turns</label>
+            <label className="label" style={{ alignSelf: 'end' }}>Count</label>
+            <label style={{ visibility: 'hidden' }}>&nbsp;</label>
+            <input className="input" type="number" min={1} value={multiTurns} onChange={(e) => setMultiTurns(e.target.value)} style={{ width: '100%' }} />
+            <input className="input" type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(e.target.value)} style={{ width: '100%' }} />
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurnsNum, multiCountNum)} disabled={treeId == null || selected == null}>Advance N copies</button>
             </div>
-            <div>
-              <label>Count</label>
-              <input type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(Number(e.target.value))} style={{ width: '100%' }} />
-            </div>
-            <button onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurns, multiCount)} disabled={treeId == null || selected == null}>Advance N copies</button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12, alignItems: 'end' }}>
-            <div>
-              <label>Chain turns</label>
-              <input type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(Number(e.target.value))} style={{ width: '100%' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
+            <label className="label" style={{ alignSelf: 'end' }}>Chain turns</label>
+            <label style={{ visibility: 'hidden' }}>&nbsp;</label>
+            <input className="input" type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(e.target.value)} style={{ width: '100%' }} />
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurnsNum)} disabled={treeId == null || selected == null}>Advance chain</button>
             </div>
-            <button onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurns)} disabled={treeId == null || selected == null}>Advance chain</button>
           </div>
           <div style={{ marginTop: 12 }}>
-            <div>进入 /sim 页面（基于此树）</div>
-            <button onClick={() => treeId != null && selected != null && navigate(`/sim/${treeId}?node=${selected}`)} disabled={treeId == null || selected == null}>进入</button>
+            <div className="label" style={{ marginBottom: 4 }}>查看模拟详情</div>
+            <button className="btn" onClick={() => treeId != null && selected != null && navigate(`/sim/${treeId}?node=${selected}`)} disabled={treeId == null || selected == null}>查看详情</button>
           </div>
           <div style={{ marginTop: 12 }}>
-            <div>public_broadcast:</div>
-            <input value={text} onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} />
-            <button onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>Apply</button>
+            <div className="label">public_broadcast:</div>
+            <input className="input" value={text} onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} />
+            <button className="btn" onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>Apply</button>
           </div>
           <div style={{ marginTop: 12 }}>
-            <div>Delete subtree (root disabled)</div>
-            <button onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>Delete</button>
+            <div className="label">Delete subtree (root disabled)</div>
+            <button className="btn" onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>Delete</button>
           </div>
         </div>
       </div>
-      {/* Toasts bottom-right */}
-      <div style={{ position: 'fixed', right: 16, bottom: 16, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 1000 }}>
-        {toasts.map((t) => (
-          <div key={t.id} style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.25)', fontSize: 12 }}>
-            {t.text}
-          </div>
-        ))}
-      </div>
+      {/* Toasts bottom-right (Radix) */}
+      <Toast.Viewport style={{ position: 'fixed', right: 16, bottom: 16, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 1000 }} />
+      {toasts.map((t) => (
+        <Toast.Root key={t.id} duration={2500} style={{ background: 'var(--panel)', border: '0.75px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)' }}>
+          <Toast.Title style={{ fontSize: 12 }}>{t.text}</Toast.Title>
+        </Toast.Root>
+      ))}
     </div>
+    </Toast.Provider>
   )
 }

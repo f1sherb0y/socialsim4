@@ -86,7 +86,7 @@ class Scene:
         """
         return [YieldAction()]
 
-    def to_dict(self):
+    def serialize(self):
         # Unified serialization shape with scene-specific config under "config"
         return {
             "type": getattr(self, "TYPE", "scene"),
@@ -97,7 +97,7 @@ class Scene:
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def deserialize(cls, data):
         # Unified deserialization using scene-specific config hook
         name = data["name"]
         initial_event = data["initial_event"]

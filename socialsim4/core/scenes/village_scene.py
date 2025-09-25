@@ -70,7 +70,7 @@ class Tile:
         self.terrain = terrain
         self.resources = resources or {}
 
-    def to_dict(self):
+    def serialize(self):
         return {
             "passable": self.passable,
             "movement_cost": self.movement_cost,
@@ -79,7 +79,7 @@ class Tile:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict):
+    def deserialize(cls, data: Dict):
         return cls(
             passable=data.get("passable", True),
             movement_cost=data.get("movement_cost", 1),
@@ -99,11 +99,11 @@ class GameMap:
         # Sparse storage of tiles: only store non-default tiles explicitly
         self.tiles: Dict[Tuple[int, int], Tile] = {}
 
-    def to_dict(self):
+    def serialize(self):
         """Serializes the map to a dictionary."""
         tiles = []
         for (x, y), tile in self.tiles.items():
-            tiles.append({"x": x, "y": y, **tile.to_dict()})
+            tiles.append({"x": x, "y": y, **tile.serialize()})
         return {
             "width": self.width,
             "height": self.height,
@@ -177,7 +177,7 @@ class GameMap:
         return "\n".join([header, legend] + rows)
 
     @classmethod
-    def from_dict(cls, data: Dict):
+    def deserialize(cls, data: Dict):
         """Creates a map from a dictionary."""
         width = data.get("width", 20)
         height = data.get("height", 20)
@@ -185,7 +185,7 @@ class GameMap:
 
         for t in data.get("tiles", []):
             x, y = t["x"], t["y"]
-            tile = Tile.from_dict(t)
+            tile = Tile.deserialize(t)
             game_map.tiles[(x, y)] = tile
 
         for loc in data.get("locations", []):
@@ -579,14 +579,14 @@ Current time: {hours}:{mins:02d} ({time_of_day})
         return {
             "movement_cost": self.movement_cost,
             "chat_range": self.chat_range,
-            "map": self.game_map.to_dict(),
+            "map": self.game_map.serialize(),
             "print_map_each_turn": self.print_map_each_turn,
         }
 
     @classmethod
     def deserialize_config(cls, config: Dict) -> Dict:
         return {
-            "game_map": GameMap.from_dict(config["map"]),
+            "game_map": GameMap.deserialize(config["map"]),
             "movement_cost": config.get("movement_cost", 1),
             "chat_range": config.get("chat_range", 5),
             "print_map_each_turn": config.get("print_map_each_turn", False),

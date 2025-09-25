@@ -114,7 +114,7 @@ class SimulationManager:
             if sim_code in self.simulations:
                 self.stop_simulation(sim_code)
 
-            simulator = Simulator.from_dict(data, clients)
+            simulator = Simulator.deserialize(data, clients)
             instance = SimulationInstance(simulator)
             self.simulations[sim_code] = instance
 

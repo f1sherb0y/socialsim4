@@ -1,3 +1,4 @@
+from copy import deepcopy
 from queue import Queue
 from typing import Callable, List, Optional
 
@@ -97,39 +98,36 @@ class Simulator:
 
     # No external turn requests in this prototype; agents are isolated from simulator
 
-    def to_dict(self):
-        state = None
-        if hasattr(self.ordering, "get_state"):
-            state = self.ordering.get_state()
-        return {
-            "agents": {name: agent.to_dict() for name, agent in self.agents.items()},
-            "scene": self.scene.to_dict(),
-            "max_steps_per_turn": self.max_steps_per_turn,
+    # Clear serialization with deep-copy semantics
+    def serialize(self):
+        ord_state = self.ordering.serialize()
+        snap = {
+            "agents": {name: agent.serialize() for name, agent in self.agents.items()},
+            "scene": self.scene.serialize(),
+            "max_steps_per_turn": int(self.max_steps_per_turn),
             "ordering": getattr(self.ordering, "NAME", "sequential"),
-            "ordering_state": state,
+            "ordering_state": ord_state,
             # Serialize pending event queue as a list of items
             "event_queue": list(self.event_queue.queue),
-            "turns": self.turns,
+            "turns": int(self.turns),
         }
+        return deepcopy(snap)
 
     @classmethod
-    def from_dict(cls, data, clients, log_handler=None):
+    def deserialize(cls, data, clients, log_handler=None):
+        data = deepcopy(data)
         # Note: clients are not serialized and must be passed in.
         scenario_data = data["scene"]
-        # This is a simplified example. In a real application, you would
-        # have a factory function to create the correct scene type.
         from socialsim4.core.registry import SCENE_MAP
 
         scene_type = scenario_data["type"]
         scene_class = SCENE_MAP.get(scene_type)
         if not scene_class:
             raise ValueError(f"Unknown scene type: {scene_type}")
-        scene = scene_class.from_dict(scenario_data)
+        scene = scene_class.deserialize(scenario_data)
 
         agents = [
-            Agent.from_dict(
-                agent_data, event_handler=None
-            )  # event_handler will be set by SimulationInstance
+            Agent.deserialize(agent_data, event_handler=None)
             for agent_data in data["agents"].values()
         ]
 
@@ -156,9 +154,8 @@ class Simulator:
             event_handler=log_handler,
         )
         # Apply ordering state if provided
-        if ordering_state and hasattr(simulator.ordering, "set_state"):
-            simulator.ordering.set_state(ordering_state)
-            simulator.order_iter = simulator.ordering.iter()
+        simulator.ordering.deserialize(ordering_state)
+        simulator.order_iter = simulator.ordering.iter()
         # Restore pending event queue contents
         pending = data.get("event_queue") or []
         if pending:

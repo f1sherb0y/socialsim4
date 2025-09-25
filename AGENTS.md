@@ -128,7 +128,7 @@ This document summarizes the coding requirements, conventions, and the project�
 
 ## New: Simulation Tree (SimTree)
 
-- Purpose: causal exploration via branching timelines. Each node stores a live `Simulator` cloned by `to_dict()` → `from_dict(...)`.
+- Purpose: causal exploration via branching timelines. Each node stores a live `Simulator` cloned by `serialize()` → `deserialize(...)`.
 - IDs: integer, root = 0. Each node has `{id, parent, depth, edge_type, ops, sim, logs}`.
 - Edge types: `advance`, `agent_ctx`, `agent_plan`, `agent_props`, `scene_state`, `public_event`, `multi`.
 - Operations:
@@ -139,7 +139,7 @@ This document summarizes the coding requirements, conventions, and the project�
   - `advance_multi(parent, turns, count)` → N parallel children from one parent.
   - `advance_chain(parent, turns)` → one child after running multiple steps.
   - `delete_subtree(node)` → remove node and all descendants (root protected).
-- Logs: each child node records logs emitted during its creation (via `event_handler` wired into `Simulator.from_dict(..., log_handler)` and `sim.emit_remaining_events()`).
+- Logs: each child node records logs emitted during its creation (via `event_handler` wired into `Simulator.deserialize(..., log_handler)` and `sim.emit_remaining_events()`).
 
 ## New: DevUI (prototype)
 

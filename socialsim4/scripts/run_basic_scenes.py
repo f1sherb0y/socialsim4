@@ -49,7 +49,7 @@ def make_agents(names: List[str], action_space: List[str]) -> List[Agent]:
     agents = []
     for name in names:
         agents.append(
-            Agent.from_dict(
+            Agent.deserialize(
                 {
                     "name": name,
                     "user_profile": f"You are {name}.",
@@ -109,7 +109,7 @@ def make_clients() -> Dict[str, object]:
 def build_landlord_sim(num_decks: int = 1) -> Simulator:
     # Four configured players with distinct styles/prompts
     agents = [
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Alice",
                 "user_profile": (
@@ -126,7 +126,7 @@ def build_landlord_sim(num_decks: int = 1) -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Bob",
                 "user_profile": (
@@ -143,7 +143,7 @@ def build_landlord_sim(num_decks: int = 1) -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Carol",
                 "user_profile": (
@@ -159,7 +159,7 @@ def build_landlord_sim(num_decks: int = 1) -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Dave",
                 "user_profile": (
@@ -241,7 +241,7 @@ def run_landlord_scene():
 def build_simple_chat_sim() -> Simulator:
     # agents = make_agents(["Host", "Alice", "Bob"], ["send_message", "yield"])
     agents = [
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Host",
                 "user_profile": "You are the host of a chat room. Your role is to facilitate conversation, introduce topics, and ensure everyone has a chance to speak. You are neutral and objective.",
@@ -252,7 +252,7 @@ def build_simple_chat_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Alice",
                 "user_profile": "You are Alice. You are an optimist, full of energy, and always curious about new technologies and their potential to change the world for the better.",
@@ -263,7 +263,7 @@ def build_simple_chat_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Bob",
                 "user_profile": "You are Bob. You are a pragmatist and a bit of a skeptic. You are cautious about new technologies and tend to focus on the potential downsides and practical challenges.",
@@ -304,7 +304,7 @@ def run_simple_chat():
 def build_council_sim() -> Simulator:
     # Six participants: a Host + five representatives with realistic profiles
     reps: List[Agent] = [
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Host",
                 "user_profile": (
@@ -326,7 +326,7 @@ def build_council_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Rep. Chen Wei",
                 "user_profile": (
@@ -342,7 +342,7 @@ def build_council_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Rep. Li Na",
                 "user_profile": (
@@ -358,7 +358,7 @@ def build_council_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Rep. Zhang Rui",
                 "user_profile": (
@@ -374,7 +374,7 @@ def build_council_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Rep. Wang Mei",
                 "user_profile": (
@@ -390,7 +390,7 @@ def build_council_sim() -> Simulator:
                 "properties": {},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Rep. Qiao Jun",
                 "user_profile": (
@@ -446,7 +446,7 @@ def run_council():
 
 def build_village_sim() -> Simulator:
     agents = [
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Elias Thorne",
                 "user_profile": "You are Elias Thorne, a reclusive scholar living in a remote village. You are deeply knowledgeable about local history, folklore, and ancient ruins. You spend most of your time in your library, poring over old maps and texts. You are logical, reserved, and slightly suspicious of outsiders.",
@@ -464,7 +464,7 @@ def build_village_sim() -> Simulator:
                 "properties": {"map_xy": [3, 3]},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Seraphina",
                 "user_profile": "You are Seraphina, the village herbalist. You have an intimate connection with the natural world and possess a deep understanding of plants and their properties. You are compassionate, intuitive, and respected by the villagers for your healing skills. You live in a small cottage near the forest.",
@@ -482,7 +482,7 @@ def build_village_sim() -> Simulator:
                 "properties": {"map_xy": [18, 12]},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Kaelen",
                 "user_profile": "You are Kaelen, the village blacksmith. You are a person of few words but immense skill. Your forge is the heart of the village, where you craft tools, weapons, and intricate metalwork. You are stoic, practical, and fiercely protective of your community.",
@@ -500,7 +500,7 @@ def build_village_sim() -> Simulator:
                 "properties": {"map_xy": [10, 8]},
             }
         ),
-        Agent.from_dict(
+        Agent.deserialize(
             {
                 "name": "Lyra",
                 "user_profile": "You are Lyra, a young and adventurous cartographer. You are new to the village, drawn by tales of its mysterious surroundings. You are curious, energetic, and eager to map the uncharted territories around the village.",
@@ -522,7 +522,7 @@ def build_village_sim() -> Simulator:
 
     with open(Path(__file__).parent / "default_map.json") as f:
         map_data = json.load(f)
-    game_map = GameMap.from_dict(map_data)
+    game_map = GameMap.deserialize(map_data)
 
     scene = VillageScene(
         "village",
@@ -619,7 +619,7 @@ def build_werewolf_sim() -> Simulator:
             actions = []
 
         agents.append(
-            Agent.from_dict(
+            Agent.deserialize(
                 {
                     "name": name,
                     "user_profile": role_prompt(name),

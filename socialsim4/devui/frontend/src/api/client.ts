@@ -9,7 +9,7 @@ export async function createTree(): Promise<{ id: number; root: number }> {
   return res.json()
 }
 
-export type Graph = { root: number; frontier: number[]; running?: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string }[] }
+export type Graph = { root: number; frontier: number[]; running?: number[]; nodes: { id: number; depth: number }[]; edges: { from: number; to: number; type: string; ops?: any[] }[] }
 
 export async function getTreeGraph(id: number): Promise<Graph | null> {
   const res = await fetch(`/devui/simtree/${id}/graph`)

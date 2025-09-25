@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import App from './App'
 import Simulation from './pages/Simulation'
 import SimTree from './pages/SimTree'
+import './styles/radix-theme.css'
 
 const router = createBrowserRouter([
   { path: '/', element: <App /> },

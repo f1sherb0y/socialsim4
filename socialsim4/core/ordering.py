@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 from typing import Callable, Iterator, Optional
 
 
@@ -28,6 +29,14 @@ class Ordering:
     def set_state(self, state: Optional[dict]) -> None:
         return None
 
+    # Explicit aliases for clarity and deep-copy guarantees
+    def serialize(self) -> Optional[dict]:
+        state = self.get_state()
+        return deepcopy(state) if state is not None else None
+
+    def deserialize(self, state: Optional[dict]) -> None:
+        self.set_state(deepcopy(state) if state is not None else None)
+
 
 class SequentialOrdering(Ordering):
     NAME = "sequential"
@@ -48,16 +57,15 @@ class SequentialOrdering(Ordering):
             if not self._names:
                 break
             name = self._names[self._idx]
+            self._idx = (self._idx + 1) % len(self._names)
             if name in self.sim.agents:
                 yield name
-            self._idx = (self._idx + 1) % len(self._names)
 
     def get_state(self) -> Optional[dict]:
+        # Return deep-copied state
         return {"names": list(self._names), "idx": int(self._idx)}
 
     def set_state(self, state: Optional[dict]) -> None:
-        if not state:
-            return
         self._names = list(state.get("names", []))
         n = len(self._names)
         self._idx = int(state.get("idx", 0)) % (n if n else 1)
@@ -74,15 +82,14 @@ class CycledOrdering(Ordering):
         while True:
             if not self.names:
                 break
-            yield self.names[self._idx]
+            ret = self.names[self._idx]
             self._idx = (self._idx + 1) % len(self.names)
+            yield ret
 
     def get_state(self) -> Optional[dict]:
         return {"names": list(self.names), "idx": int(self._idx)}
 
     def set_state(self, state: Optional[dict]) -> None:
-        if not state:
-            return
         self.names = list(state.get("names", []))
         n = len(self.names)
         self._idx = int(state.get("idx", 0)) % (n if n else 1)
@@ -183,8 +190,8 @@ class LLMModeratedOrdering(Ordering):
             raise ValueError(
                 "Moderator must emit schedule_order action during scheduling"
             )
-        success, result, summary, meta, pass_control = self.sim.scene.parse_and_handle_action(
-            sched, mod, self.sim
+        success, result, summary, meta, pass_control = (
+            self.sim.scene.parse_and_handle_action(sched, mod, self.sim)
         )
         self.sim.log_event(
             "action_end",

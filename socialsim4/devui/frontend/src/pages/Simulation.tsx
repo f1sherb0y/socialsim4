@@ -4,6 +4,8 @@ import { Link, useParams } from 'react-router-dom'
 
 export default function Simulation() {
   const params = useParams()
+  const [theme, setTheme] = useState<string>(() => localStorage.getItem('devui:theme') || 'light')
+  const treeNav = params.treeId ? `/simtree/${params.treeId}` : '/simtree'
   const [names, setNames] = useState<string[]>([])
   const [timeline, setTimeline] = useState<any[]>([])
   const [selected, setSelected] = useState<string>('')
@@ -20,26 +22,8 @@ export default function Simulation() {
       const qs = new URLSearchParams(location.search)
       const simParam = qs.get('sim') || qs.get('node')
       const nid = simParam ? Number(simParam) : 0
-      // Logs → Events panel
-      const lines: string[] = []
-      const seen = new Set<string>()
+      // Logs: keep raw shape; formatting is done in render via formatEvent
       const logs = await getSimEvents(tid, nid)
-      for (const it of logs || []) {
-        const t = it.type
-        const d = it.data || {}
-        if (t === 'system_broadcast') {
-          if (!d.sender) {
-            const s = `${d.text}`
-            if (!seen.has(s)) { seen.add(s); lines.push(s) }
-          }
-        } else if (t === 'action_end') {
-          const action = d.action || {}
-          if (action.action !== 'yield') {
-            const s = `[${action.action}] ${d.summary}`
-            if (!seen.has(s)) { seen.add(s); lines.push(s) }
-          }
-        }
-      }
       // Node state for agents/plan/memory
       const st = await getSimState(tid, nid)
       const agentNames = st.agents.map((a: any) => a.name)
@@ -47,7 +31,7 @@ export default function Simulation() {
       setSelected(agentNames[0] || "")
       // Build a single timeline frame compatible with renderer
       const frame = {
-        events_delta: lines.map((text) => ({ type: 'system_broadcast', data: { text, sender: null } })),
+        events_delta: logs || [],
         agents: st.agents.map((a: any) => ({ name: a.name, role: a.role, plan_state: a.plan_state, context_delta: a.short_memory })),
         turns: st.turns,
       }
@@ -56,47 +40,50 @@ export default function Simulation() {
     init()
   }, [params.treeId])
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    const darkLink = document.getElementById('sl-theme-dark') as HTMLLinkElement | null
+    if (darkLink) darkLink.disabled = theme !== 'dark'
+    localStorage.setItem('devui:theme', theme)
+  }, [theme])
+
   // no local step
 
   // no offsets needed
 
-  const events = useMemo(() => {
-    const lines: string[] = []
-    const seen = new Set<string>()
-    const last = timeline.length ? (timeline[timeline.length - 1] as any) : null
-    if (last) {
-      for (const it of (last.events_delta as any[]) || []) {
-        const t = it.type
-        const d = it.data
-        if (t === 'system_broadcast') {
-          if (!d.sender) {
-            const s = `${d.text}`
-            if (!seen.has(s)) { seen.add(s); lines.push(s) }
-          }
-        } else if (t === 'action_end') {
-          const action = d.action
-          if (action.action !== 'yield') {
-            const s = `[${action.action}] ${d.summary}`
-            if (!seen.has(s)) { seen.add(s); lines.push(s) }
-          }
-        }
+  // format a single backend log item to a compact line; null to hide
+  function formatEvent(it: any, idx: number): JSX.Element | null {
+    if (!it) return null
+    const t = it.type
+    const d = it.data || {}
+    if (t === 'system_broadcast') {
+      if (d.type === 'PublicEvent') {
+        return (
+          <div key={idx} className="event-line">
+            <span className="event-label" style={{ color: '#2563eb' }}>[Event]</span>{' '}
+            {String(d.text || '')}
+          </div>
+        )
       }
-      if (lines.length === 0) {
-        const ags = (last.agents as any[]) || []
-        for (const a of ags) {
-          const msgs = (a.context_delta as any[]) || []
-          for (const m of msgs) {
-            const c = String(m.content || '')
-            if (c.includes('Public Event:')) {
-              const s = c.replace(/^\s+/, '')
-              if (!seen.has(s)) { seen.add(s); lines.push(s) }
-            }
-          }
-        }
-      }
+      return null
     }
-    return lines
-  }, [timeline])
+    if (t === 'action_end') {
+      const action = d.action || {}
+      if (action.action === 'send_message') {
+        const name = String(d.agent || '')
+        const msg = String((d.result && d.result.message) || action.message || d.summary || '')
+        return (
+          <div key={idx} className="event-line">
+            <span className="event-label" style={{ color: '#059669' }}>[Action]</span>{' '}
+            <span style={{ color: 'var(--brand)', fontWeight: 600 }}>{name}:</span>{' '}
+            {msg}
+          </div>
+        )
+      }
+      return null
+    }
+    return null
+  }
 
   const agentDelta = useMemo(() => {
     if (!selected) return [] as { role: string; content: string }[]
@@ -127,84 +114,89 @@ export default function Simulation() {
   }, [agentDelta, selected, stickBottom])
 
   return (
-    <div style={{ height: '100vh', width: '100%', display: 'grid', gridTemplateRows: 'auto 1fr', boxSizing: 'border-box', overflow: 'hidden', fontFamily: 'sans-serif' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', borderBottom: '1px solid #eee' }}>
-        <div style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>Simulation Panel</h3>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <Link to="/">首页</Link>
-            <Link to="/simtree">树</Link>
+    <div className="page">
+      <div className="header">
+        <div className="header-inner">
+          <h3 className="title">Simulation</h3>
+          <div className="row">
+            <nav className="nav row">
+              <Link to="/">首页</Link>
+              <Link to={treeNav}>树</Link>
+            </nav>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '0 16px 16px 16px', display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 16, alignItems: 'stretch', overflow: 'hidden' }}>
+      <div className="content-grid">
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <h4 style={{ margin: '8px 0 8px 0' }}>Events</h4>
-          <div ref={eventsRef}
-            style={{
-              background: '#0b0b0b',
-              color: '#c7f7c7',
-              padding: 12,
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              overflowWrap: 'anywhere',
-              lineHeight: 1.4,
-              borderRadius: 6,
-              maxWidth: '100%',
-              fontFamily: 'monospace',
-            }}
-          >
-            {events.length ? events.map((line, i) => (
-              <div key={i} style={{ padding: '2px 0', borderBottom: '1px dashed #223', opacity: 0.95 }}>
-                {line}
-              </div>
-            )) : <div style={{ opacity: 0.6 }}>(no events yet)</div>}
+          <h4 className="section-title">Events</h4>
+          <div ref={eventsRef} className="card card-pad scroll text-prewrap text-break" style={{ lineHeight: 1.55, flex: 1 }}>
+            {(() => {
+              const last = timeline.length ? (timeline[timeline.length - 1] as any) : null
+              const evs = (last?.events_delta as any[]) || []
+              const formatted = evs.map((e, i) => formatEvent(e, i)).filter(Boolean)
+              return formatted.length ? formatted : <div className="muted">(no events yet)</div>
+            })()}
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 8px 0' }}>
-            <h4 style={{ margin: 0 }}>Agent</h4>
-            <label style={{ fontSize: 12, color: '#555' }}>
-              <input type="checkbox" checked={stickBottom} onChange={(e) => setStickBottom(e.target.checked)} /> stick to bottom
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <h4 className="section-title" style={{ margin: 0 }}>Agent</h4>
+            <label className="label row" style={{ gap: 6 }}>
+              <input type="checkbox" checked={stickBottom} onChange={(e) => setStickBottom(e.target.checked)} />
+              <span>Stick to bottom</span>
             </label>
           </div>
-          <select value={selected} onChange={(e) => setSelected(e.target.value)} style={{ maxWidth: '100%', marginBottom: 8 }}>
-            {names.map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-          <div ref={agentRef}
-            style={{
-              background: '#f5f5f5',
-              padding: 12,
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              overflowWrap: 'anywhere',
-              borderRadius: 6,
-              maxWidth: '100%',
-              fontFamily: 'monospace',
-            }}
-          >
+          <CompactSelect options={names} value={selected} onChange={setSelected} />
+          <div ref={agentRef} className="card card-pad scroll text-prewrap text-break" style={{ lineHeight: 1.55, flex: 1 }}>
             {agentDelta.length ? (
-              <ul style={{ margin: 0, paddingLeft: 16 }}>
+              <ul className="list-compact">
                 {agentDelta.map((m, i) => (
-                  <li key={i}><span style={{ opacity: 0.7 }}>[{m.role}]</span> {m.content}</li>
+                  <li key={i}><span className="muted">[{m.role}]</span> {m.content}</li>
                 ))}
               </ul>
             ) : (
-              <div style={{ opacity: 0.6 }}>(empty)</div>
+              <div className="muted">(empty)</div>
             )}
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function CompactSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      const el = ref.current
+      if (!el) return
+      const target = e.target as Node
+      if (!el.contains(target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+  const label = value || (options[0] || '')
+  return (
+    <div className="select" ref={ref} style={{ marginBottom: 8 }}>
+      <button type="button" className="input select-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+        <span>{label || '(none)'}</span>
+        <span className="select-caret">▾</span>
+      </button>
+      {open && (
+        <div className="select-menu card" role="listbox">
+          {options.length ? options.map((opt) => (
+            <div key={opt} role="option" aria-selected={opt === value} className={"select-item" + (opt === value ? " select-item-active" : "")} onClick={() => { onChange(opt); setOpen(false) }}>
+              {opt}
+            </div>
+          )) : (
+            <div className="select-item muted" aria-disabled>无可选项</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

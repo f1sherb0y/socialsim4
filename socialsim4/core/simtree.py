@@ -22,8 +22,9 @@ class SimTree:
         tree = cls(clients)
         root_id = tree._next_id()
         # Store a live simulator object on the node; clone via serialize->deserialize
-        snap = sim.to_dict()
-        sim_clone = Simulator.from_dict(snap, clients, log_handler=None)
+        snap = sim.serialize()
+
+        sim_clone = Simulator.deserialize(snap, clients, log_handler=None)
         root_logs: List[dict] = []
         tree.nodes[root_id] = {
             "id": root_id,
@@ -36,7 +37,7 @@ class SimTree:
         }
         # Attach log handler so future events at root accumulate into root logs
         tree._attach_log_handler(sim_clone, root_logs)
-        sim.emit_remaining_events()
+        sim_clone.emit_remaining_events()
         tree.children[root_id] = []
         tree.root = root_id
         return tree
@@ -49,16 +50,17 @@ class SimTree:
     def copy_sim(self, node_id: int) -> int:
         # Clone the simulator by snapshotting the node's live sim
         base = self.nodes[node_id]["sim"]
-        snap = base.to_dict()
+        snap = base.serialize()
         # Deep-copy the snapshot to avoid sharing nested lists/dicts
         deep = json.loads(json.dumps(snap))
-        sim_copy = Simulator.from_dict(deep, self.clients, log_handler=None)
+        sim_copy = Simulator.deserialize(deep, self.clients, log_handler=None)
 
         # Prepare a new node with inherited logs snapshot; parent/ops assigned later
         nid = self._next_id()
         parent_logs = list(self.nodes[node_id].get("logs", []))
         # Deep copy parent's logs so child does not share dict references
         child_logs: List[dict] = json.loads(json.dumps(parent_logs))
+        print(f"Copying. Parent logs: {parent_logs}")
         node = {
             "id": nid,
             "parent": None,

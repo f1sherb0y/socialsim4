@@ -42,7 +42,7 @@ async def personas_info(
     simulator = simulation_manager.get_simulation(sim_code)
     if not simulator:
         raise HTTPException(status_code=404, detail="Simulation not found")
-    persona_info = [agent.to_dict() for agent in simulator.agents.values()]
+    persona_info = [agent.serialize() for agent in simulator.agents.values()]
     return {"personas": persona_info}
 
 
@@ -58,4 +58,4 @@ async def persona_detail(
     if agent_name not in simulator.agents:
         raise HTTPException(status_code=404, detail="Agent not found")
     agent = simulator.agents[agent_name]
-    return {"scratch": agent.to_dict(), "a_mem": {}, "s_mem": {}}
+    return {"scratch": agent.serialize(), "a_mem": {}, "s_mem": {}}

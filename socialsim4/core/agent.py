@@ -502,7 +502,7 @@ History:
         """Deprecated: use add_env_feedback(). Kept for compatibility."""
         return self.add_env_feedback(content)
 
-    def to_dict(self):
+    def serialize(self):
         # Deep-copy dict/list fields to avoid sharing across snapshots
         mem = [
             {"role": m.get("role"), "content": m.get("content")}
@@ -526,7 +526,7 @@ History:
         }
 
     @classmethod
-    def from_dict(cls, data, event_handler=None):
+    def deserialize(cls, data, event_handler=None):
         from .registry import ACTION_SPACE_MAP
 
         props = json.loads(json.dumps(data.get("properties", {})))

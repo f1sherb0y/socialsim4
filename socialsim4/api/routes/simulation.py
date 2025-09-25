@@ -38,13 +38,13 @@ async def start_simulation(
         if "properties" not in agent_data:
             agent_data["properties"] = {}
 
-    agents = [Agent.from_dict(agent_data) for agent_data in template_data["agents"]]
+    agents = [Agent.deserialize(agent_data) for agent_data in template_data["agents"]]
 
     scene_type = template_data["scene"]["type"]
     scene_class = SCENE_MAP.get(scene_type)
     if not scene_class:
         raise HTTPException(status_code=400, detail=f"Unknown scene type: {scene_type}")
-    scene = scene_class.from_dict(template_data["scene"])
+    scene = scene_class.deserialize(template_data["scene"])
 
     # Create a dictionary of clients, keyed by provider name
     clients = {provider.name: create_llm_client(provider) for provider in req.providers}
@@ -95,7 +95,7 @@ async def save_simulation(
 
     save_path = os.path.join(config.STORAGE_PATH, f"{sim_code}.json")
     with open(save_path, "w") as f:
-        json.dump(instance.simulator.to_dict(), f, indent=2)
+        json.dump(instance.simulator.serialize(), f, indent=2)
 
     return {"status": "success", "message": f"Simulation '{sim_code}' saved."}
 
