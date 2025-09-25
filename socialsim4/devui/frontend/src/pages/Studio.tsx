@@ -17,6 +17,7 @@ import {
   getSimEvents,
   getSimState,
   Graph,
+  listTrees,
 } from '../api/client'
 
 export default function Studio() {
@@ -24,6 +25,7 @@ export default function Studio() {
   const navigate = useNavigate()
 
   const [treeId, setTreeId] = useState<number | null>(null)
+  const [trees, setTrees] = useState<{ id: number; root: number }[]>([])
   const [graph, setGraph] = useState<Graph | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
@@ -108,6 +110,7 @@ export default function Studio() {
     localStorage.setItem('devui:lastTreeId', String(r.id))
     navigate(`/studio/${r.id}`)
     await connectToTree(r.id)
+    await refreshTrees()
   }
 
   async function refreshGraph() {
@@ -245,6 +248,15 @@ export default function Studio() {
     connectToTree(id)
   }, [params.treeId])
 
+  async function refreshTrees() {
+    const ts = await listTrees()
+    setTrees(ts)
+  }
+
+  useEffect(() => {
+    refreshTrees()
+  }, [])
+
   // Refresh middle/right when selected changes
   useEffect(() => {
     if (treeId != null && selected != null) refreshSelected()
@@ -379,7 +391,22 @@ export default function Studio() {
             {/* Ops */}
             <div className="card card-pad" style={{ marginTop: 8 }}>
               <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                <button className="btn" onClick={create} disabled={treeId != null}>Create (simple_chat)</button>
+                <CompactSelect
+                  options={trees.map((t) => String(t.id))}
+                  value={treeId == null ? '' : String(treeId)}
+                  onChange={(v) => {
+                    const id = parseInt(v || '0', 10)
+                    if (!Number.isNaN(id)) {
+                      localStorage.setItem('devui:lastTreeId', String(id))
+                      navigate(`/studio/${id}`)
+                      connectToTree(id)
+                    }
+                  }}
+                />
+                <button className="btn" onClick={refreshTrees}>List</button>
+                <button className="btn" onClick={create}>Create</button>
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>
               <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>

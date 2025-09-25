@@ -17,6 +17,12 @@ export async function getTreeGraph(id: number): Promise<Graph | null> {
   return res.json()
 }
 
+export async function listTrees(): Promise<{ id: number; root: number }[]> {
+  const res = await fetch('/devui/simtree')
+  if (res.status === 404) return []
+  return res.json()
+}
+
 export async function treeAdvance(id: number, parent: number, turns: number): Promise<{ child: number }> {
   const res = await fetch(`/devui/simtree/${id}/advance`, {
     method: 'POST',
