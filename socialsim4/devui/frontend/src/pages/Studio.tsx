@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow'
+import ReactFlow, { Background, Controls, MiniMap, type Node as RFNode, type Edge as RFEdge } from 'reactflow'
 import * as Toast from '@radix-ui/react-toast'
 import { graphlib, layout } from 'dagre'
 import 'reactflow/dist/style.css'
@@ -286,7 +286,7 @@ export default function Studio() {
 
   // Compute ReactFlow nodes/edges
   const rf = useMemo(() => {
-    if (!graph) return { nodes: [] as Node[], edges: [] as Edge[] }
+    if (!graph) return { nodes: [] as RFNode[], edges: [] as RFEdge[] }
     const g = new graphlib.Graph()
     g.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 60 })
     g.setDefaultEdgeLabel(() => ({}))
@@ -294,8 +294,8 @@ export default function Studio() {
     for (const n of graph.nodes) g.setNode(String(n.id), { width: W, height: H })
     for (const e of graph.edges) g.setEdge(String(e.from), String(e.to))
     layout(g)
-    const nodes: Node[] = []
-    const edges: Edge[] = []
+    const nodes: RFNode[] = []
+    const edges: RFEdge[] = []
     const fromSet = new Set(graph.edges.map((e) => e.from))
     const color = (t: string) => {
       if (t === 'advance') return '#000'
@@ -495,7 +495,7 @@ function CompactSelect({ options, value, onChange, onOpen }: { options: string[]
     const onDoc = (e: MouseEvent) => {
       const el = ref.current
       if (!el) return
-      const target = e.target as Node
+      const target = e.target as unknown as globalThis.Node
       if (!el.contains(target)) setOpen(false)
     }
     document.addEventListener('mousedown', onDoc)

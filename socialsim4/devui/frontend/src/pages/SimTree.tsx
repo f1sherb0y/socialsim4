@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createTree, getTreeGraph, treeAdvance, treeAdvanceFrontier, treeAdvanceMulti, treeAdvanceChain, treeBranchPublic, treeDeleteSubtree, Graph } from '../api/client'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow'
+import ReactFlow, { Background, Controls, MiniMap, type Node as RFNode, type Edge as RFEdge } from 'reactflow'
 import * as Toast from '@radix-ui/react-toast'
 import { graphlib, layout } from 'dagre'
 import 'reactflow/dist/style.css'
@@ -190,7 +190,7 @@ export default function SimTree() {
   }
 
   const rf = useMemo(() => {
-    if (!graph) return { nodes: [] as Node[], edges: [] as Edge[] }
+    if (!graph) return { nodes: [] as RFNode[], edges: [] as RFEdge[] }
     const g = new graphlib.Graph()
     g.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 60 })
     g.setDefaultEdgeLabel(() => ({}))
@@ -199,8 +199,8 @@ export default function SimTree() {
     for (const e of graph.edges) g.setEdge(String(e.from), String(e.to))
     layout(g)
 
-    const nodes: Node[] = []
-    const edges: Edge[] = []
+    const nodes: RFNode[] = []
+    const edges: RFEdge[] = []
     const fromSet = new Set(graph.edges.map((e) => e.from))
     const color = (t: string) => {
       if (t === 'advance') return '#000'
