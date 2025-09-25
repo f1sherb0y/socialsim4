@@ -5,11 +5,9 @@ from fastapi import APIRouter, HTTPException, WebSocket
 
 from socialsim4.core.simtree import SimTree
 from socialsim4.devui.backend.models.payloads import (
-    SimTreeAdvanceChainPayload,
     SimTreeAdvanceFrontierPayload,
     SimTreeAdvanceMultiPayload,
     SimTreeAdvancePayload,
-    SimTreeAdvanceSelectedPayload,
     SimTreeBranchPayload,
     SimTreeCreatePayload,
     SimTreeCreateResult,
@@ -155,56 +153,6 @@ def tree_advance(tree_id: int, payload: SimTreeAdvancePayload):
     return {"child": cid}
 
 
-@router.post("/simtree/{tree_id}/advance_selected")
-async def tree_advance_selected(tree_id: int, payload: SimTreeAdvanceSelectedPayload):
-    if tree_id not in TREES:
-        raise HTTPException(status_code=404, detail="simtree not found")
-    rec: SimTreeRecord = TREES[tree_id]
-    t: SimTree = rec.tree
-    parents = [int(x) for x in payload.parents]
-    turns = int(payload.turns)
-    # Track running for child nodes only
-
-    # Pre-allocate child nodes to avoid concurrent writes
-    alloc: dict[int, int] = {pid: t.copy_sim(pid) for pid in parents}
-    # Attach all first and announce
-    for pid, cid in alloc.items():
-        t.attach(pid, [{"op": "advance", "turns": turns}], cid)
-        for q in rec.subs:
-            q.put_nowait(
-                {
-                    "type": "attached",
-                    "data": {
-                        "node": int(cid),
-                        "parent": int(pid),
-                        "depth": int(t.nodes[cid]["depth"]),
-                        "edge_type": t.nodes[cid]["edge_type"],
-                        "ops": t.nodes[cid]["ops"],
-                    },
-                }
-            )
-        rec.running.add(cid)
-        for q in rec.subs:
-            q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
-
-    def _run_one(pid: int):
-        cid = alloc[pid]
-        sim = t.nodes[cid]["sim"]
-        sim.run(max_turns=turns)
-        return pid, cid
-
-    tasks = [asyncio.to_thread(_run_one, pid) for pid in parents]
-    results = await asyncio.gather(*tasks)
-    kids = []
-    for pid, cid in results:
-        kids.append(cid)
-        if cid in rec.running:
-            rec.running.remove(cid)
-        for q in rec.subs:
-            q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
-        if pid in rec.running:
-            rec.running.remove(pid)
-    return {"children": kids}
 
 
 @router.post("/simtree/{tree_id}/advance_frontier")
@@ -406,44 +354,6 @@ async def tree_advance_multi(tree_id: int, payload: SimTreeAdvanceMultiPayload):
     return {"children": kids}
 
 
-@router.post("/simtree/{tree_id}/advance_chain")
-async def tree_advance_chain(tree_id: int, payload: SimTreeAdvanceChainPayload):
-    if tree_id not in TREES:
-        raise HTTPException(status_code=404, detail="simtree not found")
-    rec: SimTreeRecord = TREES[tree_id]
-    t: SimTree = rec.tree
-    parent = int(payload.parent)
-    turns = int(payload.turns)
-    cid = t.copy_sim(parent)
-    t.attach(parent, [{"op": "advance", "turns": turns}], cid)
-    for q in rec.subs:
-        q.put_nowait(
-            {
-                "type": "attached",
-                "data": {
-                    "node": int(cid),
-                    "parent": int(parent),
-                    "depth": int(t.nodes[cid]["depth"]),
-                    "edge_type": t.nodes[cid]["edge_type"],
-                    "ops": t.nodes[cid]["ops"],
-                },
-            }
-        )
-    rec.running.add(cid)
-    for q in rec.subs:
-        q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
-
-    def _run():
-        sim = t.nodes[cid]["sim"]
-        sim.run(max_turns=turns)
-        return cid
-
-    cid = await asyncio.to_thread(_run)
-    if cid in rec.running:
-        rec.running.remove(cid)
-    for q in rec.subs:
-        q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
-    return {"child": cid}
 
 
 @router.websocket("/simtree/{tree_id}/events")

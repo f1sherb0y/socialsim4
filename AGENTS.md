@@ -134,10 +134,10 @@ This document summarizes the coding requirements, conventions, and the project�
 - Operations:
   - `advance(parent, turns)` → child by running `sim.run(max_turns=turns)`.
   - `branch(parent, ops[])` → apply strict ops in order; no fallbacks.
-  - `advance_selected(parents[], turns)` → multiple advances.
+  - (removed) `advance_selected(parents[], turns)` – use `advance_multi` instead.
   - `advance_frontier(turns, only_max_depth)` → advance leaves (or frontier if `only_max_depth=true`).
   - `advance_multi(parent, turns, count)` → N parallel children from one parent.
-  - `advance_chain(parent, turns)` → one child after running multiple steps.
+  - (removed) `advance_chain(parent, turns)` – use `advance_multi` (count=1) or repeated `advance`.
   - `delete_subtree(node)` → remove node and all descendants (root protected).
 - Logs: each child node records logs emitted during its creation (via `event_handler` wired into `Simulator.deserialize(..., log_handler)` and `sim.emit_remaining_events()`).
 

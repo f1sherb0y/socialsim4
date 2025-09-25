@@ -17,9 +17,6 @@ class SimTreeAdvancePayload(BaseModel):
     turns: int
 
 
-class SimTreeAdvanceSelectedPayload(BaseModel):
-    parents: List[int]
-    turns: int
 
 
 class SimTreeAdvanceFrontierPayload(BaseModel):
@@ -37,7 +34,3 @@ class SimTreeAdvanceMultiPayload(BaseModel):
     turns: int
     count: int
 
-
-class SimTreeAdvanceChainPayload(BaseModel):
-    parent: int
-    turns: int
