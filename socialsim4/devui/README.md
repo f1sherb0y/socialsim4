@@ -11,6 +11,9 @@ Goals (prototype stage)
 Architecture
 - Backend: FastAPI (Python), in-memory stores, strict inputs, fail fast.
 - Frontend: Vite + React + TypeScript.
+- WebSockets:
+  - Tree‑level: /devui/simtree/{id}/events → graph/lifecycle updates (attached/run_start/run_finish/deleted)
+  - Node‑level: /devui/simtree/{id}/sim/{node}/events → per‑node deltas: core events + agent_ctx_delta (appended memory)
 
 IDs and API (prototype)
 - Every SimTree has a unique `tree_id` assigned at creation (`POST /devui/simtree`).
