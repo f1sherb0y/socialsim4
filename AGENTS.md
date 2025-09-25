@@ -132,14 +132,26 @@ This document summarizes the coding requirements, conventions, and the project�
 - IDs: integer, root = 0. Each node has `{id, parent, depth, edge_type, ops, sim, logs}`.
 - Edge types: `advance`, `agent_ctx`, `agent_plan`, `agent_props`, `scene_state`, `public_event`, `multi`.
 - Operations:
-  - `advance(parent, turns)` → child by running `sim.run(max_turns=turns)`.
+  - `advance(parent, turns)` → create child by running `sim.run(max_turns=turns)` once on a cloned sim.
   - `branch(parent, ops[])` → apply strict ops in order; no fallbacks.
-  - (removed) `advance_selected(parents[], turns)` – use `advance_multi` instead.
-  - `advance_frontier(turns, only_max_depth)` → advance leaves (or frontier if `only_max_depth=true`).
-  - `advance_multi(parent, turns, count)` → N parallel children from one parent.
-  - (removed) `advance_chain(parent, turns)` – use `advance_multi` (count=1) or repeated `advance`.
+  - `advance_frontier(turns, only_max_depth)` → advance current leaves (or whole frontier if `only_max_depth=true`) by `turns` each.
+  - `advance_multi(parent, turns, count)` → N parallel children from one parent (each runs `turns`).
+  - `advance_chain(parent, turns)` → stepwise chain: repeat `turns` times; each step creates a new child running exactly 1 turn, then chains the next step on that child.
   - `delete_subtree(node)` → remove node and all descendants (root protected).
 - Logs: each child node records logs emitted during its creation (via `event_handler` wired into `Simulator.deserialize(..., log_handler)` and `sim.emit_remaining_events()`).
+
+### Streaming (DevUI)
+
+- Tree-level WS: `/devui/simtree/{tree_id}/events` streams graph mutations and run lifecycle: `attached`, `run_start`, `run_finish`, `deleted`.
+- Node-level WS (deltas): `/devui/simtree/{tree_id}/sim/{node_id}/events` streams per-node deltas only:
+  - Core events (e.g., `system_broadcast`, `action_start`, `action_end`, scene-specific like `landlord_deal`).
+  - Agent context deltas: `agent_ctx_delta` with `{agent, role, content}` each time an agent appends to short-term memory (role = `user` or `assistant`).
+- UI fetches one-time snapshots via HTTP (`/state`, `/events`) when a node is selected, and then applies deltas from the node-level WS.
+
+### Ordering serialization
+
+- Ordering names are persisted; state is deep-copied via `serialize()`/`deserialize()`.
+- `controlled` ordering is restored with a scene-provided next function via `Scene.get_controlled_next(sim)`. Scenes that rely on controlled scheduling should implement this to ensure identical behavior after cloning.
 
 ## New: DevUI (prototype)
 
