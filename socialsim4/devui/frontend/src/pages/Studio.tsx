@@ -104,7 +104,7 @@ export default function Studio() {
       return null
     }
     if (t === 'landlord_deal') {
-      const dd = msg.data || {}
+      const dd = d
       const bottom = (dd.bottom || []) as string[]
       return (
         <div key={idx} className="event-line">
@@ -471,7 +471,7 @@ export default function Studio() {
                 />
               </div>
               <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} />
+                <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} w={160} />
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>
@@ -561,7 +561,7 @@ export default function Studio() {
   )
 }
 
-function CompactSelect({ options, value, onChange, onOpen }: { options: string[]; value: string; onChange: (v: string) => void; onOpen?: () => void }) {
+function CompactSelect({ options, value, onChange, onOpen, w }: { options: string[]; value: string; onChange: (v: string) => void; onOpen?: () => void; w?: number }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
@@ -576,7 +576,7 @@ function CompactSelect({ options, value, onChange, onOpen }: { options: string[]
   }, [])
   const label = options.length === 0 ? '(none)' : (value || (options[0] || ''))
   return (
-    <div className="select" ref={ref} style={{ marginBottom: 8 }}>
+    <div className="select" ref={ref} style={{ marginBottom: 8, width: w }}>
       <button
         type="button"
         className="input select-btn"
