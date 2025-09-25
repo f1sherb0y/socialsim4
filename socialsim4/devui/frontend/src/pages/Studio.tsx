@@ -394,6 +394,7 @@ export default function Studio() {
                 <CompactSelect
                   options={trees.map((t) => String(t.id))}
                   value={treeId == null ? '' : String(treeId)}
+                  onOpen={refreshTrees}
                   onChange={(v) => {
                     const id = parseInt(v || '0', 10)
                     if (!Number.isNaN(id)) {
@@ -403,10 +404,7 @@ export default function Studio() {
                     }
                   }}
                 />
-                <button className="btn" onClick={refreshTrees}>List</button>
                 <button className="btn" onClick={create}>Create</button>
-              </div>
-              <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>
               <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
