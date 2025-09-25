@@ -216,6 +216,7 @@ class LLMModeratedOrdering(Ordering):
 
 ORDERING_MAP = {
     SequentialOrdering.NAME: SequentialOrdering,
+    CycledOrdering.NAME: CycledOrdering,
     RandomOrdering.NAME: RandomOrdering,
     AsynchronousOrdering.NAME: AsynchronousOrdering,
     ControlledOrdering.NAME: ControlledOrdering,
