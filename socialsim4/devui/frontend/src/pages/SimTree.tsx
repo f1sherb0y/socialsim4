@@ -284,13 +284,7 @@ export default function SimTree() {
         <div className="scroll" style={{ height: '100%' }}>
           <h4 className="section-title">Tree</h4>
           <div className="row" style={{ flexWrap: 'wrap', marginBottom: 8, gap: 8 }}>
-            <select className="input" value={scenario} onChange={(e) => setScenario(e.target.value as any)} style={{ width: 180 }}>
-              <option value="simple_chat">simple_chat</option>
-              <option value="council">council</option>
-              <option value="werewolf">werewolf</option>
-              <option value="landlord">landlord</option>
-              <option value="village">village</option>
-            </select>
+            <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} />
             <button className="btn" onClick={create}>Create</button>
             <button className="btn" onClick={refresh} disabled={treeId == null}>Refresh</button>
           </div>
@@ -332,5 +326,40 @@ export default function SimTree() {
       ))}
     </div>
     </Toast.Provider>
+  )
+}
+
+function CompactSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      const el = ref.current
+      if (!el) return
+      const target = e.target as unknown as globalThis.Node
+      if (!el.contains(target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+  const label = options.length === 0 ? '(none)' : (value || (options[0] || ''))
+  return (
+    <div className="select" ref={ref} style={{ marginBottom: 8 }}>
+      <button type="button" className="input select-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+        <span>{label}</span>
+        <span className="select-caret">▾</span>
+      </button>
+      {open && (
+        <div className="select-menu card" role="listbox">
+          {options.length ? options.map((opt) => (
+            <div key={opt} role="option" aria-selected={opt === value} className={"select-item" + (opt === value ? " select-item-active" : "")} onClick={() => { onChange(opt); setOpen(false) }}>
+              {opt}
+            </div>
+          )) : (
+            <div className="select-item muted" aria-disabled>无可选项</div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

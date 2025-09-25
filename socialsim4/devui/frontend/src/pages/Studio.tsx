@@ -464,13 +464,7 @@ export default function Studio() {
                     }
                   }}
                 />
-                <select className="input" value={scenario} onChange={(e) => setScenario(e.target.value as any)} style={{ width: 160 }}>
-                  <option value="simple_chat">simple_chat</option>
-                  <option value="council">council</option>
-                  <option value="werewolf">werewolf</option>
-                  <option value="landlord">landlord</option>
-                  <option value="village">village</option>
-                </select>
+                <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} />
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>
