@@ -290,7 +290,7 @@ export default function Studio() {
     const g = new graphlib.Graph()
     g.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 60 })
     g.setDefaultEdgeLabel(() => ({}))
-    const W = 40, H = 40
+    const W = 28, H = 28
     for (const n of graph.nodes) g.setNode(String(n.id), { width: W, height: H })
     for (const e of graph.edges) g.setEdge(String(e.from), String(e.to))
     layout(g)
@@ -318,13 +318,13 @@ export default function Studio() {
         style: {
           width: W,
           height: H,
-          borderRadius: 20,
+          borderRadius: 14,
           background: selected === n.id ? '#f66' : bg,
           border: '1px solid #999',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 12,
+          fontSize: 11,
           animation: running ? 'pulse 1s ease-in-out infinite alternate' : undefined,
         },
       })
@@ -490,7 +490,7 @@ export default function Studio() {
   )
 }
 
-function CompactSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+function CompactSelect({ options, value, onChange, onOpen }: { options: string[]; value: string; onChange: (v: string) => void; onOpen?: () => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
@@ -506,7 +506,13 @@ function CompactSelect({ options, value, onChange }: { options: string[]; value:
   const label = value || (options[0] || '')
   return (
     <div className="select" ref={ref} style={{ marginBottom: 8 }}>
-      <button type="button" className="input select-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+      <button
+        type="button"
+        className="input select-btn"
+        onClick={() => setOpen((v) => { const nv = !v; if (nv && onOpen) onOpen(); return nv })}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
         <span>{label || '(none)'}</span>
         <span className="select-caret">▾</span>
       </button>

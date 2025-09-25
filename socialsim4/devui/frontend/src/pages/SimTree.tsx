@@ -194,7 +194,7 @@ export default function SimTree() {
     const g = new graphlib.Graph()
     g.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 60 })
     g.setDefaultEdgeLabel(() => ({}))
-    const W = 40, H = 40
+    const W = 28, H = 28
     for (const n of graph.nodes) g.setNode(String(n.id), { width: W, height: H })
     for (const e of graph.edges) g.setEdge(String(e.from), String(e.to))
     layout(g)
@@ -223,13 +223,13 @@ export default function SimTree() {
         style: {
           width: W,
           height: H,
-          borderRadius: 20,
+          borderRadius: 14,
           background: selected === n.id ? '#f66' : bg,
           border: '1px solid #999',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 12,
+          fontSize: 11,
           animation: running ? 'pulse 1s ease-in-out infinite alternate' : undefined,
         },
       })
