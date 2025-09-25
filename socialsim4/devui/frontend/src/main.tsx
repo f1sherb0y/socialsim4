@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import App from './App'
 import Simulation from './pages/Simulation'
 import SimTree from './pages/SimTree'
+import Studio from './pages/Studio'
 import './styles/radix-theme.css'
 
 const router = createBrowserRouter([
@@ -11,6 +12,8 @@ const router = createBrowserRouter([
   { path: '/sim/:treeId?', element: <Simulation /> },
   { path: '/simtree', element: <SimTree /> },
   { path: '/simtree/:treeId', element: <SimTree /> },
+  { path: '/studio', element: <Studio /> },
+  { path: '/studio/:treeId', element: <Studio /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
