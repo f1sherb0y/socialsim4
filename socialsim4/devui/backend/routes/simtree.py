@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, WebSocket, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket
 
 from socialsim4.core.simtree import SimTree
 from socialsim4.devui.backend.models.payloads import (
@@ -14,8 +14,12 @@ from socialsim4.devui.backend.models.payloads import (
     SimTreeCreatePayload,
     SimTreeCreateResult,
 )
+from socialsim4.devui.backend.services.registry import (
+    TREES,
+    SimTreeRecord,
+    next_tree_id,
+)
 from socialsim4.scripts.run_basic_scenes import build_simple_chat_sim
-from socialsim4.devui.backend.services.registry import TREES, SimTreeRecord, next_tree_id
 
 router = APIRouter(tags=["simtree"])
 
@@ -27,16 +31,25 @@ def create_tree(payload: SimTreeCreatePayload):
     else:
         raise ValueError("Unknown scenario: " + str(payload.scenario))
 
-    # Capture any queued initial events into root logs
-    initial_logs: list = []
-    def _lh(event_type: str, data: dict):
-        initial_logs.append({"type": event_type, "data": data})
-    sim.log_event = _lh
-    sim.emit_remaining_events()
-
-    tree = SimTree.new(sim, sim.clients, initial_logs=initial_logs)
+    tree = SimTree.new(sim, sim.clients)
     tree_id = next_tree_id()
-    TREES[tree_id] = SimTreeRecord(tree)
+    rec = SimTreeRecord(tree)
+    TREES[tree_id] = rec
+    # Emit initial attached for root (in case any subscribers are present)
+    root_id = int(tree.root)
+    root = tree.nodes[root_id]
+    ev = {
+        "type": "attached",
+        "data": {
+            "node": root_id,
+            "parent": root.get("parent"),
+            "depth": int(root.get("depth", 0) or 0),
+            "edge_type": root.get("edge_type", "root"),
+            "ops": root.get("ops", []),
+        },
+    }
+    for q in rec.subs:
+        q.put_nowait(ev)
     return {"id": tree_id, "root": int(tree.root)}
 
 
@@ -64,15 +77,39 @@ def tree_graph(tree_id: int):
         raise HTTPException(status_code=404, detail="simtree not found")
     rec: SimTreeRecord = TREES[tree_id]
     t: SimTree = rec.tree
-    nodes = [{"id": int(n["id"]), "depth": int(n["depth"])} for n in t.nodes.values()]
+    # Filter out any not-yet-attached nodes (depth is None)
+    attached_ids = {
+        int(nid) for nid, n in t.nodes.items() if n.get("depth") is not None
+    }
+    nodes = [
+        {"id": int(n["id"]), "depth": int(n["depth"])}
+        for n in t.nodes.values()
+        if n.get("depth") is not None
+    ]
     edges = []
     for pid, ch in t.children.items():
+        if pid not in attached_ids:
+            continue
         for cid in ch:
+            if cid not in attached_ids:
+                continue
             et = t.nodes[cid]["edge_type"]
             edges.append({"from": int(pid), "to": int(cid), "type": et})
+    # Compute frontier among attached nodes only
+    depth_map = {
+        int(n["id"]): int(n["depth"])
+        for n in t.nodes.values()
+        if n.get("depth") is not None
+    }
+    outdeg = {i: 0 for i in depth_map.keys()}
+    for e in edges:
+        outdeg[e["from"]] = outdeg.get(e["from"], 0) + 1
+    leaves = [i for i, deg in outdeg.items() if deg == 0]
+    maxd = max(depth_map.values()) if depth_map else 0
+    frontier = [i for i in leaves if depth_map.get(i) == maxd]
     return {
         "root": int(t.root),
-        "frontier": t.frontier(True),
+        "frontier": frontier,
         "running": list(rec.running),
         "nodes": nodes,
         "edges": edges,
@@ -85,9 +122,36 @@ def tree_advance(tree_id: int, payload: SimTreeAdvancePayload):
         raise HTTPException(status_code=404, detail="simtree not found")
     rec: SimTreeRecord = TREES[tree_id]
     t: SimTree = rec.tree
-    cid = t.advance(int(payload.parent), int(payload.turns))
+    parent = int(payload.parent)
+    turns = int(payload.turns)
+    # Mark running and notify subscribers immediately so UI shows progress
+    # Attach-first, then run with lifecycle events
+    cid = t.copy_sim(parent)
+    t.attach(parent, [{"op": "advance", "turns": turns}], cid)
     for q in rec.subs:
-        q.put_nowait(1)
+        q.put_nowait(
+            {
+                "type": "attached",
+                "data": {
+                    "node": int(cid),
+                    "parent": int(parent),
+                    "depth": int(t.nodes[cid]["depth"]),
+                    "edge_type": t.nodes[cid]["edge_type"],
+                    "ops": t.nodes[cid]["ops"],
+                },
+            }
+        )
+    rec.running.add(cid)
+    for q in rec.subs:
+        q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
+
+    sim = t.nodes[cid]["sim"]
+    sim.run(max_turns=turns)
+
+    if cid in rec.running:
+        rec.running.remove(cid)
+    for q in rec.subs:
+        q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
     return {"child": cid}
 
 
@@ -99,28 +163,47 @@ async def tree_advance_selected(tree_id: int, payload: SimTreeAdvanceSelectedPay
     t: SimTree = rec.tree
     parents = [int(x) for x in payload.parents]
     turns = int(payload.turns)
-    for pid in parents:
-        rec.running.add(pid)
+    # Track running for child nodes only
+
+    # Pre-allocate child nodes to avoid concurrent writes
+    alloc: dict[int, int] = {pid: t.copy_sim(pid) for pid in parents}
+    # Attach all first and announce
+    for pid, cid in alloc.items():
+        t.attach(pid, [{"op": "advance", "turns": turns}], cid)
+        for q in rec.subs:
+            q.put_nowait(
+                {
+                    "type": "attached",
+                    "data": {
+                        "node": int(cid),
+                        "parent": int(pid),
+                        "depth": int(t.nodes[cid]["depth"]),
+                        "edge_type": t.nodes[cid]["edge_type"],
+                        "ops": t.nodes[cid]["ops"],
+                    },
+                }
+            )
+        rec.running.add(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
 
     def _run_one(pid: int):
-        logs: list = []
-        sim = t.copy_sim(pid)
-        t._set_log_handler(sim, logs)
+        cid = alloc[pid]
+        sim = t.nodes[cid]["sim"]
         sim.run(max_turns=turns)
-        return pid, sim, logs
+        return pid, cid
 
     tasks = [asyncio.to_thread(_run_one, pid) for pid in parents]
     results = await asyncio.gather(*tasks)
     kids = []
-    for pid, sim, logs in results:
-        cid = t._save_child(
-            pid, "advance", [{"op": "advance", "turns": turns}], sim, logs
-        )
+    for pid, cid in results:
         kids.append(cid)
+        if cid in rec.running:
+            rec.running.remove(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
         if pid in rec.running:
             rec.running.remove(pid)
-    for q in rec.subs:
-        q.put_nowait(1)
     return {"children": kids}
 
 
@@ -132,28 +215,43 @@ async def tree_advance_frontier(tree_id: int, payload: SimTreeAdvanceFrontierPay
     t: SimTree = rec.tree
     pids = t.frontier(True) if bool(payload.only_max_depth) else t.leaves()
     turns = int(payload.turns)
-    for pid in pids:
-        rec.running.add(pid)
+    # Track running for child nodes only
+
+    alloc: dict[int, int] = {pid: t.copy_sim(pid) for pid in pids}
+    for pid, cid in alloc.items():
+        t.attach(pid, [{"op": "advance", "turns": turns}], cid)
+        for q in rec.subs:
+            q.put_nowait(
+                {
+                    "type": "attached",
+                    "data": {
+                        "node": int(cid),
+                        "parent": int(pid),
+                        "depth": int(t.nodes[cid]["depth"]),
+                        "edge_type": t.nodes[cid]["edge_type"],
+                        "ops": t.nodes[cid]["ops"],
+                    },
+                }
+            )
+        rec.running.add(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
 
     def _run_one(pid: int):
-        logs: list = []
-        sim = t.copy_sim(pid)
-        t._set_log_handler(sim, logs)
+        cid = alloc[pid]
+        sim = t.nodes[cid]["sim"]
         sim.run(max_turns=turns)
-        return pid, sim, logs
+        return pid, cid
 
     tasks = [asyncio.to_thread(_run_one, pid) for pid in pids]
     results = await asyncio.gather(*tasks)
     kids = []
-    for pid, sim, logs in results:
-        cid = t._save_child(
-            pid, "advance", [{"op": "advance", "turns": turns}], sim, logs
-        )
+    for pid, cid in results:
         kids.append(cid)
-        if pid in rec.running:
-            rec.running.remove(pid)
-    for q in rec.subs:
-        q.put_nowait(1)
+        if cid in rec.running:
+            rec.running.remove(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
     return {"children": kids}
 
 
@@ -164,8 +262,20 @@ def tree_branch(tree_id: int, payload: SimTreeBranchPayload):
     rec: SimTreeRecord = TREES[tree_id]
     t: SimTree = rec.tree
     cid = t.branch(int(payload.parent), [dict(x) for x in payload.ops])
+    node = t.nodes[cid]
     for q in rec.subs:
-        q.put_nowait(1)
+        q.put_nowait(
+            {
+                "type": "attached",
+                "data": {
+                    "node": int(cid),
+                    "parent": int(node["parent"]),
+                    "depth": int(node["depth"]),
+                    "edge_type": node["edge_type"],
+                    "ops": node["ops"],
+                },
+            }
+        )
     return {"child": cid}
 
 
@@ -177,7 +287,7 @@ def tree_delete_subtree(tree_id: int, node_id: int):
     t: SimTree = rec.tree
     t.delete_subtree(int(node_id))
     for q in rec.subs:
-        q.put_nowait(1)
+        q.put_nowait({"type": "deleted", "data": {"node": int(node_id)}})
     return {"ok": True}
 
 
@@ -253,27 +363,43 @@ async def tree_advance_multi(tree_id: int, payload: SimTreeAdvanceMultiPayload):
     count = int(payload.count)
     if count <= 0:
         return {"children": []}
-    rec.running.add(parent)
+    # parent marker not needed; we track running children only
 
-    def _run_one(_: int):
-        logs: list = []
-        sim = t.copy_sim(parent)
-        t._set_log_handler(sim, logs)
+    cids = [t.copy_sim(parent) for _ in range(count)]
+    for cid in cids:
+        t.attach(parent, [{"op": "advance", "turns": turns}], cid)
+        for q in rec.subs:
+            q.put_nowait(
+                {
+                    "type": "attached",
+                    "data": {
+                        "node": int(cid),
+                        "parent": int(parent),
+                        "depth": int(t.nodes[cid]["depth"]),
+                        "edge_type": t.nodes[cid]["edge_type"],
+                        "ops": t.nodes[cid]["ops"],
+                    },
+                }
+            )
+        rec.running.add(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
+
+    def _run_one(i: int):
+        cid = cids[i]
+        sim = t.nodes[cid]["sim"]
         sim.run(max_turns=turns)
-        return sim, logs
+        return cid
 
     tasks = [asyncio.to_thread(_run_one, i) for i in range(count)]
-    sims = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks)
     kids = []
-    for sim, logs in sims:
-        cid = t._save_child(
-            parent, "advance", [{"op": "advance", "turns": turns}], sim, logs
-        )
+    for cid in results:
         kids.append(cid)
-    if parent in rec.running:
-        rec.running.remove(parent)
-    for q in rec.subs:
-        q.put_nowait(1)
+        if cid in rec.running:
+            rec.running.remove(cid)
+        for q in rec.subs:
+            q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
     return {"children": kids}
 
 
@@ -285,23 +411,35 @@ async def tree_advance_chain(tree_id: int, payload: SimTreeAdvanceChainPayload):
     t: SimTree = rec.tree
     parent = int(payload.parent)
     turns = int(payload.turns)
-    rec.running.add(parent)
+    cid = t.copy_sim(parent)
+    t.attach(parent, [{"op": "advance", "turns": turns}], cid)
+    for q in rec.subs:
+        q.put_nowait(
+            {
+                "type": "attached",
+                "data": {
+                    "node": int(cid),
+                    "parent": int(parent),
+                    "depth": int(t.nodes[cid]["depth"]),
+                    "edge_type": t.nodes[cid]["edge_type"],
+                    "ops": t.nodes[cid]["ops"],
+                },
+            }
+        )
+    rec.running.add(cid)
+    for q in rec.subs:
+        q.put_nowait({"type": "run_start", "data": {"node": int(cid)}})
 
     def _run():
-        logs: list = []
-        sim = t.copy_sim(parent)
-        t._set_log_handler(sim, logs)
+        sim = t.nodes[cid]["sim"]
         sim.run(max_turns=turns)
-        return sim, logs
+        return cid
 
-    sim, logs = await asyncio.to_thread(_run)
-    cid = t._save_child(
-        parent, "advance", [{"op": "advance", "turns": turns}], sim, logs
-    )
-    if parent in rec.running:
-        rec.running.remove(parent)
+    cid = await asyncio.to_thread(_run)
+    if cid in rec.running:
+        rec.running.remove(cid)
     for q in rec.subs:
-        q.put_nowait(1)
+        q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
     return {"child": cid}
 
 
@@ -317,24 +455,26 @@ async def simtree_events(tree_id: int, ws: WebSocket):
     try:
         # Optional initial message
         await ws.receive_text()
+        # Emit initial attached event for root
+        t: SimTree = rec.tree
+        root_id = int(t.root)
+        root = t.nodes[root_id]
+        await ws.send_text(
+            json.dumps(
+                {
+                    "type": "attached",
+                    "data": {
+                        "node": root_id,
+                        "parent": root.get("parent"),  # None for root
+                        "depth": int(root.get("depth", 0) or 0),
+                        "edge_type": root.get("edge_type", "root"),
+                        "ops": root.get("ops", []),
+                    },
+                }
+            )
+        )
         while True:
-            await q.get()
-            t: SimTree = rec.tree
-            nodes = [
-                {"id": int(n["id"]), "depth": int(n["depth"])} for n in t.nodes.values()
-            ]
-            edges = []
-            for pid, ch in t.children.items():
-                for cid in ch:
-                    et = t.nodes[cid]["edge_type"]
-                    edges.append({"from": int(pid), "to": int(cid), "type": et})
-            data = {
-                "root": int(t.root),
-                "frontier": t.frontier(True),
-                "running": list(rec.running),
-                "nodes": nodes,
-                "edges": edges,
-            }
-            await ws.send_text(json.dumps(data))
+            ev = await q.get()
+            await ws.send_text(json.dumps(ev))
     finally:
         rec.subs.remove(q)

@@ -14,12 +14,17 @@ class SimTree:
         self._seq: int = 0
 
     @classmethod
-    def new(cls, sim: Simulator, clients: Dict[str, object], initial_logs: Optional[List[dict]] = None):
+    def new(
+        cls,
+        sim: Simulator,
+        clients: Dict[str, object],
+    ):
         tree = cls(clients)
         root_id = tree._next_id()
         # Store a live simulator object on the node; clone via serialize->deserialize
         snap = sim.to_dict()
         sim_clone = Simulator.from_dict(snap, clients, log_handler=None)
+        root_logs: List[dict] = []
         tree.nodes[root_id] = {
             "id": root_id,
             "parent": None,
@@ -27,8 +32,11 @@ class SimTree:
             "edge_type": "root",
             "ops": [],
             "sim": sim_clone,
-            "logs": list(initial_logs or []),
+            "logs": root_logs,
         }
+        # Attach log handler so future events at root accumulate into root logs
+        tree._attach_log_handler(sim_clone, root_logs)
+        sim.emit_remaining_events()
         tree.children[root_id] = []
         tree.root = root_id
         return tree
@@ -38,63 +46,80 @@ class SimTree:
         self._seq = i + 1
         return i
 
-    def copy_sim(self, node_id: int) -> Simulator:
+    def copy_sim(self, node_id: int) -> int:
         # Clone the simulator by snapshotting the node's live sim
         base = self.nodes[node_id]["sim"]
         snap = base.to_dict()
         # Deep-copy the snapshot to avoid sharing nested lists/dicts
         deep = json.loads(json.dumps(snap))
-        return Simulator.from_dict(deep, self.clients, log_handler=None)
+        sim_copy = Simulator.from_dict(deep, self.clients, log_handler=None)
 
-    def _set_log_handler(self, sim: Simulator, logs: List[dict]) -> None:
-        def _lh(event_type: str, data: dict):
-            logs.append({"type": event_type, "data": data})
+        # Prepare a new node with inherited logs snapshot; parent/ops assigned later
+        nid = self._next_id()
+        parent_logs = list(self.nodes[node_id].get("logs", []))
+        # Deep copy parent's logs so child does not share dict references
+        child_logs: List[dict] = json.loads(json.dumps(parent_logs))
+        node = {
+            "id": nid,
+            "parent": None,
+            "depth": None,
+            "edge_type": None,
+            "ops": [],
+            "sim": sim_copy,
+            "logs": child_logs,
+        }
+
+        self._attach_log_handler(sim_copy, child_logs)
+        self.nodes[nid] = node
+        self.children[nid] = []
+        return nid
+
+    def _attach_log_handler(self, sim: Simulator, logs: List[dict]) -> None:
+        def _lh(kind, data):
+            logs.append({"type": kind, "data": data})
 
         sim.log_event = _lh
         for a in sim.agents.values():
             a.log_event = _lh
 
-    def _save_child(
-        self,
-        parent_id: int,
-        edge_type: str,
-        ops: List[dict],
-        sim: Simulator,
-        logs: Optional[List[dict]] = None,
-    ) -> int:
-        nid = self._next_id()
+    def attach(self, parent_id: int, ops: List[dict], cid: int) -> int:
         parent = self.nodes[parent_id]
-        combined_logs = list(parent.get("logs", [])) + list(logs or [])
-        node = {
-            "id": nid,
-            "parent": parent_id,
-            "depth": int(parent["depth"]) + 1,
-            "edge_type": edge_type,
-            "ops": ops,
-            # Store the live simulator for this node
-            "sim": sim,
-            "logs": combined_logs,
-        }
-        self.nodes[nid] = node
+        node = self.nodes[cid]
+        node["parent"] = parent_id
+        node["depth"] = int(parent["depth"]) + 1
+        node["ops"] = ops
+        et = "multi"
+        if ops and len(ops) == 1:
+            m = ops[0]["op"]
+            if m == "agent_ctx_append":
+                et = "agent_ctx"
+            elif m == "agent_plan_replace":
+                et = "agent_plan"
+            elif m == "agent_props_patch":
+                et = "agent_props"
+            elif m == "scene_state_patch":
+                et = "scene_state"
+            elif m == "public_broadcast":
+                et = "public_event"
+            elif m == "advance":
+                et = "advance"
+        node["edge_type"] = et
         if parent_id not in self.children:
             self.children[parent_id] = []
-        self.children[parent_id].append(nid)
-        self.children[nid] = []
-        return nid
+        self.children[parent_id].append(cid)
+        return cid
+
+    # _save_child removed: parent/ops are assigned by the caller after copy_sim
 
     def advance(self, parent_id: int, turns: int = 1) -> int:
-        logs: List[dict] = []
-        sim = self.copy_sim(parent_id)
-        self._set_log_handler(sim, logs)
+        cid = self.copy_sim(parent_id)
+        sim = self.nodes[cid]["sim"]
         sim.run(max_turns=int(turns))
-        return self._save_child(
-            parent_id, "advance", [{"op": "advance", "turns": int(turns)}], sim, logs
-        )
+        return self.attach(parent_id, [{"op": "advance", "turns": int(turns)}], cid)
 
     def branch(self, parent_id: int, ops: List[dict]) -> int:
-        logs: List[dict] = []
-        sim = self.copy_sim(parent_id)
-        self._set_log_handler(sim, logs)
+        cid = self.copy_sim(parent_id)
+        sim = self.nodes[cid]["sim"]
         for op in ops:
             name = op["op"]
             if name == "agent_ctx_append":
@@ -119,21 +144,7 @@ class SimTree:
 
         # Flush any queued events to logs
         sim.emit_remaining_events()
-
-        et = "multi"
-        if len(ops) == 1:
-            m = ops[0]["op"]
-            if m == "agent_ctx_append":
-                et = "agent_ctx"
-            elif m == "agent_plan_replace":
-                et = "agent_plan"
-            elif m == "agent_props_patch":
-                et = "agent_props"
-            elif m == "scene_state_patch":
-                et = "scene_state"
-            elif m == "public_broadcast":
-                et = "public_event"
-        return self._save_child(parent_id, et, ops, sim, logs)
+        return self.attach(parent_id, ops, cid)
 
     def lca(self, a: int, b: int) -> int:
         da = int(self.nodes[a]["depth"])

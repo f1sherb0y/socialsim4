@@ -21,15 +21,46 @@ class Ordering:
     def on_event(self, sim, event_type: str, data: dict) -> None:
         pass
 
+    # Optional serialization of ordering state for cloning
+    def get_state(self) -> Optional[dict]:
+        return None
+
+    def set_state(self, state: Optional[dict]) -> None:
+        return None
+
 
 class SequentialOrdering(Ordering):
     NAME = "sequential"
 
+    def __init__(self):
+        super().__init__()
+        self._names: list[str] = []
+        self._idx: int = 0
+
+    def set_simulation(self, sim) -> None:
+        super().set_simulation(sim)
+        # Freeze the scheduling candidate set at init time
+        self._names = list(self.sim.agents.keys())
+        self._idx = int(self._idx) % (len(self._names) if self._names else 1)
+
     def iter(self) -> Iterator[str]:
         while True:
-            for name in list(self.sim.agents.keys()):
-                if name in self.sim.agents:
-                    yield name
+            if not self._names:
+                break
+            name = self._names[self._idx]
+            if name in self.sim.agents:
+                yield name
+            self._idx = (self._idx + 1) % len(self._names)
+
+    def get_state(self) -> Optional[dict]:
+        return {"names": list(self._names), "idx": int(self._idx)}
+
+    def set_state(self, state: Optional[dict]) -> None:
+        if not state:
+            return
+        self._names = list(state.get("names", []))
+        n = len(self._names)
+        self._idx = int(state.get("idx", 0)) % (n if n else 1)
 
 
 class CycledOrdering(Ordering):
@@ -37,11 +68,24 @@ class CycledOrdering(Ordering):
 
     def __init__(self, names):
         self.names = names
+        self._idx: int = 0
 
     def iter(self) -> Iterator[str]:
         while True:
-            for name in self.names:
-                yield name
+            if not self.names:
+                break
+            yield self.names[self._idx]
+            self._idx = (self._idx + 1) % len(self.names)
+
+    def get_state(self) -> Optional[dict]:
+        return {"names": list(self.names), "idx": int(self._idx)}
+
+    def set_state(self, state: Optional[dict]) -> None:
+        if not state:
+            return
+        self.names = list(state.get("names", []))
+        n = len(self.names)
+        self._idx = int(state.get("idx", 0)) % (n if n else 1)
 
 
 class RandomOrdering(Ordering):

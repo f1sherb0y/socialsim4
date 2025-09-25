@@ -98,11 +98,17 @@ class Simulator:
     # No external turn requests in this prototype; agents are isolated from simulator
 
     def to_dict(self):
+        state = None
+        if hasattr(self.ordering, "get_state"):
+            state = self.ordering.get_state()
         return {
             "agents": {name: agent.to_dict() for name, agent in self.agents.items()},
             "scene": self.scene.to_dict(),
             "max_steps_per_turn": self.max_steps_per_turn,
             "ordering": getattr(self.ordering, "NAME", "sequential"),
+            "ordering_state": state,
+            # Serialize pending event queue as a list of items
+            "event_queue": list(self.event_queue.queue),
             "turns": self.turns,
         }
 
@@ -129,7 +135,16 @@ class Simulator:
 
         # Restore ordering if available; fall back to sequential
         ordering_name = data.get("ordering", "sequential")
+        ordering_state = data.get("ordering_state")
         ordering_cls = ORDERING_MAP.get(ordering_name, SequentialOrdering)
+        # Construct ordering, preserving state if available
+        if ordering_name == "cycled":
+            names = []
+            if ordering_state and isinstance(ordering_state, dict):
+                names = list(ordering_state.get("names", []))
+            ordering = ordering_cls(names)
+        else:
+            ordering = ordering_cls()
 
         simulator = cls(
             agents=agents,
@@ -137,9 +152,20 @@ class Simulator:
             clients=clients,
             broadcast_initial=False,  # Don't rebroadcast initial event
             max_steps_per_turn=data.get("max_steps_per_turn", 5),
-            ordering=ordering_cls(),
+            ordering=ordering,
             event_handler=log_handler,
         )
+        # Apply ordering state if provided
+        if ordering_state and hasattr(simulator.ordering, "set_state"):
+            simulator.ordering.set_state(ordering_state)
+            simulator.order_iter = simulator.ordering.iter()
+        # Restore pending event queue contents
+        pending = data.get("event_queue") or []
+        if pending:
+            q = Queue()
+            for item in pending:
+                q.put(item)
+            simulator.event_queue = q
         return simulator
 
     def run(self, max_turns=1000):

@@ -155,6 +155,7 @@ export default function Simulation() {
               lineHeight: 1.4,
               borderRadius: 6,
               maxWidth: '100%',
+              fontFamily: 'monospace',
             }}
           >
             {events.length ? events.map((line, i) => (
@@ -189,6 +190,7 @@ export default function Simulation() {
               overflowWrap: 'anywhere',
               borderRadius: 6,
               maxWidth: '100%',
+              fontFamily: 'monospace',
             }}
           >
             {agentDelta.length ? (

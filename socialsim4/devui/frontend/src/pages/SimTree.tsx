@@ -16,6 +16,16 @@ export default function SimTree() {
   const [multiTurns, setMultiTurns] = useState(1)
   const [multiCount, setMultiCount] = useState(2)
   const [chainTurns, setChainTurns] = useState(5)
+  // Toasts for run lifecycle
+  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([])
+  const toastSeq = useRef(0)
+  function addToast(text: string) {
+    const id = ++toastSeq.current
+    setToasts((ts) => [...ts, { id, text }])
+    setTimeout(() => {
+      setToasts((ts) => ts.filter((t) => t.id !== id))
+    }, 2500)
+  }
 
   async function create() {
     const r = await createTree()
@@ -72,8 +82,66 @@ export default function SimTree() {
         ws.send('ready')
       }
       ws.onmessage = (ev) => {
-        const data = JSON.parse(ev.data)
-        setGraph(data)
+        const msg = JSON.parse(ev.data)
+        setGraph((g) => {
+          if (!g) {
+            if (msg.type === 'attached') {
+              const d = msg.data || {}
+              const node = Number(d.node)
+              const depth = Number(d.depth)
+              return { root: node, frontier: [], nodes: [{ id: node, depth }], edges: [], running: [] }
+            }
+            return g
+          }
+          const type = msg.type
+          const d = msg.data || {}
+          if (type === 'attached') {
+            const node = Number(d.node)
+            const parentVal = d.parent
+            const parent = (parentVal === null || parentVal === undefined) ? null : Number(parentVal)
+            const depth = Number(d.depth)
+            const edge_type = String(d.edge_type || 'advance')
+            const nodes = g.nodes.some((n) => n.id === node) ? g.nodes : [...g.nodes, { id: node, depth }]
+            const edges = parent == null ? g.edges : [...g.edges, { from: parent, to: node, type: edge_type }]
+            return { ...g, nodes, edges }
+          }
+          if (type === 'run_start') {
+            const node = Number(d.node)
+            const running = new Set(g.running || [])
+            running.add(node)
+            addToast(`Node ${node} started`)
+            return { ...g, running: Array.from(running) }
+          }
+          if (type === 'run_finish') {
+            const node = Number(d.node)
+            const running = new Set(g.running || [])
+            running.delete(node)
+            addToast(`Node ${node} finished`)
+            return { ...g, running: Array.from(running) }
+          }
+          if (type === 'deleted') {
+            const rootDel = Number(d.node)
+            const toDelete = new Set<number>()
+            const children = new Map<number, number[]>()
+            for (const e of g.edges) {
+              if (!children.has(e.from)) children.set(e.from, [])
+              children.get(e.from)!.push(e.to)
+            }
+            const stack = [rootDel]
+            while (stack.length) {
+              const cur = stack.pop()!
+              if (toDelete.has(cur)) continue
+              toDelete.add(cur)
+              const ch = children.get(cur) || []
+              for (const c of ch) stack.push(c)
+            }
+            const nodes = g.nodes.filter((n) => !toDelete.has(n.id))
+            const edges = g.edges.filter((e) => !toDelete.has(e.from) && !toDelete.has(e.to))
+            const running = (g.running || []).filter((r) => !toDelete.has(r))
+            return { ...g, nodes, edges, running }
+          }
+          return g
+        })
       }
       wsRef.current = ws
     })()
@@ -225,6 +293,14 @@ export default function SimTree() {
             <button onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>Delete</button>
           </div>
         </div>
+      </div>
+      {/* Toasts bottom-right */}
+      <div style={{ position: 'fixed', right: 16, bottom: 16, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 1000 }}>
+        {toasts.map((t) => (
+          <div key={t.id} style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.25)', fontSize: 12 }}>
+            {t.text}
+          </div>
+        ))}
       </div>
     </div>
   )
