@@ -8,6 +8,7 @@ from socialsim4.devui.backend.models.payloads import (
     SimTreeAdvanceFrontierPayload,
     SimTreeAdvanceMultiPayload,
     SimTreeAdvancePayload,
+    SimTreeAdvanceChainPayload,
     SimTreeBranchPayload,
     SimTreeCreatePayload,
     SimTreeCreateResult,

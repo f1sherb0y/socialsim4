@@ -469,6 +469,8 @@ export default function Studio() {
                     }
                   }}
                 />
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} />
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
