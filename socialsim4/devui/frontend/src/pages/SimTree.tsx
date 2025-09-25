@@ -287,6 +287,7 @@ export default function SimTree() {
 
         <div className="scroll" style={{ height: '100%' }}>
           <h4 className="section-title">Tree</h4>
+          <div className="label" style={{ marginBottom: 4 }}>Create new simulation tree</div>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr auto auto', columnGap: 8, alignItems: 'end', marginBottom: 8 }}>
             <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} mb={0} />
             <button className="btn" onClick={create}>Create</button>
@@ -294,29 +295,29 @@ export default function SimTree() {
           </div>
           <h4 className="section-title">Ops</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
-            <label className="label" style={{ alignSelf: 'end' }}>Leaves turns</label>
+            <label className="label" style={{ alignSelf: 'end' }}>Run leaves</label>
             <label style={{ visibility: 'hidden' }}>&nbsp;</label>
             <input className="input" type="number" min={1} value={frontierTurns} onChange={(e) => setFrontierTurns(e.target.value)} style={{ width: '100%' }} />
             <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Advance leaves</button>
+              <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Run</button>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
-            <label className="label" style={{ alignSelf: 'end' }}>Multi turns</label>
-            <label className="label" style={{ alignSelf: 'end' }}>Count</label>
+            <label className="label" style={{ alignSelf: 'end' }}>Step Count</label>
+            <label className="label" style={{ alignSelf: 'end' }}>Parallel Size</label>
             <label style={{ visibility: 'hidden' }}>&nbsp;</label>
             <input className="input" type="number" min={1} value={multiTurns} onChange={(e) => setMultiTurns(e.target.value)} style={{ width: '100%' }} />
             <input className="input" type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(e.target.value)} style={{ width: '100%' }} />
             <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurnsNum, multiCountNum)} disabled={treeId == null || selected == null}>Advance N copies</button>
+              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurnsNum, multiCountNum)} disabled={treeId == null || selected == null}>Parallel Run</button>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
-            <label className="label" style={{ alignSelf: 'end' }}>Chain steps</label>
+            <label className="label" style={{ alignSelf: 'end' }}>Chain Length</label>
             <label style={{ visibility: 'hidden' }}>&nbsp;</label>
             <input className="input" type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(e.target.value)} style={{ width: '100%' }} />
             <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurnsNum)} disabled={treeId == null || selected == null}>Advance chain</button>
+              <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurnsNum)} disabled={treeId == null || selected == null}>Chain Run</button>
             </div>
           </div>
           <div style={{ marginTop: 12 }}>
@@ -324,7 +325,7 @@ export default function SimTree() {
             <button className="btn" onClick={() => treeId != null && selected != null && navigate(`/sim/${treeId}?node=${selected}`)} disabled={treeId == null || selected == null}>查看详情</button>
           </div>
           <div style={{ marginTop: 12 }}>
-            <div className="label">public_broadcast:</div>
+            <div className="label">Brodcast</div>
             <input className="input" value={text} onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} />
             <button className="btn" onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>Apply</button>
           </div>
