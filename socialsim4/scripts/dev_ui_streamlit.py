@@ -54,9 +54,7 @@ def build_snapshot(
             prev_last_len = int(prev.get("last_len", 0))
             if len(last_content) > prev_last_len:
                 appended = last_content[prev_last_len:]
-                delta_msgs = [
-                    {"role": mem_all[-1]["role"], "content": appended}
-                ]
+                delta_msgs = [{"role": mem_all[-1]["role"], "content": appended}]
             new_last_len = len(last_content)
 
         new_mem_offsets[nm] = {"count": cnt, "last_len": new_last_len}
@@ -249,7 +247,7 @@ def run_dev_ui(sim: Simulator):
 
 
 def main():
-    sim = build_landlord_sim()
+    sim = build_council_sim()
     run_dev_ui(sim)
 
 

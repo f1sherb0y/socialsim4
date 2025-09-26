@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, WebSocket
 
 from socialsim4.core.simtree import SimTree
 from socialsim4.devui.backend.models.payloads import (
+    SimTreeAdvanceChainPayload,
     SimTreeAdvanceFrontierPayload,
     SimTreeAdvanceMultiPayload,
     SimTreeAdvancePayload,
-    SimTreeAdvanceChainPayload,
     SimTreeBranchPayload,
     SimTreeCreatePayload,
     SimTreeCreateResult,
@@ -19,11 +19,12 @@ from socialsim4.devui.backend.services.registry import (
     next_tree_id,
 )
 from socialsim4.scripts.run_basic_scenes import (
-    build_simple_chat_sim,
     build_council_sim,
-    build_werewolf_sim,
     build_landlord_sim,
-    # build_village_sim,  # village not tested by default
+    build_simple_chat_sim,
+    build_simple_chat_sim_chinese,
+    build_village_sim,  # village not tested by default
+    build_werewolf_sim,
 )
 
 router = APIRouter(tags=["simtree"])
@@ -34,6 +35,8 @@ def create_tree(payload: SimTreeCreatePayload):
     sc = payload.scenario
     if sc == "simple_chat":
         sim = build_simple_chat_sim()
+    elif sc == "simple_chat_chinese":
+        sim = build_simple_chat_sim_chinese()
     elif sc == "council":
         sim = build_council_sim()
     elif sc == "werewolf":
@@ -41,7 +44,6 @@ def create_tree(payload: SimTreeCreatePayload):
     elif sc == "landlord":
         sim = build_landlord_sim()
     elif sc == "village":
-        from socialsim4.scripts.run_basic_scenes import build_village_sim
         sim = build_village_sim()
     else:
         raise ValueError("Unknown scenario: " + str(sc))
@@ -168,8 +170,6 @@ def tree_advance(tree_id: int, payload: SimTreeAdvancePayload):
     for q in rec.subs:
         q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
     return {"child": cid}
-
-
 
 
 @router.post("/simtree/{tree_id}/advance_frontier")
@@ -416,8 +416,6 @@ async def tree_advance_multi(tree_id: int, payload: SimTreeAdvanceMultiPayload):
         for q in rec.subs:
             q.put_nowait({"type": "run_finish", "data": {"node": int(cid)}})
     return {"children": kids}
-
-
 
 
 @router.websocket("/simtree/{tree_id}/events")

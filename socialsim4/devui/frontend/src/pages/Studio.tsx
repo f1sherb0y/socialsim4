@@ -473,7 +473,7 @@ export default function Studio() {
               </div>
               <div className="label" style={{ marginBottom: 4 }}>Create new simulation tree</div>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr auto auto', columnGap: 8, alignItems: 'end', marginBottom: 8 }}>
-                <CompactSelect options={["simple_chat","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} mb={0} />
+                <CompactSelect options={["simple_chat","simple_chat_chinese","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} mb={0} />
                 <button className="btn" onClick={create}>Create</button>
                 <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
               </div>

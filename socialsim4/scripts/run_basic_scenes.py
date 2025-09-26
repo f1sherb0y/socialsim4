@@ -295,9 +295,72 @@ def build_simple_chat_sim() -> Simulator:
     return sim
 
 
+def build_simple_chat_sim_chinese() -> Simulator:
+    # agents = make_agents(["Host", "Alice", "Bob"], ["send_message", "yield"])
+    agents = [
+        Agent.deserialize(
+            {
+                "name": "Host",
+                "user_profile": "You are the host of a chat room. Your role is to facilitate conversation, introduce topics, and ensure everyone has a chance to speak. You are neutral and objective.",
+                "style": "welcoming and clear",
+                "action_space": ["web_search", "view_page"],
+                "initial_instruction": "",
+                "role_prompt": "",
+                "properties": {},
+            }
+        ),
+        Agent.deserialize(
+            {
+                "name": "Alice",
+                "user_profile": "You are Alice. You are an optimist, full of energy, and always curious about new technologies and their potential to change the world for the better.",
+                "style": "enthusiastic and inquisitive",
+                "action_space": ["web_search", "view_page"],
+                "initial_instruction": "",
+                "role_prompt": "",
+                "properties": {},
+            }
+        ),
+        Agent.deserialize(
+            {
+                "name": "Bob",
+                "user_profile": "You are Bob. You are a pragmatist and a bit of a skeptic. You are cautious about new technologies and tend to focus on the potential downsides and practical challenges.",
+                "style": "cynical and questioning",
+                "action_space": ["web_search", "view_page"],
+                "initial_instruction": "",
+                "role_prompt": "",
+                "properties": {},
+            }
+        ),
+    ]
+
+    scene = SimpleChatScene("room", "欢迎来到聊天室。")
+
+    clients = make_clients()
+    sim = Simulator(
+        agents,
+        scene,
+        clients,
+        ordering=SequentialOrdering(),
+        event_handler=console_logger,
+    )
+    sim.broadcast(PublicEvent("讨论者: " + ", ".join([a.name for a in agents])))
+    sim.broadcast(
+        PublicEvent(
+            "讨论话题: AI 是否具备像电力一样的“通用性”，可以应用于几乎所有行业？请用中文讨论。"
+        )
+    )
+    return sim
+
+
 def run_simple_chat():
     print("=== SimpleChatScene ===")
     sim = build_simple_chat_sim()
+    sim.run(max_turns=50)
+
+
+def run_simple_chat_chinese():
+    print("=== SimpleChatScene(Chinese) ===")
+    sim = build_simple_chat_sim_chinese()
     sim.run(max_turns=50)
 
 
@@ -667,7 +730,8 @@ def run_werewolf():
 
 
 if __name__ == "__main__":
-    run_simple_chat()
+    run_simple_chat_chinese()
+
     # run_council()
     # run_village()
 

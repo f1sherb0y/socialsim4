@@ -13,7 +13,13 @@ class StartVotingAction(Action):
         if scene.state.get("voting_started", False):
             error = "Voting already started."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} failed to start voting", {}, False
+            return (
+                False,
+                {"error": error},
+                f"{agent.name} failed to start voting",
+                {},
+                False,
+            )
 
         title = action_data["title"].strip()
         scene.state["voting_started"] = True
@@ -77,7 +83,7 @@ class VotingStatusAction(Action):
             "title": scene.state.get("vote_title"),
         }
         summary = f"Voting status on '{scene.state.get('vote_title')}': yes {yes}, no {no}, abstain {abstain}, pending {pending}"
-        return True, result, summary
+        return True, result, summary, {}, False
 
 
 # Removed: GetRoundsAction — no round concept
@@ -99,7 +105,13 @@ class RequestBriefAction(Action):
         if getattr(agent, "name", "") != "Host":
             error = "Only the Host can use request_brief."
             agent.add_env_feedback(error)
-            return False, {"error": error}, f"{agent.name} request_brief failed", {}, False
+            return (
+                False,
+                {"error": error},
+                f"{agent.name} request_brief failed",
+                {},
+                False,
+            )
 
         desc = action_data["desc"]
 

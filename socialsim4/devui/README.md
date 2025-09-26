@@ -28,7 +28,15 @@ IDs and API (prototype)
 Run (dev)
 1) Backend
    - Install deps: fastapi, uvicorn
-   - Run: uvicorn socialsim4.devui.backend.app:app --host 0.0.0.0 --port 8090 --reload
+   - Set environment variable: 
+```bash
+export GEMINI_API_KEY=[your_gemini_api_key]
+export LLM_DIALECT=gemini
+```
+   - Run: 
+```bash
+uvicorn socialsim4.devui.backend.app:app --host 0.0.0.0 --port 8090 --reload
+```
 
 2) Frontend
    - cd socialsim4/devui/frontend
