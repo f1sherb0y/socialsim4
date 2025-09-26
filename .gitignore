@@ -132,3 +132,4 @@ storage
 socialsim.db
 socialsim4/vis/*.txt
 *.pdf
+stats.sh
