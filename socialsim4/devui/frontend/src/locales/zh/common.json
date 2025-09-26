@@ -1,0 +1,78 @@
+{
+  "app": {
+    "title": "SocialSim4 开发界面"
+  },
+  "nav": {
+    "home": "首页",
+    "tree": "树",
+    "sim": "模拟",
+    "studio": "工作台",
+    "language": "语言"
+  },
+  "home": {
+    "panel": "面板",
+    "workbench": "工作台",
+    "simulation": {
+      "title": "Simulation",
+      "desc": "查看某个 SimTree 节点的事件流与 Agent 上下文。",
+      "enter": "进入"
+    },
+    "simtree": {
+      "title": "SimTree",
+      "desc": "创建、运行与分支时间线，图形化浏览节点。",
+      "enter": "进入"
+    },
+    "studio": {
+      "title": "Studio",
+      "desc": "左：SimTree 图与操作；中：所选节点 Events；右：Agents。",
+      "enter": "进入"
+    }
+  },
+  "common": {
+    "none": "(无)",
+    "noOptions": "无可选项",
+    "empty": "(空)",
+    "noEvents": "(暂无事件)",
+    "stickBottom": "始终滚动到底部",
+    "selected": "选中",
+    "nodes": "节点",
+    "edges": "边",
+    "running": "运行中",
+    "apply": "应用",
+    "delete": "删除",
+    "refresh": "刷新",
+    "create": "创建",
+    "viewDetails": "查看详情"
+  },
+  "sim": {
+    "title": "Simulation",
+    "events": "事件",
+    "agent": "智能体"
+  },
+  "simtree": {
+    "title": "SimTree",
+    "graph": "图",
+    "tree": "树",
+    "createNew": "创建新的模拟树",
+    "runLeaves": "运行叶子",
+    "stepCount": "步数",
+    "parallelSize": "并行大小",
+    "chainLength": "链长度",
+    "broadcast": "公告",
+    "deleteSubtree": "删除子树（根节点禁用）",
+    "run": "运行",
+    "parallelRun": "并行运行",
+    "chainRun": "链式运行"
+  },
+  "studio": {
+    "title": "Studio",
+    "selectTree": "选择模拟树",
+    "createNew": "创建新的模拟树",
+    "events": "事件",
+    "agents": "智能体"
+  },
+  "toasts": {
+    "nodeStarted": "节点 {{id}} 开始",
+    "nodeFinished": "节点 {{id}} 完成"
+  }
+}

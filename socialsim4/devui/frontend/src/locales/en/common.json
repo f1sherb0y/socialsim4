@@ -1,0 +1,79 @@
+{
+  "app": {
+    "title": "SocialSim4 DevUI"
+  },
+  "nav": {
+    "home": "Home",
+    "tree": "Tree",
+    "sim": "Simulation",
+    "studio": "Studio",
+    "language": "Language"
+  },
+  "home": {
+    "panel": "Panel",
+    "workbench": "Workbench",
+    "simulation": {
+      "title": "Simulation",
+      "desc": "View event stream and agent context for a SimTree node.",
+      "enter": "Enter"
+    },
+    "simtree": {
+      "title": "SimTree",
+      "desc": "Create, run and branch timelines with a graph view.",
+      "enter": "Enter"
+    },
+    "studio": {
+      "title": "Studio",
+      "desc": "Left: SimTree and ops; Middle: Events; Right: Agents.",
+      "enter": "Enter"
+    }
+  },
+  "common": {
+    "none": "(none)",
+    "noOptions": "No options",
+    "empty": "(empty)",
+    "noEvents": "(no events yet)",
+    "stickBottom": "Stick to bottom",
+    "selected": "Selected",
+    "nodes": "Nodes",
+    "edges": "Edges",
+    "running": "Running",
+    "apply": "Apply",
+    "delete": "Delete",
+    "refresh": "Refresh",
+    "create": "Create",
+    "viewDetails": "View details"
+  },
+  "sim": {
+    "title": "Simulation",
+    "events": "Events",
+    "agent": "Agent"
+  },
+  "simtree": {
+    "title": "SimTree",
+    "graph": "Graph",
+    "tree": "Tree",
+    "createNew": "Create new simulation tree",
+    "runLeaves": "Run leaves",
+    "stepCount": "Step Count",
+    "parallelSize": "Parallel Size",
+    "chainLength": "Chain Length",
+    "broadcast": "Broadcast",
+    "deleteSubtree": "Delete subtree (root disabled)",
+    "run": "Run",
+    "parallelRun": "Parallel Run",
+    "chainRun": "Chain Run"
+  },
+  "studio": {
+    "title": "Studio",
+    "selectTree": "Select simulation tree",
+    "createNew": "Create new simulation tree",
+    "events": "Events",
+    "agents": "Agents"
+  },
+  "toasts": {
+    "nodeStarted": "Node {{id}} started",
+    "nodeFinished": "Node {{id}} finished"
+  }
+}
+

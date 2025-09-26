@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import LanguageSwitcher from './components/LanguageSwitcher'
 
 export default function App() {
+  const { t } = useTranslation()
   const [theme, setTheme] = useState<string>(() => localStorage.getItem('devui:theme') || 'light')
 
   useEffect(() => {
@@ -15,36 +18,39 @@ export default function App() {
     <div className="page">
       <div className="header">
         <div className="header-inner">
-          <h3 className="title">SocialSim4 DevUI</h3>
-          <nav className="nav row">
-            <Link to="/">首页</Link>
-            <Link to="/simtree">树</Link>
-            <Link to="/sim">模拟</Link>
-          </nav>
+          <h3 className="title">{t('app.title')}</h3>
+          <div className="row" style={{ gap: 10, flex: 1, marginLeft: 8 }}>
+            <nav className="nav row">
+              <Link to="/">{t('nav.home')}</Link>
+              <Link to="/simtree">{t('nav.tree')}</Link>
+              <Link to="/sim">{t('nav.sim')}</Link>
+            </nav>
+            <div style={{ marginLeft: 'auto' }}><LanguageSwitcher /></div>
+          </div>
         </div>
       </div>
 
       <div style={{ padding: '16px' }}>
         <div className="row" style={{ flexWrap: 'wrap', gap: 12 }}>
           <div className="card card-pad" style={{ flex: '1 1 360px' }}>
-            <div className="label" style={{ marginBottom: 6 }}>面板</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Simulation</div>
-            <div className="muted" style={{ marginBottom: 12 }}>查看某个 SimTree 节点的事件流与 Agent 上下文。</div>
-            <Link to="/sim" className="btn">进入</Link>
+            <div className="label" style={{ marginBottom: 6 }}>{t('home.panel')}</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('home.simulation.title')}</div>
+            <div className="muted" style={{ marginBottom: 12 }}>{t('home.simulation.desc')}</div>
+            <Link to="/sim" className="btn">{t('home.simulation.enter')}</Link>
           </div>
 
           <div className="card card-pad" style={{ flex: '1 1 360px' }}>
-            <div className="label" style={{ marginBottom: 6 }}>面板</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>SimTree</div>
-            <div className="muted" style={{ marginBottom: 12 }}>创建、运行与分支时间线，图形化浏览节点。</div>
-            <Link to="/simtree" className="btn">进入</Link>
+            <div className="label" style={{ marginBottom: 6 }}>{t('home.panel')}</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('home.simtree.title')}</div>
+            <div className="muted" style={{ marginBottom: 12 }}>{t('home.simtree.desc')}</div>
+            <Link to="/simtree" className="btn">{t('home.simtree.enter')}</Link>
           </div>
 
           <div className="card card-pad" style={{ flex: '1 1 360px' }}>
-            <div className="label" style={{ marginBottom: 6 }}>工作台</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Studio</div>
-            <div className="muted" style={{ marginBottom: 12 }}>左：SimTree 图与操作；中：所选节点 Events；右：Agents。</div>
-            <Link to="/studio" className="btn">进入</Link>
+            <div className="label" style={{ marginBottom: 6 }}>{t('home.workbench')}</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('home.studio.title')}</div>
+            <div className="muted" style={{ marginBottom: 12 }}>{t('home.studio.desc')}</div>
+            <Link to="/studio" className="btn">{t('home.studio.enter')}</Link>
           </div>
         </div>
       </div>

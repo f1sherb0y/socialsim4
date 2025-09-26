@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState , JSX} from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactFlow, { Background, Controls, MiniMap, type Node as RFNode, type Edge as RFEdge } from 'reactflow'
 import * as Toast from '@radix-ui/react-toast'
 import { graphlib, layout } from 'dagre'
 import 'reactflow/dist/style.css'
+import { useTranslation } from 'react-i18next'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 import {
   createTree,
@@ -24,6 +26,7 @@ type AgentInfo = { name: string; role?: string; plan_state: any; short_memory: {
 export default function Studio() {
   const params = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const [treeId, setTreeId] = useState<number | null>(null)
   const [trees, setTrees] = useState<{ id: number; root: number }[]>([])
@@ -58,7 +61,7 @@ export default function Studio() {
   function addToast(text: string) {
     const id = ++toastSeq.current
     setToasts((ts) => [...ts, { id, text }])
-    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 2500)
+    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 5000)
   }
 
   // Format backend event for middle panel
@@ -187,14 +190,14 @@ export default function Studio() {
         const node = Number(d.node)
         const running = new Set(g.running || [])
         running.add(node)
-        addToast(`Node ${node} started`)
+        addToast(t('toasts.nodeStarted', { id: node }))
         return { ...g, running: Array.from(running) }
       }
       if (type === 'run_finish') {
         const node = Number(d.node)
         const running = new Set(g.running || [])
         running.delete(node)
-        addToast(`Node ${node} finished`)
+        addToast(t('toasts.nodeFinished', { id: node }))
         if (selected !== null && node === selected) refreshSelected()
         return { ...g, running: Array.from(running) }
       }
@@ -390,7 +393,7 @@ export default function Studio() {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 11,
-          animation: running ? 'pulse 1s ease-in-out infinite alternate' : undefined,
+          animation: running ? 'running-fade .9s ease-in-out infinite' : undefined,
         },
       })
     }
@@ -411,20 +414,23 @@ export default function Studio() {
       <div className="page">
         <div className="header">
           <div className="header-inner">
-            <h3 className="title">Studio</h3>
-            <nav className="nav row">
-              <Link to="/">首页</Link>
-              <Link to={treeId != null ? `/studio/${treeId}` : '/studio'}>工作台</Link>
-            </nav>
+            <h3 className="title">{t('studio.title')}</h3>
+            <div className="row" style={{ gap: 10, flex: 1, marginLeft: 8 }}>
+              <nav className="nav row">
+                <Link to="/">{t('nav.home')}</Link>
+                <Link to={treeId != null ? `/studio/${treeId}` : '/studio'}>{t('nav.studio')}</Link>
+              </nav>
+              <div style={{ marginLeft: 'auto' }}><LanguageSwitcher /></div>
+            </div>
           </div>
         </div>
 
         <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'stretch', overflow: 'hidden', height: '100%', boxSizing: 'border-box' }}>
           {/* Left: Graph + Ops */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <h4 className="section-title">Graph</h4>
+            <h4 className="section-title">{t('simtree.graph')}</h4>
             <div className="card" style={{ width: '100%', flex: 1, minHeight: 0 }}>
-              <style>{`@keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,0,0,.4)}to{box-shadow:0 0 8px 4px rgba(255,0,0,.2)}}`}</style>
+              <style>{`@keyframes running-fade{0%{opacity:1}50%{opacity:.5}100%{opacity:1}}`}</style>
               <ReactFlow nodes={rf.nodes} edges={rf.edges} fitView onNodeClick={(_, n) => setSelected(Number(n.id))}>
                 <MiniMap pannable zoomable />
                 <Controls position="bottom-left" />
@@ -433,8 +439,8 @@ export default function Studio() {
             </div>
             {graph && (
               <div className="stats">
-                <div>Selected: {selected ?? '-'}</div>
-                <div>Nodes: {graph.nodes.length} · Edges: {graph.edges.length} · Running: {(graph.running || []).length}</div>
+                <div>{t('common.selected')}: {selected ?? '-'}</div>
+                <div>{t('common.nodes')}: {graph.nodes.length} · {t('common.edges')}: {graph.edges.length} · {t('common.running')}: {(graph.running || []).length}</div>
               </div>
             )}
             <div className="legend" style={{ marginTop: 8 }}>
@@ -455,7 +461,7 @@ export default function Studio() {
 
             {/* Ops */}
             <div className="card card-pad" style={{ marginTop: 8 }}>
-              <div className="label" style={{ marginBottom: 4 }}>Select simulation tree</div>
+              <div className="label" style={{ marginBottom: 4 }}>{t('studio.selectTree')}</div>
               <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <CompactSelect
                   options={trees.map((t) => String(t.id))}
@@ -471,58 +477,58 @@ export default function Studio() {
                   }}
                 />
               </div>
-              <div className="label" style={{ marginBottom: 4 }}>Create new simulation tree</div>
+              <div className="label" style={{ marginBottom: 4 }}>{t('studio.createNew')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr auto auto', columnGap: 8, alignItems: 'end', marginBottom: 8 }}>
                 <CompactSelect options={["simple_chat","simple_chat_chinese","council","werewolf","landlord","village"]} value={scenario} onChange={(v) => setScenario(v as any)} mb={0} />
-                <button className="btn" onClick={create}>Create</button>
-                <button className="btn" onClick={refreshGraph} disabled={treeId == null}>Refresh</button>
+                <button className="btn" onClick={create}>{t('common.create')}</button>
+                <button className="btn" onClick={refreshGraph} disabled={treeId == null}>{t('common.refresh')}</button>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
-                <label className="label" style={{ alignSelf: 'end' }}>Run leaves</label>
+                <label className="label" style={{ alignSelf: 'end' }}>{t('simtree.runLeaves')}</label>
                 <label style={{ visibility: 'hidden' }}>&nbsp;</label>
                 <input className="input" type="number" min={1} value={frontierTurns} onChange={(e) => setFrontierTurns(e.target.value)} style={{ width: '100%' }} />
                 <div className="row" style={{ justifyContent: 'flex-end' }}>
-                  <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>Run</button>
+                  <button className="btn" onClick={advanceFrontier} disabled={treeId == null}>{t('simtree.run')}</button>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
-                <label className="label" style={{ alignSelf: 'end' }}>Step Count</label>
-                <label className="label" style={{ alignSelf: 'end' }}>Parallel Size</label>
+                <label className="label" style={{ alignSelf: 'end' }}>{t('simtree.stepCount')}</label>
+                <label className="label" style={{ alignSelf: 'end' }}>{t('simtree.parallelSize')}</label>
                 <label style={{ visibility: 'hidden' }}>&nbsp;</label>
                 <input className="input" type="number" min={1} value={multiTurns} onChange={(e) => setMultiTurns(e.target.value)} style={{ width: '100%' }} />
                 <input className="input" type="number" min={1} value={multiCount} onChange={(e) => setMultiCount(e.target.value)} style={{ width: '100%' }} />
                 <div className="row" style={{ justifyContent: 'flex-end' }}>
-                  <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurnsNum, multiCountNum)} disabled={treeId == null || selected == null}>Parallel Run</button>
+                  <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceMulti(treeId, selected, multiTurnsNum, multiCountNum)} disabled={treeId == null || selected == null}>{t('simtree.parallelRun')}</button>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gridTemplateRows: 'auto auto', columnGap: 8, rowGap: 6, marginTop: 12 }}>
-                <label className="label" style={{ alignSelf: 'end' }}>Chain Length</label>
+                <label className="label" style={{ alignSelf: 'end' }}>{t('simtree.chainLength')}</label>
                 <label style={{ visibility: 'hidden' }}>&nbsp;</label>
                 <input className="input" type="number" min={1} value={chainTurns} onChange={(e) => setChainTurns(e.target.value)} style={{ width: '100%' }} />
                 <div className="row" style={{ justifyContent: 'flex-end' }}>
-                  <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurnsNum)} disabled={treeId == null || selected == null}>Chain Run</button>
+                  <button className="btn" onClick={() => treeId != null && selected != null && treeAdvanceChain(treeId, selected, chainTurnsNum)} disabled={treeId == null || selected == null}>{t('simtree.chainRun')}</button>
                 </div>
               </div>
               <div style={{ marginTop: 12 }}>
-                <div className="label">Brodcast</div>
+                <div className="label">{t('simtree.broadcast')}</div>
                 <input className="input" value={text} onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} />
-                <button className="btn" onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>Apply</button>
+                <button className="btn" onClick={branchPublic} style={{ marginTop: 6 }} disabled={treeId == null || selected == null}>{t('common.apply')}</button>
               </div>
               <div style={{ marginTop: 12 }}>
-                <div className="label">Delete subtree (root disabled)</div>
-                <button className="btn" onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>Delete</button>
+                <div className="label">{t('simtree.deleteSubtree')}</div>
+                <button className="btn" onClick={delSubtree} disabled={!graph || selected == null || selected === graph.root}>{t('common.delete')}</button>
               </div>
             </div>
           </div>
 
           {/* Middle: Events */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <h4 className="section-title">Events</h4>
+            <h4 className="section-title">{t('studio.events')}</h4>
             <div ref={eventsRef} className="card card-pad scroll text-prewrap text-break" style={{ lineHeight: 1.55, flex: 1 }}>
               {(() => {
                 const formatted = (events || []).map((e, i) => formatEvent(e, i)).filter(Boolean)
-                return formatted.length ? formatted : <div className="muted">(no events yet)</div>
+                return formatted.length ? formatted : <div className="muted">{t('common.noEvents')}</div>
               })()}
             </div>
           </div>
@@ -530,10 +536,10 @@ export default function Studio() {
           {/* Right: Agents */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h4 className="section-title" style={{ margin: 0 }}>Agents</h4>
+              <h4 className="section-title" style={{ margin: 0 }}>{t('studio.agents')}</h4>
               <label className="label row" style={{ gap: 6 }}>
                 <input type="checkbox" checked={stickBottom} onChange={(e) => setStickBottom(e.target.checked)} />
-                <span>Stick to bottom</span>
+                <span>{t('common.stickBottom')}</span>
               </label>
             </div>
             <CompactSelect options={agents.map((a) => a.name)} value={selectedAgent} onChange={setSelectedAgent} />
@@ -545,17 +551,36 @@ export default function Studio() {
                   ))}
                 </ul>
               ) : (
-                <div className="muted">(empty)</div>
+                <div className="muted">{t('common.empty')}</div>
               )}
             </div>
           </div>
         </div>
 
         {/* Toasts */}
-        <Toast.Viewport style={{ position: 'fixed', right: 16, bottom: 16, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 1000 }} />
+        <Toast.Viewport style={{ position: 'fixed', right: 16, bottom: 16, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 1000, maxWidth: 'calc(100vw - 32px)' }} />
         {toasts.map((t) => (
-          <Toast.Root key={t.id} duration={2500} style={{ background: 'var(--panel)', border: '0.75px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)' }}>
-            <Toast.Title style={{ fontSize: 12 }}>{t.text}</Toast.Title>
+          <Toast.Root
+            key={t.id}
+            duration={5000}
+            style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--border)',
+              borderLeft: '4px solid var(--brand)',
+              borderRadius: 10,
+              padding: '10px 12px',
+              color: 'var(--text)',
+              boxShadow: '0 8px 24px rgba(0,0,0,.18)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              minWidth: 240,
+              maxWidth: 360,
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--brand)' }} />
+            <Toast.Title style={{ fontSize: 12, lineHeight: 1.3, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{t.text}</Toast.Title>
           </Toast.Root>
         ))}
       </div>
@@ -566,6 +591,7 @@ export default function Studio() {
 function CompactSelect({ options, value, onChange, onOpen, w, mb }: { options: string[]; value: string; onChange: (v: string) => void; onOpen?: () => void; w?: number; mb?: number }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
+  const { t } = useTranslation()
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
       const el = ref.current
@@ -576,7 +602,7 @@ function CompactSelect({ options, value, onChange, onOpen, w, mb }: { options: s
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [])
-  const label = options.length === 0 ? '(none)' : (value || (options[0] || ''))
+  const label = options.length === 0 ? t('common.none') : (value || (options[0] || ''))
   return (
     <div className="select" ref={ref} style={{ marginBottom: mb ?? 8, width: w ?? '100%' }}>
       <button
@@ -597,7 +623,7 @@ function CompactSelect({ options, value, onChange, onOpen, w, mb }: { options: s
               {opt}
             </div>
           )) : (
-            <div className="select-item muted" aria-disabled>无可选项</div>
+            <div className="select-item muted" aria-disabled>{t('common.noOptions')}</div>
           )}
         </div>
       )}

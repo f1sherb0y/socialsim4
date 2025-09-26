@@ -6,6 +6,7 @@ import Simulation from './pages/Simulation'
 import SimTree from './pages/SimTree'
 import Studio from './pages/Studio'
 import './styles/radix-theme.css'
+import './i18n'
 
 const router = createBrowserRouter([
   { path: '/', element: <App /> },
@@ -17,7 +18,5 @@ const router = createBrowserRouter([
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>
+  <RouterProvider router={router} />
 )
