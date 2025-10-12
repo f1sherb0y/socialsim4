@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     backend_port: int = 8000
 
     database_url: str = "sqlite+aiosqlite:///./socialsim4.db"
-    redis_url: str | None = None
 
     jwt_signing_key: SecretStr = SecretStr("change-me")
     jwt_algorithm: str = "HS256"
