@@ -28,6 +28,9 @@ class User(TimestampMixin, Base):
     simulations: Mapped[list["Simulation"]] = relationship(
         back_populates="owner", cascade="all, delete-orphan"
     )
+    verification_tokens: Mapped[list["VerificationToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class ProviderConfig(TimestampMixin, Base):

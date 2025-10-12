@@ -7,16 +7,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.config import get_settings
 from ...core.security import create_access_token, create_refresh_token, hash_password, verify_password
-from ...dependencies import get_current_user, get_db_session
+from ...dependencies import get_current_user, get_db_session, get_email_sender
 from ...models.token import RefreshToken
 from ...models.user import User
 from ...schemas.auth import (
     LoginRequest,
+    VerificationRequest,
     RefreshRequest,
     RegisterRequest,
     TokenPair,
 )
-from ...schemas.user import UserCreate, UserPublic
+from ...schemas.common import Message
+from ...schemas.user import UserPublic
+from ...services.email import EmailSender
+from ...services.verification import get_verification_token, issue_verification_token
 
 
 router = APIRouter()
@@ -24,7 +28,23 @@ settings = get_settings()
 
 
 @router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, session: AsyncSession = Depends(get_db_session)) -> UserPublic:
+async def register(
+    payload: RegisterRequest,
+    session: AsyncSession = Depends(get_db_session),
+    email_sender: EmailSender = Depends(get_email_sender),
+) -> UserPublic:
+    if settings.require_email_verification:
+        if not settings.email_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Email verification enabled but SMTP settings are missing",
+            )
+        if not settings.app_base_url:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Email verification enabled but APP base URL is missing",
+            )
+
     if (await session.execute(select(User).where(User.email == payload.email))).scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
     if (await session.execute(select(User).where(User.username == payload.username))).scalar_one_or_none():
@@ -38,11 +58,16 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
         phone_number=payload.phone_number,
         hashed_password=hash_password(payload.password),
         is_active=True,
-        is_verified=False,
+        is_verified=not settings.require_email_verification,
     )
     session.add(user)
     await session.commit()
     await session.refresh(user)
+    if settings.require_email_verification:
+        token = await issue_verification_token(session, user)
+        verification_link = f"{settings.app_base_url.rstrip('/')}/auth/verify?token={token.token}"
+        await email_sender.send_verification_email(user.email, verification_link)
+
     return UserPublic.model_validate(user)
 
 
@@ -54,6 +79,8 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_db_se
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User disabled")
+    if settings.require_email_verification and not user.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email address not verified")
 
     access_token, access_exp = create_access_token(str(user.id))
     refresh_token, refresh_exp = create_refresh_token(str(user.id))
@@ -76,6 +103,37 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_db_se
     )
 
 
+@router.post("/verify", response_model=Message)
+async def verify_email(
+    payload: VerificationRequest,
+    session: AsyncSession = Depends(get_db_session),
+) -> Message:
+    token = await get_verification_token(session, payload.token)
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+
+    expiry = token.expires_at
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+    if expiry < datetime.now(timezone.utc):
+        await session.delete(token)
+        await session.commit()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+
+    user = await session.get(User, token.user_id)
+    if user is None:
+        await session.delete(token)
+        await session.commit()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account missing")
+
+    user.is_verified = True
+    user.updated_at = datetime.now(timezone.utc)
+    await session.delete(token)
+    await session.commit()
+
+    return Message(message="Email verified")
+
+
 @router.get("/me", response_model=UserPublic)
 async def read_me(current_user: UserPublic = Depends(get_current_user)) -> UserPublic:
     return current_user
@@ -86,7 +144,7 @@ async def refresh_token(payload: RefreshRequest, session: AsyncSession = Depends
     try:
         decoded = jwt.decode(
             payload.refresh_token,
-            key=settings.jwt_secret_key,
+            key=settings.jwt_signing_key.get_secret_value(),
             algorithms=[settings.jwt_algorithm],
         )
     except JWTError as exc:

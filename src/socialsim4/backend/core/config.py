@@ -20,8 +20,17 @@ class Settings(BaseSettings):
     access_token_exp_minutes: int = 15
     refresh_token_exp_minutes: int = 60 * 24 * 14
 
-    email_smtp_url: str | None = None
+    email_smtp_host: str | None = None
+    email_smtp_port: int | None = None
+    email_smtp_username: str | None = None
+    email_smtp_password: SecretStr | None = None
+    email_smtp_use_tls: bool = True
+    email_smtp_use_ssl: bool = False
     email_from: str | None = None
+
+    app_base_url: str | None = None
+    verification_token_exp_minutes: int = 60 * 24
+    require_email_verification: bool = False
 
     allowed_origins: list[str] = []
 
@@ -31,6 +40,14 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
     )
+
+    @property
+    def email_enabled(self) -> bool:
+        return (
+            self.email_smtp_host is not None
+            and self.email_smtp_port is not None
+            and self.email_from is not None
+        )
 
 
 @lru_cache

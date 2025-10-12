@@ -17,7 +17,7 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     payload = {"sub": subject, "exp": expire}
     token = jwt.encode(
         payload,
-        settings.jwt_secret_key.get_secret_value(),
+        settings.jwt_signing_key.get_secret_value(),
         algorithm=settings.jwt_algorithm,
     )
     return token, expire
@@ -30,7 +30,7 @@ def create_refresh_token(subject: str) -> tuple[str, datetime]:
     payload = {"sub": subject, "exp": expire, "type": "refresh"}
     token = jwt.encode(
         payload,
-        settings.jwt_secret_key.get_secret_value(),
+        settings.jwt_signing_key.get_secret_value(),
         algorithm=settings.jwt_algorithm,
     )
     return token, expire

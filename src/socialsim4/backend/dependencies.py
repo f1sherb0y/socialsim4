@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .core.config import get_settings
 from .core.database import get_session
 from .models.user import User
+from .services.email import EmailSender
 from .schemas.user import UserPublic
 
 
@@ -17,6 +18,10 @@ async def get_db_session() -> AsyncSession:
     async for session in get_session():
         return session
     raise RuntimeError("Session generator exhausted")
+
+
+def get_email_sender() -> EmailSender:
+    return EmailSender(settings)
 
 
 async def get_current_user(

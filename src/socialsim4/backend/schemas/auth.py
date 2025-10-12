@@ -40,3 +40,7 @@ class EmailVerification(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class VerificationRequest(BaseModel):
+    token: str

@@ -1,5 +1,5 @@
 from .simulation import Simulation, SimulationSnapshot, SimulationLog, SimTreeNode
-from .token import RefreshToken
+from .token import RefreshToken, VerificationToken
 from .user import ProviderConfig, User
 
 __all__ = [
@@ -10,4 +10,5 @@ __all__ = [
     "SimulationLog",
     "SimTreeNode",
     "RefreshToken",
+    "VerificationToken",
 ]
