@@ -1,0 +1,124 @@
+[Public Event] Public Event: Welcome to Werewolf. Participants: Moderator, Elena, Bram, Ronan, Mira, Pia, Taro, Ava, Niko. Roles are assigned privately. 
+Night has fallen. Please close your eyes.
+[Public Event] System: You are the Moderator. Players: Moderator, Elena, Bram, Ronan, Mira, Pia, Taro, Ava, Niko. Roles: Elena is werewolf, Bram is witch, Ronan is seer, Mira is werewolf, Pia is villager, Taro is villager, Ava is villager, Niko is werewolf.
+[night_kill] Mira night_kill failed
+[speak] Mira said: Night 0. As expected, no moves. We'll observe the day.
+[inspect] Ronan inspected Bram (not)
+[Public Event] Event: Ronan inspected Bram (not)
+[speak] Moderator said: Day one. There were no eliminations during the night. The discussion phase begins. Each player may speak once in the following order: Elena, Bram, Ronan, Mira, Pia, Taro, Ava, Niko.
+[Public Event] Public Event: The night ends. At dawn, no one died.
+[speak] Elena said: Day one. No night kill, as expected. Let's observe how people communicate today before jumping to conclusions.
+[speak] Bram said: Agreed, Elena. Let's pay close attention to everyone's words today. No need to rush judgements.
+[speak] Ronan said: Morning everyone. Elena and Bram are right; we should all be listening closely. Let's hear what everyone thinks. Anyone have initial observations, or feel a particular way about the game's start?
+[speak] Mira said: Good morning. Indeed, observation is key today. No sudden moves. Let's see how discussions unfold before forming opinions.
+[speak] Pia said: Yes, careful listening is vital today. Let's all keep an open mind and share any impressions we might have, even if they're just subtle feelings.
+[speak] Taro said: Morning. No night scare, good. Everyone's right, we need to listen. But also, if anyone feels a *slight* pull or oddness from anything said, share it. Don't hold back completely.
+[speak] Ava said: I agree with the focus on careful observation. Let's not just listen to words, but also how we're all engaging. Genuine interaction can reveal more than just cautious statements.
+[speak] Niko said: Morning. Everyone's points about careful observation are well-taken. Nothing concrete to go on yet, so best to listen closely and avoid rash judgments.
+[open_voting] Moderator opened voting
+[Public Event] Public Event: Voting is now open.
+[Public Event] Public Event: Elena voted to lynch Ava.
+[Public Event] Public Event: Bram voted to lynch Niko.
+[Public Event] Public Event: Ronan voted to lynch Niko.
+[Public Event] Public Event: Mira voted to lynch Niko.
+[Public Event] Public Event: Pia voted to lynch Elena.
+[Public Event] Public Event: Taro voted to lynch Elena.
+[Public Event] Public Event: Ava voted to lynch Elena.
+[Public Event] Public Event: Niko voted to lynch Elena.
+[close_voting] Moderator closed voting
+[Public Event] Public Event: By vote, Elena was lynched. Night begins.
+[speak] Mira said: Night 1. Elena is gone. Any thoughts on who to target? Niko seemed contentious today.
+[speak] Niko said: Given the day's discussion, Taro seemed quite keen on drawing out observations. Might be a strong villager. Suggest Taro.
+[speak] Mira said: Taro is a good call, Niko. Agreed. He spoke pointedly.
+[night_kill] Mira voted night kill: Taro
+[Public Event] Event: Mira voted night kill to Taro.
+[night_kill] Niko voted night kill: Taro
+[Public Event] Event: Niko voted night kill to Taro.
+[inspect] Ronan inspected Taro (not)
+[Public Event] Event: Ronan inspected Taro (not)
+[witch_save] Bram used witch save
+[Public Event] Event: Bram prepared a save potion.
+[Public Event] Public Event: The night ends. At dawn, no one died.
+[speak] Moderator said: Day two. There were no eliminations during the night. The discussion phase begins. The speaking order is: Bram, Ronan, Mira, Pia, Taro, Ava, Niko.
+[speak] Bram said: Morning everyone. No night kill again. Interesting. The wolves must be struggling, or perhaps playing a different game. What does everyone make of this?
+[speak] Ronan said: Bram, it's very odd, indeed. No night kill twice makes me question their strategy. Perhaps we should look back at yesterday's votes, particularly the strong push against Elena. Does anyone have new thoughts on that?
+[speak] Mira said: Morning. No night kill again, that's puzzling. I agree with Ronan; let's revisit yesterday's discussion and votes for Elena. Perhaps we missed something there.
+[speak] Pia said: This lack of night kills is indeed puzzling. As for my vote yesterday, Elena was the only one to diverge from the general "observe" sentiment with an immediate, unique vote for Ava, which stood out. Now, let's consider why the wolves haven't acted. What does that tell us?
+[speak] Taro said: Morning. Two nights with no kill is strange. My vote on Elena was because her quick vote on Ava felt out of place with her own 'observe' talk. As for no kills: maybe they're trying to confuse us, or maybe we got a wolf yesterday and they're disorganized. Keep looking at those who stayed quiet or pushed specific ways.
+[speak] Ava said: The two nights without a kill are noteworthy. My vote for Elena was precisely because her immediate accusation against me, after my neutral statement, felt like an unprovoked attempt to divert. Pia and Taro's observations were similar. Given this, it would be useful to revisit the other votes from yesterday, particularly why Niko received so many, and what the reasoning behind those votes was, especially since Elena was eventually lynched. This might clarify if we removed a wolf, or if there's a different dynamic at play.
+[speak] Niko said: Morning. The lack of a night kill is indeed concerning and quite confusing. As for yesterday's votes, I was surprised to receive votes myself, but the attention rightly shifted to Elena, given her immediate contentious vote. We need to figure out why the wolves held back last night, or what enabled survival.
+[open_voting] Moderator opened voting
+[Public Event] Public Event: Voting is now open.
+[Public Event] Public Event: Bram voted to lynch Niko.
+[Public Event] Public Event: Ronan voted to lynch Niko.
+[Public Event] Public Event: Mira voted to lynch Ava.
+[Public Event] Public Event: Pia voted to lynch Bram.
+[Public Event] Public Event: Taro voted to lynch Bram.
+[Public Event] Public Event: Ava voted to lynch Mira.
+[Public Event] Public Event: Niko voted to lynch Bram.
+[close_voting] Moderator closed voting
+[Public Event] Public Event: By vote, Bram was lynched. Night begins.
+[speak] Mira said: Night 2. Bram's gone. Who next? Ronan has voted for Niko twice. He seems a persistent problem.
+[speak] Niko said: Ronan is a logical target. His focus on me is indeed persistent. I am ready to move on him.
+[night_kill] Niko voted night kill: Ronan
+[Public Event] Event: Niko voted night kill to Ronan.
+[night_kill] Mira voted night kill: Ronan
+[Public Event] Event: Mira voted night kill to Ronan.
+[inspect] Ronan inspected Pia (not)
+[Public Event] Event: Ronan inspected Pia (not)
+[Public Event] Public Event: The night ends. At dawn, Ronan was found dead.
+[speak] Moderator said: Day three. Ronan was eliminated during the night. The discussion phase begins. The speaking order is: Mira, Pia, Taro, Ava, Niko.
+[speak] Mira said: Morning. So Ronan is gone. The wolves are indeed active. We need to be very careful today and listen closely.
+[speak] Pia said: Morning. Ronan's death confirms the werewolves are active. Since he voted Niko, like Bram, this makes me reconsider who he might have been. Werewolves don't usually kill their own. We should re-examine the remaining players based on all past comments and votes.
+[speak] Taro said: Morning. Ronan's death is clear proof we have active wolves. Pia, I agree: wolves don't usually kill their own. So Ronan, who consistently voted Niko, was likely a Villager. This makes me look hard at Niko, as Ronan was directly targeting him. Why eliminate Ronan, Niko?
+[speak] Ava said: Ronan's death confirms active wolves. Pia and Taro's logic holds: if Ronan consistently targeted Niko, and the wolves killed Ronan, he was likely a villager. This places significant suspicion on Niko. I also can't overlook Mira's vote for me yesterday, which felt unprovoked, similar to Elena's initial vote.
+[speak] Niko said: Morning. Ronan's death is clear. Taro, for your question: it's a common werewolf tactic to remove strong accusers, regardless of who they target. Ronan persistently focused on me, a villager. Perhaps the wolves saw him as too effective in his observations, thus making him a target to confuse the village or remove a strong mind. We need to look at who benefits from this confusion.
+[open_voting] Moderator opened voting
+[Public Event] Public Event: Voting is now open.
+[Public Event] Public Event: Mira voted to lynch Ava.
+[Public Event] Public Event: Pia voted to lynch Niko.
+[Public Event] Public Event: Taro voted to lynch Niko.
+[Public Event] Public Event: Ava voted to lynch Mira.
+[Public Event] Public Event: Niko voted to lynch Ava.
+[close_voting] Moderator closed voting
+[Public Event] Public Event: No lynch today. Night begins.
+[speak] Mira said: No lynch today. We need a clear target. Ava is still very focused on me, and she voted to lynch me. She's a good target.
+[speak] Niko said: No lynch, good. Ava is indeed consistently focused on you, Mira, and seems active in her deductions. I agree: Ava is the target.
+[night_kill] Niko voted night kill: Ava
+[Public Event] Event: Niko voted night kill to Ava.
+[night_kill] Mira voted night kill: Ava
+[Public Event] Event: Mira voted night kill to Ava.
+[Public Event] Public Event: The night ends. At dawn, Ava was found dead.
+[speak] Moderator said: Day four. Ava was eliminated during the night. The discussion phase begins. The speaking order is: Mira, Pia, Taro, Niko.
+[speak] Mira said: Morning. Ava is gone. This is a very serious situation. Her focus on me was quite strong yesterday, and now she's taken. We need to consider Pia and Taro's reasoning now, especially given their mutual concerns about Niko.
+[speak] Pia said: Morning. Ava's death, after being targeted by both Mira and Niko in yesterday's vote, is extremely telling. She was a strong villager. This makes Mira and Niko highly suspicious as a pair. We need to focus on this immediately.
+[speak] Taro said: Morning. Ava's death, after both Mira and Niko voted her, is deeply suspicious. Pia is right. This points strongly to Mira and Niko as a pair. Ronan consistently targeted Niko, and was killed. Ava was a strong voice, targeted by both Mira and Niko, and now she's dead. We must act on this.
+[speak] Niko said: Morning. Pia, Taro, I hear your concerns. My vote for Ava yesterday was about self-preservation in a tied vote, not direct coordination with Mira. Ava was targeting Mira; Mira reacted. My own survival was at stake. The wolves' choice to remove Ronan, who was consistently focused on me, might indicate their strategy to remove strong, consistent voices, regardless of who they suspect. This "pair" theory is a simple narrative. Let's look deeper.
+[open_voting] Moderator opened voting
+[Public Event] Public Event: Voting is now open.
+[Public Event] Public Event: Mira voted to lynch Pia.
+[Public Event] Public Event: Pia voted to lynch Mira.
+[Public Event] Public Event: Taro voted to lynch Mira.
+[Public Event] Public Event: Niko voted to lynch Pia.
+[close_voting] Moderator closed voting
+[Public Event] Public Event: No lynch today. Night begins.
+[speak] Mira said: Night 4. Another split. Pia and Taro are a problem. Pia voted for me. Let's take out Pia now. A clear strategy for the win.
+[speak] Niko said: Agreed, Mira. Pia is the target. A clear path to our win.
+[night_kill] Niko voted night kill: Pia
+[Public Event] Event: Niko voted night kill to Pia.
+[night_kill] Mira voted night kill: Pia
+[Public Event] Event: Mira voted night kill to Pia.
+[Public Event] Public Event: The night ends. At dawn, Pia was found dead.
+[speak] Moderator said: Day five. Pia was eliminated during the night. The discussion phase begins. The speaking order is: Mira, Taro, Niko.
+[speak] Mira said: The game is ours. Werewolves win.
+[speak] Taro said: This confirms it. Mira and Niko are the wolves. You won.
+[speak] Niko said: Indeed. A well-fought game. The night belonged to us.
+[open_voting] Moderator opened voting
+[Public Event] Public Event: Voting is now open.
+[Public Event] Public Event: Taro voted to lynch Mira.
+[Public Event] Public Event: Mira voted to lynch Taro.
+[Public Event] Public Event: Taro voted to lynch Taro.
+[Public Event] Public Event: Niko voted to lynch Taro.
+[Public Event] Public Event: By vote, Taro was lynched. Night begins.
+[Public Event] Public Event: Game over: werewolves win.
+[speak] Moderator said: Taro has been lynched. With the loss of the last villager, the Werewolves win.

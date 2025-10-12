@@ -1,0 +1,81 @@
+Please help me design a website frontend and backend. This is a 'Social Simulation Platform Based Large Langugage Models' website.
+The core simulation algorithm is already implemented in socialsim4/core. We are now making use of this, add backend, database, frontend to it, to turn it from a single module to a web platform that multiple users can use.
+The old code in socialsim4/backend and socialsim4/frontend should be deprecated and purged. We should implement a brand new one. Dont refer to them, dont read them.
+
+A typical intercation of a user should be:
+
+1. Open the landing page.
+2. Login or Register.
+    - When registering, user should provide these information:
+        - Organiazation
+        - Email
+        - Username
+        - Full name 
+        - Phone number
+        - Password
+        - And email verification is needed.
+    - User is able to reset his password by email.
+3. Click 'new simulation' or 'resume simulation'.
+
+If he clicks 'new simulation':
+
+4. Select simulation scenes. The user should be able to select a specific scene from a range of provided scenes.
+5. Configure the simulation scenes. Each scene has its specific configurations.
+    - For simple chat scene: should provide a news for agents to discuss on.
+    - For legislative council scene: should provide a draft for council agents to discuss on.
+    - For werewolf scene: nothing.
+    - For landlord scene: should set the number of decks.
+5. Configure the agents. 
+    - The user can add, remove or edit agents in this simulation.
+    - User can edit the name/profile/properties/action space of each agent.
+    - As well as many other properties.
+6. Start the simulation.
+
+Notice that user should be able to go to a previous step to modify the configurations.
+
+
+If he clicks 'resume simulation':
+1. Jump to 'saved simulations' page. On that page he should have a list of saved simulations to resume.
+2. Select one of the saved simulations to continue. Each simulation should have auto-generated name: Simulation #ABCD, where ABCD are random hex values.
+3. He can also copy an existing saved simulation to another new one.
+
+Inside the simulation interaction page, this page is actually migrated from socialsim4/devui/frontend. This page has 3 columns, left, right and middle.
+    - Left: Simulation tree.
+    - Middle: Simulation Display (Events), or other display ( there may be a map for the village scene, but we dont implement that for now)
+    - Right: Agents, there states and contexts.
+    - In addition, we should also add a 'save' button for user to save this simulation.
+
+The user should be able to manage and test connectivity of his own large language providers in his user page.
+
+I need you to help me design: 
+Which pages should the whole website have? Which functionalities should each page have? How to provide the best, most friendly and fluent user experience? Consider all interaction paths of the user.
+
+
+From the perspective of frontend apis, there may be these apis needed:
+
+auth/login
+auth/register
+/me
+list scenes
+list simulations
+start simulation
+resume simulation
+get/set providers
+test the connectivity of a specific provider ( and return error message if possible ) ( should verify if model name is in provided models)
+
+and a bunch of api used for interacting with a running simulation. Refer to devui for this part. But, this now should be user and simulation specific.
+
+From the perspective of the backend, we should solve these issues:
+
+How to store the information of each user? how to store each saved simulation? How to manage the connectivity of the websocket of running users?
+And i think there should be more problems.
+
+
+Also, some configuration of the backend and frontend code should be programmer friendly. For example we can set these things:
+frontend base url, port 
+backend base url, or port
+backend database connection 
+and some other settings
+
+through environment vairables.
+

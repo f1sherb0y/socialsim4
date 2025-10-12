@@ -1,0 +1,141 @@
+[Public Event] Public Event: New game: Dou Dizhu (4 players). Call/rob bidding, doubling stage, full combos.
+[Public Event] Public Event: New deal. Call the landlord begins.
+[Public Event] Public Event: Players: Alice, Bob, Carol, Dave
+[call_landlord] Alice called landlord
+[Public Event] Public Event: Alice called the landlord.
+[pass] Bob passed rob
+[Public Event] Public Event: Bob did not rob.
+[rob_landlord] Carol robbed landlord
+[Public Event] Public Event: Carol robbed the landlord. Multiplier x2.
+[pass] Dave passed rob
+[Public Event] Public Event: Dave did not rob.
+[Public Event] Public Event: Landlord is Carol. Bottom cards: 2 9
+[no_double] Dave declined doubling
+[Public Event] Public Event: Dave declined to double.
+[double] Alice doubled
+[Public Event] Public Event: Alice doubled. Multiplier x2.
+[no_double] Bob declined doubling
+[Public Event] Public Event: Bob declined to double.
+[double] Carol doubled
+[Public Event] Public Event: Carol doubled. Multiplier x2.
+[Public Event] Public Event: Doubling finished. Game starts.
+[play_cards] Carol played: A A A J J (triple_pair), remaining: 4 5 6 7 9 Q Q K 2 2
+[Public Event] Public Event: Carol played: A A A J J (triple_pair).
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[Public Event] Public Event: Trick ends. Carol leads next.
+[play_cards] Carol played: Q Q (pair), remaining: 4 5 6 7 9 K 2 2
+[Public Event] Public Event: Carol played: Q Q (pair).
+[play_cards] Dave tried: J J -> not_beating | remaining: 3 6 7 7 8 8 8 10 10 J J K 2
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[Public Event] Public Event: Trick ends. Carol leads next.
+[play_cards] Carol played: 4 (single), remaining: 5 6 7 9 K 2 2
+[Public Event] Public Event: Carol played: 4 (single).
+[play_cards] Dave played: K (single), remaining: 3 6 7 7 8 8 8 10 10 J J 2
+[Public Event] Public Event: Dave played: K (single).
+[play_cards] Alice played: 2 (single), remaining: 3 3 3 4 4 6 6 7 9 K SJ BJ
+[Public Event] Public Event: Alice played: 2 (single).
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[Public Event] Public Event: Trick ends. Alice leads next.
+[play_cards] Alice played: 3 3 3 4 (triple_single), remaining: 4 6 6 7 9 K SJ BJ
+[Public Event] Public Event: Alice played: 3 3 3 4 (triple_single).
+[play_cards] Bob played: 5 5 5 4 (triple_single), remaining: 8 9 9 10 10 Q Q K A
+[Public Event] Public Event: Bob played: 5 5 5 4 (triple_single).
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[play_cards] Dave played: 8 8 8 3 (triple_single), remaining: 6 7 7 10 10 J J 2
+[Public Event] Public Event: Dave played: 8 8 8 3 (triple_single).
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[Public Event] Public Event: Trick ends. Dave leads next.
+[play_cards] Dave played: J J (pair), remaining: 6 7 7 10 10 2
+[Public Event] Public Event: Dave played: J J (pair).
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[play_cards] Carol played: 2 2 (pair), remaining: 5 6 7 9 K
+[Public Event] Public Event: Carol played: 2 2 (pair).
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[Public Event] Public Event: Trick ends. Carol leads next.
+[play_cards] Carol played: 5 (single), remaining: 6 7 9 K
+[Public Event] Public Event: Carol played: 5 (single).
+[play_cards] Dave played: 6 (single), remaining: 7 7 10 10 2
+[Public Event] Public Event: Dave played: 6 (single).
+[play_cards] Alice played: K (single), remaining: 4 6 6 7 9 SJ BJ
+[Public Event] Public Event: Alice played: K (single).
+[play_cards] Bob played: A (single), remaining: 8 9 9 10 10 Q Q K
+[Public Event] Public Event: Bob played: A (single).
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[Public Event] Public Event: Trick ends. Bob leads next.
+[play_cards] Bob played: 9 9 (pair), remaining: 8 10 10 Q Q K
+[Public Event] Public Event: Bob played: 9 9 (pair).
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[play_cards] Dave played: 10 10 (pair), remaining: 7 7 2
+[Public Event] Public Event: Dave played: 10 10 (pair).
+[pass] Alice passed
+[Public Event] Public Event: Alice passed.
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[Public Event] Public Event: Trick ends. Dave leads next.
+[play_cards] Dave played: 7 7 (pair), remaining: 2
+[Public Event] Public Event: Dave played: 7 7 (pair).
+[play_cards] Alice played: SJ BJ (rocket), remaining: 4 6 6 7 9
+[Public Event] Public Event: Alice played: SJ BJ (rocket).
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[play_cards] Dave tried: 2 -> not_beating | remaining: 2
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[Public Event] Public Event: Trick ends. Alice leads next.
+[play_cards] Alice played: 6 6 (pair), remaining: 4 7 9
+[Public Event] Public Event: Alice played: 6 6 (pair).
+[pass] Bob passed
+[Public Event] Public Event: Bob passed.
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[pass] Dave passed
+[Public Event] Public Event: Dave passed.
+[Public Event] Public Event: Trick ends. Alice leads next.
+[play_cards] Alice played: 9 (single), remaining: 4 7
+[Public Event] Public Event: Alice played: 9 (single).
+[play_cards] Bob played: K (single), remaining: 8 10 10 Q Q
+[Public Event] Public Event: Bob played: K (single).
+[pass] Carol passed
+[Public Event] Public Event: Carol passed.
+[play_cards] Dave played: 2 (single), remaining: (empty) [WIN]
+[Public Event] Public Event: Dave played: 2 (single).
+[Public Event] Public Event: Game over. Winner: farmers (x16).
