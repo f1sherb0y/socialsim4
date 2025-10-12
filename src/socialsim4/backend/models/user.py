@@ -6,6 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base import Base
 from ..db.mixins import TimestampMixin
+from .simulation import Simulation
+from .token import VerificationToken
 
 
 class User(TimestampMixin, Base):
@@ -22,22 +24,14 @@ class User(TimestampMixin, Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    providers: Mapped[list["ProviderConfig"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
-    simulations: Mapped[list["Simulation"]] = relationship(
-        back_populates="owner", cascade="all, delete-orphan"
-    )
-    verification_tokens: Mapped[list["VerificationToken"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
+    providers: Mapped[list["ProviderConfig"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    simulations: Mapped[list["Simulation"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    verification_tokens: Mapped[list["VerificationToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class ProviderConfig(TimestampMixin, Base):
     __tablename__ = "provider_configs"
-    __table_args__ = (
-        UniqueConstraint("user_id", "name", name="uq_provider_user_name"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_provider_user_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)

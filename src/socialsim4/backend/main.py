@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
-from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from .api.routes import router as api_router
-from .core.database import engine
 from .core.config import get_settings
+from .core.database import engine
 from .db.base import Base
 
 
@@ -15,23 +15,6 @@ async def _prepare_database() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # Ensure required timestamp columns exist on core tables (idempotent for Postgres)
-        await conn.execute(text("""
-            ALTER TABLE IF EXISTS users
-            ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        """))
-        await conn.execute(text("""
-            ALTER TABLE IF EXISTS users
-            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        """))
-        await conn.execute(text("""
-            ALTER TABLE IF EXISTS simulations
-            ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        """))
-        await conn.execute(text("""
-            ALTER TABLE IF EXISTS simulations
-            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        """))
 
 
 def create_app() -> FastAPI:
