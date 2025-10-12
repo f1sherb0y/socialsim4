@@ -13,6 +13,11 @@ class SimTree:
         self.root: Optional[int] = None
         self._seq: int = 0
         self._node_subs: Dict[int, List[object]] = {}
+        # Tree-level broadcast sink (wired by backend runtime to WS subscribers)
+        self._tree_broadcast = lambda event: None
+
+    def set_tree_broadcast(self, fn) -> None:
+        self._tree_broadcast = fn
 
     @classmethod
     def new(
@@ -78,11 +83,13 @@ class SimTree:
 
     def _attach_log_handler(self, node_id: int, sim: Simulator, logs: List[dict]) -> None:
         def _lh(kind, data):
-            entry = {"type": kind, "data": data}
+            entry = {"type": kind, "data": data, "node": int(node_id)}
             logs.append(entry)
             subs = self._node_subs.get(node_id) or []
             for q in subs:
                 q.put_nowait(entry)
+            # Also fan out to tree-level broadcast (e.g., WS attached to the tree)
+            self._tree_broadcast(entry)
 
         sim.log_event = _lh
         for a in sim.agents.values():

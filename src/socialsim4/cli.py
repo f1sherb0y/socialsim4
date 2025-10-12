@@ -93,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     scene_choices = sorted(SCENES.keys())
     sim_parser = subparsers.add_parser("run-sim", help="Run a scripted simulation scenario")
-    sim_parser.add_argument("--scene", choices=scene_choices, default="simple_chat", help="Scenario to execute")
+    sim_parser.add_argument("--scene", choices=scene_choices, default="simple_chat_scene", help="Scenario to execute")
     sim_parser.add_argument("--turns", type=int, help="Maximum turns to execute (defaults per scene)")
     sim_parser.add_argument("--dialect", choices=["openai", "gemini", "mock"], help="LLM dialect to use")
     sim_parser.add_argument("--api-key", help="API key for the selected LLM provider")

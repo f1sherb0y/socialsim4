@@ -640,7 +640,7 @@ class SceneSpec(NamedTuple):
 
 
 SCENES: Dict[str, SceneSpec] = {
-    "simple_chat": SceneSpec(
+    "simple_chat_scene": SceneSpec(
         builder=lambda clients, logger=console_logger: build_simple_chat_sim(clients, event_logger=logger),
         default_turns=50,
     ),
@@ -648,19 +648,19 @@ SCENES: Dict[str, SceneSpec] = {
         builder=lambda clients, logger=console_logger: build_simple_chat_sim_chinese(clients, event_logger=logger),
         default_turns=50,
     ),
-    "council": SceneSpec(
+    "council_scene": SceneSpec(
         builder=lambda clients, logger=console_logger: build_council_sim(clients, event_logger=logger),
         default_turns=120,
     ),
-    "village": SceneSpec(
+    "village_scene": SceneSpec(
         builder=lambda clients, logger=console_logger: build_village_sim(clients, event_logger=logger),
         default_turns=40,
     ),
-    "landlord": SceneSpec(
+    "landlord_scene": SceneSpec(
         builder=lambda clients, logger=console_logger: build_landlord_sim(clients, event_logger=logger),
         default_turns=200,
     ),
-    "werewolf": SceneSpec(
+    "werewolf_scene": SceneSpec(
         builder=lambda clients, logger=console_logger: build_werewolf_sim(clients, event_logger=logger),
         default_turns=400,
     ),
