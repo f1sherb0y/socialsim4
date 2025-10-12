@@ -5,3 +5,8 @@ API_PREFIX = os.environ.get("API_PREFIX", "")
 LISTEN_ADDRESS = os.environ.get("LISTEN_ADDRESS", "0.0.0.0")
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./socialsim.db")
 MAX_REPEAT = int(os.environ.get("MAX_REPEAT", "3"))
+EMOTION_ENABLED = os.environ.get("EMOTION_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "t",
+)

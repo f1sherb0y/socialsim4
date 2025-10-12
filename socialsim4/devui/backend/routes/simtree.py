@@ -326,6 +326,7 @@ def node_state(tree_id: int, node_id: int):
             {
                 "name": name,
                 "role": ag.properties.get("role"),
+                "emotion": ag.emotion,
                 "plan_state": ag.plan_state,
                 "short_memory": ag.short_memory.get_all(),
             }
@@ -357,6 +358,7 @@ def sim_state(tree_id: int, sim_id: int):
             {
                 "name": name,
                 "role": ag.properties.get("role"),
+                "emotion": ag.emotion,
                 "plan_state": ag.plan_state,
                 "short_memory": ag.short_memory.get_all(),
             }

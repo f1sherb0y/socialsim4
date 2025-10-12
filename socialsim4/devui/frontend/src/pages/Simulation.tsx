@@ -35,7 +35,7 @@ export default function Simulation() {
       // Build a single timeline frame compatible with renderer
       const frame = {
         events_delta: logs || [],
-        agents: st.agents.map((a: any) => ({ name: a.name, role: a.role, plan_state: a.plan_state, context_delta: a.short_memory })),
+        agents: st.agents.map((a: any) => ({ name: a.name, role: a.role, emotion: a.emotion, plan_state: a.plan_state, context_delta: a.short_memory })),
         turns: st.turns,
       }
       setTimeline([frame])
@@ -87,6 +87,14 @@ export default function Simulation() {
     }
     return null
   }
+
+  const agentEmotion = useMemo(() => {
+    if (!selected) return ''
+    const last = timeline.length ? (timeline[timeline.length - 1] as any) : null
+    if (!last) return ''
+    const ag = ((last.agents as any[]) || []).find((a) => a.name === selected)
+    return ag?.emotion || ''
+  }, [timeline, selected])
 
   const agentDelta = useMemo(() => {
     if (!selected) return [] as { role: string; content: string }[]
@@ -153,6 +161,7 @@ export default function Simulation() {
             </label>
           </div>
           <CompactSelect options={names} value={selected} onChange={setSelected} />
+          {agentEmotion && <div className="card-pad" style={{ marginBottom: 8 }}><b>Emotion:</b> {agentEmotion}</div>}
           <div ref={agentRef} className="card card-pad scroll text-prewrap text-break" style={{ lineHeight: 1.55, flex: 1 }}>
             {agentDelta.length ? (
               <ul className="list-compact">

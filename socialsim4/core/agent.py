@@ -2,7 +2,7 @@ import re
 import json
 import xml.etree.ElementTree as ET
 
-from socialsim4.api.config import MAX_REPEAT
+from socialsim4.api.config import MAX_REPEAT, EMOTION_ENABLED
 from socialsim4.core.memory import ShortTermMemory
 
 # 假设的最大上下文字符长度（可调整，根据模型实际上下文窗口）
@@ -36,6 +36,7 @@ class Agent:
         self.max_repeat = max_repeat
         self.properties = kwargs
         self.log_event = event_handler
+        self.emotion = kwargs.get("emotion", "neutral")
 
         # Lightweight, scene-agnostic plan state persisted across turns
         self.plan_state = {
@@ -107,9 +108,13 @@ Internal Notes:
             getattr(action, "INSTRUCTION", "") for action in self.action_space
         )
 
+        emotion_prompt = (
+            f"Your current emotion is {self.emotion}." if EMOTION_ENABLED else ""
+        )
         base = f"""
 You are {self.name}.
 You speak in a {self.style} style.
+{emotion_prompt}
 
 {self.user_profile}
 
@@ -196,6 +201,11 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 //   <Strategy>...</Strategy>
 //   <Notes>...</Notes>
 // Use numbered lists for Goals and Milestones.
+
+--- Emotion Update ---
+// Optional. Include ONLY if you are changing your emotion.
+// Output either "no change"
+// or your new emotion (e.g., happy, sad, angry).
 """
 
     def call_llm(self, clients, messages, client_name="chat"):
@@ -247,7 +257,12 @@ History:
             re.DOTALL,
         )
         plan_update_match = re.search(
-            r"--- Plan Update ---\s*(.*)$", full_response, re.DOTALL
+            r"--- Plan Update ---\s*(.*?)(?:\n--- Emotion Update ---|\Z)",
+            full_response,
+            re.DOTALL,
+        )
+        emotion_update_match = re.search(
+            r"--- Emotion Update ---\s*(.*)$", full_response, re.DOTALL
         )
 
         thoughts = thoughts_match.group(1).strip() if thoughts_match else ""
@@ -256,8 +271,22 @@ History:
         plan_update_block = (
             plan_update_match.group(1).strip() if plan_update_match else ""
         )
+        emotion_update_block = (
+            emotion_update_match.group(1).strip() if emotion_update_match else ""
+        )
 
-        return thoughts, plan, action, plan_update_block
+        return thoughts, plan, action, plan_update_block, emotion_update_block
+
+    def _parse_emotion_update(self, block):
+        """Parse Emotion Update block.
+        Returns an emotion string or None (for 'no change').
+        """
+        if not block:
+            return None
+        text = block.strip()
+        if text.lower().startswith("no change"):
+            return None
+        return text
 
     def _parse_plan_update(self, block):
         """Parse Plan Update block in strict tag format.
@@ -461,14 +490,21 @@ History:
         for i in range(attempts):
             llm_output = self.call_llm(clients, ctx)
             # print(f"{self.name} LLM output:\n{llm_output}\n{'-' * 40}")
-            thoughts, plan, action_block, plan_update_block = self._parse_full_response(
-                llm_output
-            )
+            (
+                thoughts,
+                plan,
+                action_block,
+                plan_update_block,
+                emotion_update_block,
+            ) = self._parse_full_response(llm_output)
             try:
                 action_data = self._parse_actions(action_block) or self._parse_actions(
                     llm_output
                 )
                 plan_update = self._parse_plan_update(plan_update_block)
+                emotion_update = self._parse_emotion_update(emotion_update_block)
+                if emotion_update:
+                    self.emotion = emotion_update
                 last_exc = None
                 break
             except Exception as e:
@@ -486,7 +522,10 @@ History:
 
         self.short_memory.append("assistant", llm_output)
         if self.log_event:
-            self.log_event("agent_ctx_delta", {"agent": self.name, "role": "assistant", "content": llm_output})
+            self.log_event(
+                "agent_ctx_delta",
+                {"agent": self.name, "role": "assistant", "content": llm_output},
+            )
         self.last_history_length = len(self.short_memory)
 
         return action_data
@@ -500,7 +539,10 @@ History:
         """
         self.short_memory.append("user", content)
         if self.log_event:
-            self.log_event("agent_ctx_delta", {"agent": self.name, "role": "user", "content": content})
+            self.log_event(
+                "agent_ctx_delta",
+                {"agent": self.name, "role": "user", "content": content},
+            )
 
     def append_env_message(self, content):
         """Deprecated: use add_env_feedback(). Kept for compatibility."""
@@ -527,6 +569,7 @@ History:
             "max_repeat": self.max_repeat,
             "properties": props,
             "plan_state": plan,
+            "emotion": self.emotion,
         }
 
     @classmethod
@@ -548,7 +591,10 @@ History:
             event_handler=event_handler,
             **props,
         )
-        agent.short_memory.history = json.loads(json.dumps(data.get("short_memory", [])))
+        agent.emotion = data.get("emotion", "neutral")
+        agent.short_memory.history = json.loads(
+            json.dumps(data.get("short_memory", []))
+        )
         agent.last_history_length = data.get("last_history_length", 0)
         agent.plan_state = json.loads(
             json.dumps(
