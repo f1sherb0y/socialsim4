@@ -167,8 +167,8 @@ export function SettingsPage() {
             </div>
           </label>
           {createProvider.error && <div style={{ color: "#f87171" }}>Failed to add provider.</div>}
-          <button type="submit" className="button" disabled={createProvider.isLoading}>
-            {createProvider.isLoading ? "Saving…" : "Save provider"}
+          <button type="submit" className="button" disabled={createProvider.isPending}>
+            {createProvider.isPending ? "Saving…" : "Save provider"}
           </button>
         </form>
 
@@ -191,9 +191,9 @@ export function SettingsPage() {
                   className="button"
                   style={{ width: "fit-content" }}
                   onClick={() => testProvider.mutate(provider.id)}
-                  disabled={testProvider.isLoading}
+                  disabled={testProvider.isPending}
                 >
-                  {testProvider.isLoading ? "Testing…" : "Test connectivity"}
+                  {testProvider.isPending ? "Testing…" : "Test connectivity"}
                 </button>
               </div>
             ))}

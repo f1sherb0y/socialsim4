@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -14,10 +16,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 settings = get_settings()
 
 
-async def get_db_session() -> AsyncSession:
-    async for session in get_session():
-        return session
-    raise RuntimeError("Session generator exhausted")
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    async with get_session() as session:
+        yield session
 
 
 def get_email_sender() -> EmailSender:

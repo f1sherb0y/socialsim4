@@ -9,6 +9,15 @@ This document summarizes the coding requirements, conventions, and the project�
 - Scenes define environment, constraints, and action semantics. Agents emit actions; scenes parse and execute them; simulator orchestrates turns.
 - Ordering decides who acts next. Different policies lead to different social dynamics.
 
+## Platform Architecture Snapshot (Q4 2024)
+
+- **Backend**: FastAPI app in `src/socialsim4/backend`, async SQLAlchemy over PostgreSQL, JWT auth with optional email verification, bcrypt hashing, and Pydantic settings wired to `.env`.
+- **Data model**: `Simulation`, `SimulationSnapshot`, `SimTreeNode`, `SimulationLog`, `ProviderConfig`, `VerificationToken`, `RefreshToken`, `User` with JSONB blobs for scene/agent state.
+- **Runtime surfaces**: REST under `/api` for auth, providers, scenes, simulations; CLI entry point `socialsim4` for `serve` and `run-sim`.
+- **Frontend**: Vite + React + TypeScript + Zustand in `/frontend`, authenticated routes for dashboard, wizard, saved simulations, settings, and workspace; API access via Axios client with token refresh.
+- **Workspace**: ReactFlow graph with dagre layout and WebSocket streaming mirroring DevUI Studio; toast notifications and per-agent short-memory pane.
+- **Configuration**: `.env` controls DB URL, SMTP, JWT signing key, allowed origins, and LLM defaults consumed by both CLI and backend settings.
+
 ## Non‑Negotiable Coding Rules (Prototype Stage)
 
 - Eliminate defensive coding: no try/except, no isinstance, no hasattr, no dynamic fallback branches.
@@ -153,17 +162,15 @@ This document summarizes the coding requirements, conventions, and the project�
 - Ordering names are persisted; state is deep-copied via `serialize()`/`deserialize()`.
 - `controlled` ordering is restored with a scene-provided next function via `Scene.get_controlled_next(sim)`. Scenes that rely on controlled scheduling should implement this to ensure identical behavior after cloning.
 
-## New: DevUI (prototype)
+## Workspace & SimTree Integration
 
-- Location: `socialsim4/devui`.
-- Backend: FastAPI, in‑memory stores (no persistence), strict request models.
-  - Simulation routes: create/run/snapshot (WS `/devui/sim/{id}/events`).
-  - SimTree routes: create/graph/summaries, advance/branch/delete, parallel advance, `spawn_sim` from a tree node, WS `/devui/simtree/{id}/events`.
-  - SimTree WS payload includes `running` node ids for UI animation.
-- Frontend: Vite + React + TypeScript.
-  - Simulation panel: per‑event WS stream, events feed, agent context deltas with tail‑growth handling, stick‑to‑bottom option.
-  - SimTree panel: React Flow + dagre auto‑layout; color‑coded edges; running nodes pulse; ops panel for advance/branch/multi/chain/delete; deep‑link to `/sim/:treeId?node=...`.
-- Conventions: keep inputs strict, no try/except in core paths; fail fast.
+- DevUI workspace mechanics are being migrated into the main platform: React workspace page consumes REST + WebSocket endpoints for tree graphs, event streams, and agent deltas.
+- Server-side SimTree orchestration reuses `socialsim4.core.simtree`, cloning serialized simulators per node; HTTP routes wrap tree graph queries, advance/branch/multi/chain operations, and logs/state inspection.
+- WebSocket channels:
+  - Tree scope: `/devui/simtree/{tree_id}/events` emits `attached`, `run_start`, `run_finish`, `deleted` with running-node tracking.
+  - Node scope: `/devui/simtree/{tree_id}/sim/{node_id}/events` streams incremental deltas, especially `agent_ctx_delta` for short-term memory growth.
+- Clients must fetch baseline state via REST before subscribing to node-level streams; deltas apply in order to avoid re-fetching large payloads.
+- Node mutations are strict: attach happens before turns run, logs append immediately, delete cascades down the subtree; root deletion is blocked.
 
 ## Parser note
 

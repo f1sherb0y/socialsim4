@@ -1,10 +1,15 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class SimulationBase(BaseModel):
-    id: int
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={datetime: lambda v: v.isoformat() if v else None},
+    )
+
+    id: str
     name: str
     scene_type: str
     scene_config: dict
@@ -14,9 +19,10 @@ class SimulationBase(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+    @field_validator("id", mode="before")
+    @classmethod
+    def _stringify_id(cls, value: str | int) -> str:
+        return str(value)
 
 
 class SimulationCreate(BaseModel):

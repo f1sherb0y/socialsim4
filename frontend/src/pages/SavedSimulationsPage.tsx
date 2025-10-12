@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "../api/client";
 
 type Simulation = {
-  id: number;
+  id: string;
   name: string;
   status: string;
   created_at: string;
@@ -22,8 +22,8 @@ export function SavedSimulationsPage() {
   });
 
   const copySimulation = useMutation({
-    mutationFn: async (simulationId: number) => {
-      const response = await apiClient.post<Simulation>(`/simulations/${simulationId}/copy`);
+    mutationFn: async (simulationSlug: string) => {
+      const response = await apiClient.post<Simulation>(`/simulations/${simulationSlug}/copy`);
       return response.data;
     },
     onSuccess: (simulation) => {
@@ -33,11 +33,11 @@ export function SavedSimulationsPage() {
   });
 
   const resumeSimulation = useMutation({
-    mutationFn: async (simulationId: number) => {
-      await apiClient.post(`/simulations/${simulationId}/resume`);
+    mutationFn: async (simulationSlug: string) => {
+      await apiClient.post(`/simulations/${simulationSlug}/resume`);
     },
-    onSuccess: (_, simulationId) => {
-      navigate(`/simulations/${simulationId}`);
+    onSuccess: (_, simulationSlug) => {
+      navigate(`/simulations/${simulationSlug}`);
     },
   });
 
@@ -66,7 +66,7 @@ export function SavedSimulationsPage() {
                     className="button"
                     style={{ flex: 1 }}
                     onClick={() => resumeSimulation.mutate(simulation.id)}
-                    disabled={resumeSimulation.isLoading}
+                    disabled={resumeSimulation.isPending}
                   >
                     Resume
                   </button>
@@ -75,7 +75,7 @@ export function SavedSimulationsPage() {
                     className="button"
                     style={{ flex: 1, background: "rgba(148,163,184,0.2)", color: "#e2e8f0" }}
                     onClick={() => copySimulation.mutate(simulation.id)}
-                    disabled={copySimulation.isLoading}
+                    disabled={copySimulation.isPending}
                   >
                     Copy
                   </button>

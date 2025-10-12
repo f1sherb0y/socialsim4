@@ -8,7 +8,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { SavedSimulationsPage } from "./pages/SavedSimulationsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SimulationWizardPage } from "./pages/SimulationWizardPage";
-import { WorkspacePage } from "./pages/WorkspacePage";
+import { SimulationPage } from "./pages/SimulationPage";
 import { RequireAuth } from "./components/RequireAuth";
 
 export default function App() {
@@ -46,7 +46,7 @@ export default function App() {
           path="/simulations/:id"
           element={
             <RequireAuth>
-              <WorkspacePage />
+              <SimulationPage />
             </RequireAuth>
           }
         />

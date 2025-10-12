@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { apiClient } from "../api/client";
 
 type Simulation = {
-  id: number;
+  id: string;
   name: string;
   status: string;
   created_at: string;

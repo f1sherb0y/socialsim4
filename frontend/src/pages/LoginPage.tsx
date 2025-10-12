@@ -14,6 +14,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: { pathname?: string } } };
   const setSession = useAuthStore((state) => state.setSession);
+  const updateTokens = useAuthStore((state) => state.updateTokens);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,10 +29,13 @@ export function LoginPage() {
         email,
         password,
       });
+      const { access_token, refresh_token } = loginRes.data;
+      updateTokens(access_token, refresh_token);
+
       const meRes = await apiClient.get("/auth/me");
       setSession({
-        accessToken: loginRes.data.access_token,
-        refreshToken: loginRes.data.refresh_token,
+        accessToken: access_token,
+        refreshToken: refresh_token,
         user: meRes.data,
       });
       const redirectTo = location.state?.from?.pathname ?? "/dashboard";

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class TokenPair(BaseModel):
@@ -23,6 +23,13 @@ class RegisterRequest(BaseModel):
     phone_number: str
     password: str
 
+    @field_validator("password")
+    @classmethod
+    def _check_password_length(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("password must be at most 72 bytes when encoded as utf-8")
+        return value
+
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -31,6 +38,13 @@ class PasswordResetRequest(BaseModel):
 class PasswordResetConfirm(BaseModel):
     token: str
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def _check_reset_password_length(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("password must be at most 72 bytes when encoded as utf-8")
+        return value
 
 
 class EmailVerification(BaseModel):

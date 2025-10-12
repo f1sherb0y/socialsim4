@@ -37,7 +37,7 @@ export function SimulationWizardPage() {
         scene_config: sceneConfig,
         agent_config: { agents },
       });
-      return response.data as { id: number };
+      return response.data as { id: string };
     },
     onSuccess: (data) => {
       navigate(`/simulations/${data.id}`);
@@ -199,8 +199,8 @@ export function SimulationWizardPage() {
                   ))}
                 </ul>
               </div>
-              <button type="submit" className="button" disabled={createSimulation.isLoading}>
-                {createSimulation.isLoading ? "Creating…" : "Start simulation"}
+              <button type="submit" className="button" disabled={createSimulation.isPending}>
+                {createSimulation.isPending ? "Creating…" : "Start simulation"}
               </button>
               {createSimulation.error && <div style={{ color: "#f87171" }}>Failed to create simulation.</div>}
             </div>

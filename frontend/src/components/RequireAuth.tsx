@@ -12,16 +12,23 @@ export function RequireAuth({ children }: Props) {
   const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const checkSession = useAuthStore((state) => state.restoreSession);
+  const hasRestored = useAuthStore((state) => state.hasRestored);
 
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    if (!hasRestored) {
+      checkSession();
+    }
+  }, [checkSession, hasRestored]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (hasRestored && !isAuthenticated) {
       navigate("/login", { replace: true, state: { from: location } });
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [hasRestored, isAuthenticated, navigate, location]);
+
+  if (!hasRestored) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return null;

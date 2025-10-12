@@ -12,7 +12,7 @@ uvicorn = { extras = ["standard"], version = "^0.30.0" }
 sqlalchemy = "^2.0.23"
 psycopg = { extras = ["binary"], version = "^3.1.18" }
 alembic = "^1.13.1"
-passlib = { extras = ["bcrypt"], version = "^1.7.4" }
+bcrypt = "^5.0.0"
 python-jose = { extras = ["cryptography"], version = "^3.3.0" }
 pydantic = "^2.4.2"
 pydantic-settings = "^2.1.0"

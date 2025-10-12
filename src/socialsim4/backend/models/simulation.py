@@ -12,7 +12,7 @@ from .user import User
 class Simulation(TimestampMixin, Base):
     __tablename__ = "simulations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(128), index=True)
     scene_type: Mapped[str] = mapped_column(String(64))
@@ -38,8 +38,8 @@ class SimulationSnapshot(TimestampMixin, Base):
     __tablename__ = "simulation_snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    simulation_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("simulations.id", ondelete="CASCADE"), index=True
+    simulation_id: Mapped[str] = mapped_column(
+        String(16), ForeignKey("simulations.id", ondelete="CASCADE"), index=True
     )
     label: Mapped[str] = mapped_column(String(128))
     state: Mapped[dict] = mapped_column(JSONB)
@@ -53,8 +53,8 @@ class SimTreeNode(TimestampMixin, Base):
     __tablename__ = "sim_tree_nodes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    simulation_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("simulations.id", ondelete="CASCADE"), index=True
+    simulation_id: Mapped[str] = mapped_column(
+        String(16), ForeignKey("simulations.id", ondelete="CASCADE"), index=True
     )
     parent_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("sim_tree_nodes.id", ondelete="CASCADE"))
     depth: Mapped[int] = mapped_column(Integer)
@@ -72,8 +72,8 @@ class SimulationLog(TimestampMixin, Base):
     __tablename__ = "simulation_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    simulation_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("simulations.id", ondelete="CASCADE"), index=True
+    simulation_id: Mapped[str] = mapped_column(
+        String(16), ForeignKey("simulations.id", ondelete="CASCADE"), index=True
     )
     tree_node_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("sim_tree_nodes.id", ondelete="SET NULL"))
     sequence: Mapped[int] = mapped_column(Integer)
