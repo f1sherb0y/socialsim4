@@ -352,6 +352,107 @@ def build_simple_chat_sim_chinese() -> Simulator:
     return sim
 
 
+def build_emotional_conflict_sim() -> Simulator:
+    agents = [
+        Agent.deserialize(
+            {
+                "name": "Host",
+                "user_profile": (
+                    "You are the host of the emotional dialogue room. "
+                    "Your role is to maintain order, keep the conversation balanced, "
+                    "and help both sides express their true feelings and find understanding."
+                ),
+                "style": "calm, empathetic, and neutral",
+                "action_space": ["send_message", "yield"],
+                "initial_instruction": "",
+                "role_prompt": "",
+                "properties": {},
+            }
+        ),
+        Agent.deserialize(
+            {
+                "name": "Lily",
+                "user_profile": (
+                    "You are Lily, a straightforward and emotional person. "
+                    "You feel your partner Alex has been distant lately — always on the phone, not replying to your messages. "
+                    "You easily swing between anger, sadness, and a fragile hope that Alex still cares."
+                ),
+                "style": "emotional and expressive",
+                "action_space": [],
+                "initial_instruction": "",
+                "role_prompt": "",
+                "properties": {"emotion": "Anger"},
+            }
+        ),
+        Agent.deserialize(
+            {
+                "name": "Alex",
+                "user_profile": (
+                    "You are Alex, Lily’s partner. You are introverted and tend to avoid conflict. "
+                    "Recently you’ve been under work pressure, but you haven’t explained it clearly to Lily, causing misunderstandings. "
+                    "In the conversation, you may start defensive or cold, but gradually show regret and a wish to reconcile."
+                ),
+                "style": "reserved, rational, slightly defensive",
+                "action_space": [],
+                "initial_instruction": "",
+                "role_prompt": "",
+                "properties": {"emotion": "Sadness"},
+            }
+        ),
+    ]
+
+    scene = SimpleChatScene(
+        "room",
+        (
+            "Welcome to the Emotional Dialogue Room. "
+            "Today’s scenario: Lily and Alex are in conflict because of communication issues. "
+            "The host will try to help them express themselves and rebuild understanding."
+        ),
+    )
+
+    clients = make_clients()
+    sim = Simulator(
+        agents,
+        scene,
+        clients,
+        ordering=SequentialOrdering(),
+        event_handler=console_logger,
+    )
+
+    # Initial setup and emotional tone
+    sim.broadcast(PublicEvent("Participants: " + ", ".join([a.name for a in agents])))
+    sim.broadcast(
+        PublicEvent(
+            "Scene start: Lily feels Alex has become emotionally distant, while Alex thinks Lily is overreacting. "
+            "The host will guide them to express their emotions and seek resolution."
+        )
+    )
+
+    # Optional: Example initial dialogue for context
+    sim.broadcast(
+        PublicEvent(
+            "Lily: You barely talk to me anymore. I text you and you don't even reply! Do you even care?"
+        )
+    )
+    sim.broadcast(
+        PublicEvent(
+            "Alex: I'm just busy with work lately, Lily. You always think the worst of me."
+        )
+    )
+    sim.broadcast(
+        PublicEvent(
+            "Lily: It's not about work, it's about how you make me feel invisible!"
+        )
+    )
+    sim.broadcast(
+        PublicEvent(
+            "Host: It seems both of you are frustrated and hurt. Let's take a moment — what’s the feeling behind those words?"
+        )
+    )
+
+    return sim
+
+
 def run_simple_chat():
     print("=== SimpleChatScene ===")
     sim = build_simple_chat_sim()

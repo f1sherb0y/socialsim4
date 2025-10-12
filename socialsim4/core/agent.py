@@ -153,7 +153,7 @@ Initial instruction:
         return base
 
     def get_output_format(self):
-        return """
+        base_prompt = """
 Planning guidelines:
 - The Goals, Milestones, Plan, and Current Focus you author here are your inner behavioral plans, not scene-wide commitments. Use them to decide Actions;
 - Goals: stable end-states. Rarely change; name and describe them briefly.
@@ -201,12 +201,24 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 //   <Strategy>...</Strategy>
 //   <Notes>...</Notes>
 // Use numbered lists for Goals and Milestones.
-
---- Emotion Update ---
-// Optional. Include ONLY if you are changing your emotion.
-// Output either "no change"
-// or your new emotion (e.g., happy, sad, angry).
 """
+        if EMOTION_ENABLED:
+            emotion_rules = """
+--- Emotion Update ---
+// This section is mandatory.
+Emotion Update Rules:
+- Always output one emotion after each turn to represent your affective state.
+- Use Plutchik’s 8 primary emotions: Joy, Trust, Fear, Surprise, Sadness, Disgust, Anger, Anticipation.
+- Combine two if appropriate to form a Dyad emotion (e.g., Joy + Anticipation = Hope).
+- Determine emotion by analyzing:
+  - Progress toward goals or milestones (positive → Joy/Trust; negative → Sadness/Fear).
+  - Novelty or unexpected events (→ Surprise).
+  - Conflict or obstacles (→ Anger or Disgust).
+  - Anticipation of success or new opportunity (→ Anticipation).
+- Prefer continuity; avoid abrupt switches unless major events occur.
+"""
+            return base_prompt + emotion_rules
+        return base_prompt
 
     def call_llm(self, clients, messages, client_name="chat"):
         client = clients.get(client_name)
@@ -502,9 +514,10 @@ History:
                     llm_output
                 )
                 plan_update = self._parse_plan_update(plan_update_block)
-                emotion_update = self._parse_emotion_update(emotion_update_block)
-                if emotion_update:
-                    self.emotion = emotion_update
+                if EMOTION_ENABLED:
+                    emotion_update = self._parse_emotion_update(emotion_update_block)
+                    if emotion_update:
+                        self.emotion = emotion_update
                 last_exc = None
                 break
             except Exception as e:

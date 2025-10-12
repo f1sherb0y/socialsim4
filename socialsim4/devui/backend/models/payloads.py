@@ -11,6 +11,7 @@ class SimTreeCreatePayload(BaseModel):
         "landlord",
         "village",
         "simple_chat_chinese",
+        "emotional_conflict",
     ]
 
 

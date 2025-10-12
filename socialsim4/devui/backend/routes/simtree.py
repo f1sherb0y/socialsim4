@@ -25,6 +25,7 @@ from socialsim4.scripts.run_basic_scenes import (
     build_simple_chat_sim_chinese,
     build_village_sim,  # village not tested by default
     build_werewolf_sim,
+    build_emotional_conflict_sim,
 )
 
 router = APIRouter(tags=["simtree"])
@@ -45,6 +46,8 @@ def create_tree(payload: SimTreeCreatePayload):
         sim = build_landlord_sim()
     elif sc == "village":
         sim = build_village_sim()
+    elif sc == "emotional_conflict":
+        sim = build_emotional_conflict_sim()
     else:
         raise ValueError("Unknown scenario: " + str(sc))
 
