@@ -4,7 +4,12 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
-    plugins: [react()],
+    plugins: [
+      react({
+        // Disable Fast Refresh to avoid additional dev re-renders that could trigger duplicate requests
+        fastRefresh: false,
+      }),
+    ],
     define: {
       __APP_VERSION__: JSON.stringify(env.npm_package_version ?? "dev"),
     },
