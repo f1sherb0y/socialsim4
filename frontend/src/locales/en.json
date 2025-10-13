@@ -116,8 +116,11 @@
     "invalidId": "Invalid simulation ID.",
     "noEvents": "No events yet.",
     "noAgentMsgs": "No agent messages yet.",
+    "noAgents": "No agents",
+    "eventTag": "Event",
+    "actionTag": "Action",
+    "dealTag": "Deal",
     "status": "Status",
     "syncing": "Syncing…"
   }
 }
-

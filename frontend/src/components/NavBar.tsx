@@ -34,7 +34,7 @@ export function NavBar() {
           {mode === "dark" ? "🌙" : "☀️"}
         </button>
         <select
-          className="input small"
+          className="lang-select"
           value={i18n.language.startsWith('zh') ? 'zh' : 'en'}
           onChange={(e) => setLanguage(e.target.value as 'en' | 'zh')}
           style={{ width: 'auto' }}

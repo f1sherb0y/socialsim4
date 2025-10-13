@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 
 import en from './locales/en.json';
 import zh from './locales/zh.json';
+;(window as any).i18next = i18n;
 
 const STORAGE_KEY = 'socialsim4.lang';
 
@@ -31,4 +32,3 @@ i18n
   });
 
 export default i18n;
-

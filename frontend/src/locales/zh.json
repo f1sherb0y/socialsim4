@@ -116,8 +116,11 @@
     "invalidId": "无效的模拟 ID。",
     "noEvents": "暂无事件。",
     "noAgentMsgs": "暂无智能体消息。",
+    "noAgents": "没有智能体",
+    "eventTag": "事件",
+    "actionTag": "动作",
+    "dealTag": "发牌",
     "status": "状态",
     "syncing": "同步中…"
   }
 }
-
