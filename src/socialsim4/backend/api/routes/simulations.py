@@ -389,15 +389,19 @@ async def simulation_tree_advance_frontier(
     # Yield control so WS tasks can flush newly enqueued 'attached' events
     await asyncio.sleep(0)
 
-    async def _run(parent_id: int) -> tuple[int, int]:
+    async def _run(parent_id: int) -> tuple[int, int, bool]:
         child_id = allocations[parent_id]
         simulator = tree.nodes[child_id]["sim"]
-        await asyncio.to_thread(simulator.run, max_turns=turns)
-        return parent_id, child_id
+        errored = False
+        try:
+            await asyncio.to_thread(simulator.run, max_turns=turns)
+        except Exception:
+            errored = True
+        return parent_id, child_id, errored
 
     results = await asyncio.gather(*[_run(pid) for pid in parents])
     produced: list[int] = []
-    for _, cid in results:
+    for *_pid, cid, _err in results:
         produced.append(cid)
         if cid in record.running:
             record.running.remove(cid)
@@ -440,14 +444,18 @@ async def simulation_tree_advance_multi(
         _broadcast(record, {"type": "run_start", "data": {"node": int(cid)}})
     await asyncio.sleep(0)
 
-    async def _run(child_id: int) -> int:
+    async def _run(child_id: int) -> tuple[int, bool]:
         simulator = tree.nodes[child_id]["sim"]
-        await asyncio.to_thread(simulator.run, max_turns=turns)
-        return child_id
+        errored = False
+        try:
+            await asyncio.to_thread(simulator.run, max_turns=turns)
+        except Exception:
+            errored = True
+        return child_id, errored
 
     finished = await asyncio.gather(*[_run(cid) for cid in children])
     result_children: list[int] = []
-    for cid in finished:
+    for cid, _err in finished:
         result_children.append(cid)
         if cid in record.running:
             record.running.remove(cid)
@@ -489,7 +497,10 @@ async def simulation_tree_advance_chain(
         await asyncio.sleep(0)
 
         simulator = tree.nodes[cid]["sim"]
-        await asyncio.to_thread(simulator.run, max_turns=1)
+        try:
+            await asyncio.to_thread(simulator.run, max_turns=1)
+        except Exception:
+            pass
 
         if cid in record.running:
             record.running.remove(cid)
