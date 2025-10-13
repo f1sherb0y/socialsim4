@@ -43,85 +43,43 @@ export function RegisterPage() {
     }
   };
 
-  const inputStyle = {
-    width: "100%",
-    marginTop: "0.5rem",
-    padding: "0.75rem",
-    borderRadius: "10px",
-    border: "1px solid rgba(148,163,184,0.3)",
-  } as const;
-
   return (
-    <div className="app-container">
-      <main className="app-main" style={{ maxWidth: "520px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "2rem", marginBottom: "1.5rem" }}>Create your workspace</h1>
-        <form onSubmit={onSubmit} className="card" style={{ gap: "1rem" }}>
-          <label>
-            Organization
-            <input
-              value={form.organization}
-              onChange={(event) => handleChange("organization", event.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label>
-            Email
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => handleChange("email", event.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label>
-            Username
-            <input
-              value={form.username}
-              onChange={(event) => handleChange("username", event.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label>
-            Full name
-            <input
-              value={form.full_name}
-              onChange={(event) => handleChange("full_name", event.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label>
-            Phone number
-            <input
-              value={form.phone_number}
-              onChange={(event) => handleChange("phone_number", event.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => handleChange("password", event.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
-          {error && <div style={{ color: "#f87171" }}>{error}</div>}
-          {success && <div style={{ color: "#34d399" }}>Registration successful. Check your email.</div>}
-          <button type="submit" className="button" disabled={loading}>
-            {loading ? "Submitting…" : "Create account"}
-          </button>
-        </form>
-        <div style={{ marginTop: "1rem", color: "#94a3b8" }}>
-          Already registered? <Link to="/login">Sign in</Link>
-        </div>
-      </main>
-    </div>
+    <section className="panel" style={{ maxWidth: 520, margin: "0 auto", gap: "0.75rem" }}>
+      <div className="panel-title">Create your workspace</div>
+      <form onSubmit={onSubmit} className="card" style={{ gap: "0.5rem" }}>
+        <label>
+          Organization
+          <input className="input" value={form.organization} onChange={(e) => handleChange("organization", e.target.value)} required />
+        </label>
+        <label>
+          Email
+          <input className="input" type="email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} required />
+        </label>
+        <label>
+          Username
+          <input className="input" value={form.username} onChange={(e) => handleChange("username", e.target.value)} required />
+        </label>
+        <label>
+          Full name
+          <input className="input" value={form.full_name} onChange={(e) => handleChange("full_name", e.target.value)} required />
+        </label>
+        <label>
+          Phone number
+          <input className="input" value={form.phone_number} onChange={(e) => handleChange("phone_number", e.target.value)} required />
+        </label>
+        <label>
+          Password
+          <input className="input" type="password" value={form.password} onChange={(e) => handleChange("password", e.target.value)} required />
+        </label>
+        {error && <div style={{ color: "#f87171" }}>{error}</div>}
+        {success && <div style={{ color: "#34d399" }}>Registration successful. Check your email.</div>}
+        <button type="submit" className="button" disabled={loading}>
+          {loading ? "Submitting…" : "Create account"}
+        </button>
+      </form>
+      <div style={{ color: "var(--muted)" }}>
+        Already registered? <Link to="/login">Sign in</Link>
+      </div>
+    </section>
   );
 }

@@ -48,39 +48,25 @@ export function LoginPage() {
   };
 
   return (
-    <div className="app-container">
-      <main className="app-main" style={{ maxWidth: "420px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "2rem", marginBottom: "1.5rem" }}>Welcome back</h1>
-        <form onSubmit={onSubmit} className="card">
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
-            />
-          </label>
-          {error && <div style={{ color: "#f87171" }}>{error}</div>}
-          <button type="submit" className="button" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-        <div style={{ marginTop: "1rem", color: "#94a3b8" }}>
-          No account yet? <Link to="/register">Create one</Link>
-        </div>
-      </main>
-    </div>
+    <section className="panel" style={{ maxWidth: 420, margin: "0 auto", gap: "0.75rem" }}>
+      <div className="panel-title">Welcome back</div>
+      <form onSubmit={onSubmit} className="card" style={{ gap: "0.5rem" }}>
+        <label>
+          Email
+          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </label>
+        <label>
+          Password
+          <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </label>
+        {error && <div style={{ color: "#f87171" }}>{error}</div>}
+        <button type="submit" className="button" disabled={loading}>
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+      <div style={{ color: "var(--muted)" }}>
+        No account yet? <Link to="/register">Create one</Link>
+      </div>
+    </section>
   );
 }
