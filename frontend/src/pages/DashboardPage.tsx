@@ -44,7 +44,7 @@ export function DashboardPage() {
       <main className="app-main">
         {!hasProvider && (
           <div className="card" style={{ marginBottom: "0.75rem" }}>
-            <div className="panel-title">{t('settings.providers.title')}</div>
+            <div className="panel-title"><span className="badge-warning" aria-hidden>!</span>{t('settings.providers.title')}</div>
             <div style={{ color: "var(--muted)" }}>{t('dashboard.providerRequired')}</div>
             <div style={{ color: "var(--muted)" }}>{t('dashboard.providersHint')}</div>
             <Link to="/settings/providers" className="button button-danger" style={{ marginTop: '0.5rem', width: 'fit-content' }}>

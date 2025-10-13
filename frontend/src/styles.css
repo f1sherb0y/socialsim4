@@ -253,5 +253,8 @@ textarea::placeholder {
 .menu-item { display: block; width: 100%; text-align: left; background: transparent; border: none; color: var(--text); padding: 0.4rem 0.5rem; border-radius: 8px; cursor: pointer; font: inherit; }
 .menu-item:hover, .menu-item.active { background: rgba(148,163,184,0.18); }
 
+/* Small warning badge icon */
+.badge-warning { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--danger-a), var(--danger-b)); color: #fff; font-weight: 800; font-size: 0.8rem; margin-right: 0.35rem; }
+
 /* Resizable column handle */
 .resizer { width: 2px; cursor: col-resize; background: var(--border); }
