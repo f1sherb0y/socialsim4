@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { listSimulations, type Simulation } from "../api/simulations";
+import { listProviders } from "../api/providers";
 import { useTranslation } from "react-i18next";
 
 type Simulation = {
@@ -17,6 +18,11 @@ export function DashboardPage() {
     queryKey: ["simulations"],
     queryFn: () => listSimulations(),
   });
+  const providersQuery = useQuery({
+    queryKey: ["providers"],
+    queryFn: () => listProviders(),
+  });
+  const hasProvider = (providersQuery.data ?? []).length > 0;
 
   return (
     <div className="app-container">
@@ -26,16 +32,41 @@ export function DashboardPage() {
           <p style={{ color: "#94a3b8" }}>{t('dashboard.subtitle')}</p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link to="/simulations/new" className="button">{t('dashboard.new')}</Link>
+          <Link to={hasProvider ? "/simulations/new" : "/settings/providers"} className={`button ${!hasProvider ? 'button-ghost' : ''}`}
+            aria-disabled={!hasProvider}
+            onClick={(e) => { if (!hasProvider) e.preventDefault(); }}
+          >
+            {t('dashboard.new')}
+          </Link>
           <Link to="/simulations/saved" className="button button-ghost">{t('dashboard.resume')}</Link>
         </div>
       </header>
       <main className="app-main">
+        {!hasProvider && (
+          <div className="panel" style={{ marginBottom: "0.75rem" }}>
+            <div className="panel-title">{t('settings.providers.title')}</div>
+            <div style={{ color: "var(--muted)" }}>
+              {t('dashboard.providersHint')}
+            </div>
+            <div>
+              <Link to="/settings/providers" className="button button-danger" style={{ marginTop: '0.5rem', width: 'fit-content' }}>
+                {t('dashboard.manageProviders')}
+              </Link>
+            </div>
+          </div>
+        )}
         <section className="card-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           <div className="card">
             <div className="panel-title">{t('dashboard.quick')}</div>
             <p style={{ color: "#94a3b8" }}>{t('dashboard.subtitle')}</p>
-            <Link to="/simulations/new" className="button">{t('dashboard.launchWizard')}</Link>
+            <Link
+              to={hasProvider ? "/simulations/new" : "/settings/providers"}
+              className={`button ${!hasProvider ? 'button-ghost' : ''}`}
+              aria-disabled={!hasProvider}
+              onClick={(e) => { if (!hasProvider) e.preventDefault(); }}
+            >
+              {t('dashboard.launchWizard')}
+            </Link>
           </div>
           <div className="card">
             <div className="panel-title">{t('dashboard.providers')}</div>

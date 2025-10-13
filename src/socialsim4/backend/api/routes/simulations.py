@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.database import get_session
 from ...dependencies import get_current_user, get_db_session, settings
 from ...models.simulation import Simulation, SimulationLog, SimulationSnapshot
-from ...models.user import User
+from ...models.user import User, ProviderConfig
+from socialsim4.core.llm import create_llm_client
+from socialsim4.core.llm_config import LLMConfig
 from ...schemas.common import Message
 from ...schemas.simtree import (
     SimulationTreeAdvanceChainPayload,
@@ -38,9 +40,35 @@ async def _get_simulation_for_owner(
     return sim
 
 
-async def _get_tree_record(sim: Simulation) -> SimTreeRecord:
+async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int) -> SimTreeRecord:
+    # Build LLM clients from the user's provider configuration
+    result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == user_id))
+    provider = result.scalars().first()
+    if provider is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM provider not configured")
+    dialect = (provider.provider or "").lower()
+    if dialect not in {"openai", "gemini", "mock"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid LLM provider dialect")
+    if dialect != "mock" and not provider.api_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM API key required")
+    if not provider.model:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM model required")
+
+    cfg = LLMConfig(
+        dialect=dialect,
+        api_key=provider.api_key or "",
+        model=provider.model,
+        base_url=provider.base_url,
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        max_tokens=1024,
+    )
+    client = create_llm_client(cfg)
+    clients = {"chat": client, "default": client}
     try:
-        return await SIM_TREE_REGISTRY.get_or_create(sim.id, sim.scene_type)
+        return await SIM_TREE_REGISTRY.get_or_create(sim.id, sim.scene_type, clients)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -51,7 +79,7 @@ async def _get_simulation_and_tree(
     simulation_id: str,
 ) -> tuple[Simulation, SimTreeRecord]:
     sim = await _get_simulation_for_owner(session, owner_id, simulation_id)
-    record = await _get_tree_record(sim)
+    record = await _get_tree_record(sim, session, owner_id)
     return sim, record
 
 
@@ -106,6 +134,19 @@ async def create_simulation(
     current_user: UserPublic = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> SimulationBase:
+    # Ensure user has a valid LLM provider configured
+    result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+    provider = result.scalars().first()
+    if provider is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM provider not configured")
+    dialect = (provider.provider or "").lower()
+    if dialect not in {"openai", "gemini", "mock"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid LLM provider dialect")
+    if dialect != "mock" and not provider.api_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM API key required")
+    if not provider.model:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM model required")
+
     sim_id = generate_simulation_id()
     name = payload.name or generate_simulation_name(sim_id)
     sim = Simulation(
