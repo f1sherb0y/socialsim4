@@ -33,6 +33,7 @@
     "providers": "Connect providers",
     "providersHint": "Add your OpenAI, Azure, or custom endpoints once and reuse them across simulations.",
     "manageProviders": "Manage providers",
+    "providerRequired": "You need to configure a provider before running simulations.",
     "recent": "Recent simulations",
     "viewAll": "View all",
     "loading": "Loading simulations…",

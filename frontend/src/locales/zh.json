@@ -33,6 +33,7 @@
     "providers": "连接服务提供商",
     "providersHint": "添加 OpenAI、Azure 或自定义端点，并在模拟中复用。",
     "manageProviders": "管理提供商",
+    "providerRequired": "你需要先配置提供商才能运行仿真。",
     "recent": "最近的模拟",
     "viewAll": "查看全部",
     "loading": "正在加载模拟…",
