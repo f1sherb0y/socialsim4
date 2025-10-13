@@ -239,3 +239,8 @@ textarea::placeholder {
 .text-button { border: none; background: transparent; color: var(--link); cursor: pointer; padding: 0.25rem 0.5rem; font: inherit; }
 .nav-user { display: flex; align-items: center; gap: 0.5rem; }
 .nav-username { color: var(--muted); font-size: 0.9rem; }
+
+/* Resizable column handle */
+.resizer { width: 6px; cursor: col-resize; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+:root.theme-light .resizer { background: rgba(15,23,42,0.04); }
+:root.theme-dark .resizer { background: rgba(148,163,184,0.08); }

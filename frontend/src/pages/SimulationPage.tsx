@@ -60,6 +60,51 @@ export function SimulationPage() {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [stickBottom, setStickBottom] = useState(true);
 
+  // Resizable columns
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [colWidths, setColWidths] = useState<[number, number, number]>([33, 34, 33]);
+  const dragRef = useRef<{ index: 0 | 1; startX: number; widths: [number, number, number] } | null>(null);
+  const minPct = 15;
+
+  const onResizerMouseDown = (index: 0 | 1, event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    dragRef.current = { index, startX: event.clientX, widths: [...colWidths] as [number, number, number] };
+    document.addEventListener("mousemove", onDragMove);
+    document.addEventListener("mouseup", onDragEnd);
+    document.body.style.cursor = "col-resize";
+    (document.body.style as any).userSelect = "none";
+  };
+
+  const onDragMove = (ev: MouseEvent) => {
+    const d = dragRef.current;
+    const el = containerRef.current;
+    if (!d || !el) return;
+    const rect = el.getBoundingClientRect();
+    const total = rect.width || 1;
+    const deltaPx = ev.clientX - d.startX;
+    const deltaPct = (deltaPx / total) * 100;
+    let [w0, w1, w2] = d.widths;
+    if (d.index === 0) {
+      const sum = w0 + w1;
+      let nw0 = Math.max(minPct, Math.min(sum - minPct, w0 + deltaPct));
+      let nw1 = sum - nw0;
+      setColWidths([nw0, nw1, w2]);
+    } else {
+      const sum = w1 + w2;
+      let nw1 = Math.max(minPct, Math.min(sum - minPct, w1 + deltaPct));
+      let nw2 = sum - nw1;
+      setColWidths([w0, nw1, nw2]);
+    }
+  };
+
+  const onDragEnd = () => {
+    dragRef.current = null;
+    document.removeEventListener("mousemove", onDragMove);
+    document.removeEventListener("mouseup", onDragEnd);
+    document.body.style.cursor = "";
+    (document.body.style as any).userSelect = "";
+  };
+
   const eventsRef = useRef<HTMLDivElement | null>(null);
   const agentRef = useRef<HTMLDivElement | null>(null);
 
@@ -461,8 +506,8 @@ export function SimulationPage() {
           </button>
         </div>
       </header>
-      <main className="app-main" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
-        <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <main className="app-main" style={{ display: "flex", gap: "0.5rem" }} ref={containerRef}>
+        <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Simulation tree</div>
           <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
             <ReactFlow
@@ -594,14 +639,18 @@ export function SimulationPage() {
           </div>
         </section>
 
-        <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />
+
+        <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[1]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Events</div>
           <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
             {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
           </div>
         </section>
 
-        <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div className="resizer" onMouseDown={(e) => onResizerMouseDown(1, e)} />
+
+        <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[2]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>Agents</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
