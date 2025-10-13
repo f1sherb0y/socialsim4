@@ -122,6 +122,62 @@ class SimTree:
         if q in lst:
             lst.remove(q)
 
+    def serialize(self) -> dict:
+        nodes: list[dict] = []
+        for nid, node in self.nodes.items():
+            sim: Simulator = node["sim"]
+            nodes.append(
+                {
+                    "id": int(nid),
+                    "parent": node["parent"],
+                    "depth": int(node["depth"]) if node.get("depth") is not None else None,
+                    "edge_type": node.get("edge_type"),
+                    "ops": node.get("ops", []),
+                    "sim": sim.serialize(),
+                    "logs": list(node.get("logs", [])),
+                }
+            )
+        return {
+            "root": int(self.root) if self.root is not None else None,
+            "seq": int(self._seq),
+            "nodes": nodes,
+        }
+
+    @classmethod
+    def deserialize(cls, data: dict, clients: Dict[str, object]):
+        tree = cls(clients)
+        tree.root = data.get("root")
+        tree._seq = int(data.get("seq", 0))
+        tree.nodes = {}
+        tree.children = {}
+        items = data.get("nodes") or []
+        for item in items:
+            nid = int(item.get("id"))
+            parent = item.get("parent")
+            depth = item.get("depth")
+            edge_type = item.get("edge_type")
+            ops = item.get("ops") or []
+            sim_data = item.get("sim") or {}
+            sim = Simulator.deserialize(sim_data, clients, log_handler=None)
+            logs = list(item.get("logs") or [])
+            node = {
+                "id": nid,
+                "parent": parent,
+                "depth": depth,
+                "edge_type": edge_type,
+                "ops": ops,
+                "sim": sim,
+                "logs": logs,
+            }
+            tree.nodes[nid] = node
+            if parent is not None:
+                tree.children.setdefault(parent, []).append(nid)
+            tree.children.setdefault(nid, [])
+        # Attach log handlers so future events append and fan out
+        for nid, node in tree.nodes.items():
+            tree._attach_log_handler(nid, node["sim"], node.get("logs") or [])
+        return tree
+
     def attach(self, parent_id: int, ops: List[dict], cid: int) -> int:
         parent = self.nodes[parent_id]
         node = self.nodes[cid]

@@ -27,6 +27,7 @@ def _serialize_provider(provider: ProviderConfig) -> ProviderBase:
         last_test_status=provider.last_test_status,
         last_tested_at=provider.last_tested_at,
         last_error=provider.last_error,
+        config=provider.config,
     )
 
 
@@ -55,7 +56,7 @@ async def create_provider(
         model=payload.model,
         base_url=payload.base_url,
         api_key=payload.api_key,
-        config={},
+        config=payload.config or {},
     )
     session.add(provider)
     await session.commit()
@@ -84,6 +85,8 @@ async def update_provider(
         provider.base_url = payload.base_url
     if payload.api_key is not None:
         provider.api_key = payload.api_key
+    if payload.config is not None:
+        provider.config = payload.config
 
     await session.commit()
     await session.refresh(provider)

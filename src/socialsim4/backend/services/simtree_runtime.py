@@ -4,8 +4,6 @@ import asyncio
 from typing import Dict
 
 from socialsim4.core.simtree import SimTree
-from socialsim4.core.llm import create_llm_client
-from socialsim4.core.llm_config import LLMConfig
 from socialsim4.scenarios.basic import SCENES, make_clients_from_env
 
 

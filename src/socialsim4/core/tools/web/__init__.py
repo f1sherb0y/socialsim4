@@ -1,10 +1,8 @@
 """Web tooling: search and page viewing.
 
 Exports:
-- web_search(query: str, max_results: int = 5) -> List[dict]
 - view_page(url: str, max_chars: int = 4000) -> dict
+- search client factory in socialsim4.core.tools.web.search
 """
 
-from .search import web_search
 from .view import view_page
-

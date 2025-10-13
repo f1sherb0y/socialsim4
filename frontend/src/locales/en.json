@@ -54,13 +54,31 @@
   },
   "settings": {
     "title": "Settings",
-    "tabs": { "profile": "Profile", "security": "Security", "providers": "Providers" },
-    "profile": { "email": "Email", "username": "Username", "fullName": "Full name", "organization": "Organization" },
-    "security": { "signoutAll": "Sign out of all sessions", "placeholder": "Two-factor authentication and password reset flows will appear here." },
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security",
+      "providers": "Providers"
+    },
+    "profile": {
+      "email": "Email",
+      "username": "Username",
+      "fullName": "Full name",
+      "organization": "Organization"
+    },
+    "security": {
+      "signoutAll": "Sign out of all sessions",
+      "placeholder": "Two-factor authentication and password reset flows will appear here."
+    },
     "providers": {
       "title": "Provider integrations",
       "add": "Add provider",
-      "fields": { "label": "Label", "provider": "Provider", "model": "Model", "baseUrl": "Base URL", "apiKey": "API key" },
+      "fields": {
+        "label": "Label",
+        "provider": "Provider",
+        "model": "Model",
+        "baseUrl": "Base URL",
+        "apiKey": "API key"
+      },
       "save": "Save provider",
       "test": "Test connectivity",
       "hasKey": "Key stored",
@@ -93,7 +111,15 @@
     "fetchScenesError": "Unable to fetch scenes."
   },
   "auth": {
-    "login": { "welcome": "Welcome back", "email": "Email", "password": "Password", "signin": "Sign in", "noAccount": "No account yet?", "create": "Create one", "invalid": "Invalid credentials" },
+    "login": {
+      "welcome": "Welcome back",
+      "email": "Email",
+      "password": "Password",
+      "signin": "Sign in",
+      "noAccount": "No account yet?",
+      "create": "Create one",
+      "invalid": "Invalid credentials"
+    },
     "register": {
       "title": "Create your workspace",
       "organization": "Organization",
@@ -137,6 +163,7 @@
     "noAgents": "No agents",
     "eventTag": "Event",
     "actionTag": "Action",
+    "messageTag": "Message",
     "dealTag": "Deal",
     "bottom": "Bottom",
     "status": "Status",

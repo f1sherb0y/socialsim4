@@ -13,6 +13,7 @@ class ProviderBase(BaseModel):
     last_tested_at: datetime | None = None
     last_test_status: str | None = None
     last_error: str | None = None
+    config: dict | None = None
 
     class Config:
         from_attributes = True
@@ -25,6 +26,7 @@ class ProviderCreate(BaseModel):
     model: str
     base_url: str
     api_key: str
+    config: dict | None = None
 
 
 class ProviderUpdate(BaseModel):
@@ -33,3 +35,4 @@ class ProviderUpdate(BaseModel):
     model: str | None = None
     base_url: str | None = None
     api_key: str | None = None
+    config: dict | None = None

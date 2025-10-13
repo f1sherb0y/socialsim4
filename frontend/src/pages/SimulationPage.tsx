@@ -289,8 +289,22 @@ export function SimulationPage() {
 
         return current;
       });
+      // Side-effects outside setGraph: auto-focus newest attached node
+      if (message.type === "attached") {
+        const data = message.data ?? {};
+        const node = Number(data.node);
+        if (!Number.isNaN(node)) {
+          setSelectedNode(node);
+          selectedRef.current = node;
+          const tree = treeIdRef.current;
+          if (tree != null) {
+            refreshSelected(tree, node);
+            connectNodeWs(tree, node);
+          }
+        }
+      }
     },
-    [addToast, refreshSelected],
+    [addToast, refreshSelected, connectNodeWs],
   );
 
   const connectToTree = useCallback(
@@ -452,8 +466,8 @@ export function SimulationPage() {
   }, [agents, selectedAgent]);
 
   const formattedEvents = useMemo(() => {
-    return (events || []).map((event, idx) => formatEvent(event, idx)).filter(Boolean) as JSX.Element[];
-  }, [events]);
+    return (events || []).map((event, idx) => formatEvent(event, idx, t)).filter(Boolean) as JSX.Element[];
+  }, [events, t]);
 
   if (!simulationSlug) {
     return <div className="panel">{t('sim.invalidId')}</div>;
@@ -503,11 +517,12 @@ export function SimulationPage() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%" }} ref={containerRef}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%", minHeight: 0 }} ref={containerRef}>
           <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
             <div className="panel-title">{t('sim.tree')}</div>
-            <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
+            <div className="card" style={{ flex: 1, minHeight: 0, padding: 0, overflow: "hidden", position: "relative" }}>
               <ReactFlow
+                style={{ width: "100%", height: "100%" }}
                 nodes={rfGraph.nodes}
                 edges={rfGraph.edges}
                 fitView
@@ -519,21 +534,56 @@ export function SimulationPage() {
                   }
                 }}
               >
-                <MiniMap pannable zoomable />
-                <Controls position="bottom-left" />
+                {(() => {
+                  const root = typeof document !== 'undefined' ? document.documentElement : null;
+                  const cs = root ? getComputedStyle(root) : null;
+                  const panel = (cs?.getPropertyValue('--panel') || '').trim() || 'rgba(255,255,255,0.9)';
+                  const muted = (cs?.getPropertyValue('--muted') || '').trim() || '#475569';
+                  const accentB = (cs?.getPropertyValue('--accent-b') || '').trim() || '#6366f1';
+                  return (
+                    <>
+                      <MiniMap
+                        pannable
+                        zoomable
+                        width={110}
+                        height={70}
+                        maskColor={panel}
+                        nodeColor={() => muted}
+                        nodeStrokeColor={accentB}
+                      />
+                      <Controls className="rf-controls" position="bottom-left" />
+                    </>
+                  );
+                })()}
                 <Background />
               </ReactFlow>
+              {graph && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    left: 8,
+                    fontSize: "0.8rem",
+                    background: "var(--panel)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: "0.2rem 0.5rem",
+                    opacity: 0.95,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {t('sim.selectedNode')}: {selectedNode ?? "-"}
+                  {" · "}{t('sim.nodes')}: {graph.nodes.length}
+                  {" · "}{t('sim.edges')}: {graph.edges.length}
+                  {" · "}{t('sim.running')}: {(graph.running || []).length}
+                  {" · "}{t('sim.turnsAt')}: {turns}
+                </div>
+              )}
             </div>
-            {graph && (
-            <div className="card" style={{ marginTop: "0.5rem", fontSize: "0.9rem", display: "grid", gap: "0.35rem" }}>
-              <div>{t('sim.selectedNode')}: {selectedNode ?? "-"}</div>
-              <div>{t('sim.nodes')}: {graph.nodes.length} · {t('sim.edges')}: {graph.edges.length} · {t('sim.running')}: {(graph.running || []).length}</div>
-              <div>{t('sim.turnsAt')}: {turns}</div>
-            </div>
-            )}
             <div className="card" style={{ marginTop: "0.5rem", display: "grid", gap: "0.5rem" }}>
               <div>
-              <div className="panel-subtitle">{t('sim.frontier')}</div>
+                <div className="panel-subtitle">{t('sim.frontier')}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
                   <input
                     className="input small"
@@ -553,13 +603,13 @@ export function SimulationPage() {
                     }}
                     disabled={treeIdRef.current == null}
                   >
-                  {t('sim.run')}
-                </button>
+                    {t('sim.run')}
+                  </button>
                 </div>
               </div>
 
               <div>
-              <div className="panel-subtitle">{t('sim.parallel')}</div>
+                <div className="panel-subtitle">{t('sim.parallel')}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.35rem", alignItems: "center" }}>
                   <input className="input small" type="number" min={1} value={multiTurns} onChange={(event) => setMultiTurns(event.target.value)} />
                   <input className="input small" type="number" min={1} value={multiCount} onChange={(event) => setMultiCount(event.target.value)} />
@@ -574,13 +624,13 @@ export function SimulationPage() {
                     }}
                     disabled={treeIdRef.current == null || selectedNode == null}
                   >
-                  {t('sim.run')}
-                </button>
+                    {t('sim.run')}
+                  </button>
                 </div>
               </div>
 
               <div>
-              <div className="panel-subtitle">{t('sim.chain')}</div>
+                <div className="panel-subtitle">{t('sim.chain')}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
                   <input className="input small" type="number" min={1} value={chainTurns} onChange={(event) => setChainTurns(event.target.value)} />
                   <button
@@ -594,13 +644,13 @@ export function SimulationPage() {
                     }}
                     disabled={treeIdRef.current == null || selectedNode == null}
                   >
-                  {t('sim.run')}
-                </button>
+                    {t('sim.run')}
+                  </button>
                 </div>
               </div>
 
               <div>
-              <div className="panel-subtitle">{t('sim.broadcast')}</div>
+                <div className="panel-subtitle">{t('sim.broadcast')}</div>
                 <textarea className="input" value={broadcastText} onChange={(event) => setBroadcastText(event.target.value)} rows={2} />
                 <button
                   type="button"
@@ -613,25 +663,25 @@ export function SimulationPage() {
                   }}
                   disabled={treeIdRef.current == null || selectedNode == null}
                 >
-                {t('sim.apply')}
-              </button>
+                  {t('sim.apply')}
+                </button>
               </div>
 
               <div>
-              <div className="panel-subtitle">{t('sim.deleteSubtree')}</div>
-              <button
-                type="button"
-                className="button button-danger small"
-                onClick={async () => {
-                  const tree = treeIdRef.current;
-                  if (tree == null || selectedNode == null || !graph || selectedNode === graph.root) return;
-                  await treeDeleteSubtree(tree, selectedNode);
-                  await refreshSelected();
-                }}
-                disabled={!graph || selectedNode == null || (graph && selectedNode === graph.root)}
-              >
-                {t('sim.delete')}
-              </button>
+                <div className="panel-subtitle">{t('sim.deleteSubtree')}</div>
+                <button
+                  type="button"
+                  className="button button-danger small"
+                  onClick={async () => {
+                    const tree = treeIdRef.current;
+                    if (tree == null || selectedNode == null || !graph || selectedNode === graph.root) return;
+                    await treeDeleteSubtree(tree, selectedNode);
+                    await refreshSelected();
+                  }}
+                  disabled={!graph || selectedNode == null || (graph && selectedNode === graph.root)}
+                >
+                  {t('sim.delete')}
+                </button>
               </div>
             </div>
           </section>
@@ -639,14 +689,26 @@ export function SimulationPage() {
           <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />
 
           <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
-          <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>{t('sim.events')}</span>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
-              <input type="checkbox" checked={eventsAutoScroll} onChange={(event) => setEventsAutoScroll(event.target.checked)} />
-              {t('sim.autoScroll')}
-            </label>
-          </div>
-            <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
+            <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>{t('sim.events')}</span>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+                <input type="checkbox" checked={eventsAutoScroll} onChange={(event) => setEventsAutoScroll(event.target.checked)} />
+                {t('sim.autoScroll')}
+              </label>
+            </div>
+            <div
+              ref={eventsRef}
+              className="card scroll-panel"
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                padding: "0.75rem",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+                whiteSpace: "pre-wrap",
+              }}
+            >
               {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
             </div>
           </section>
@@ -654,24 +716,36 @@ export function SimulationPage() {
           <div className="resizer" onMouseDown={(e) => onResizerMouseDown(1, e)} />
 
           <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
-          <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>{t('sim.agents')}</span>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
-              <input type="checkbox" checked={agentsAutoScroll} onChange={(event) => setAgentsAutoScroll(event.target.checked)} />
-              {t('sim.autoScroll')}
-            </label>
-          </div>
+            <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>{t('sim.agents')}</span>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+                <input type="checkbox" checked={agentsAutoScroll} onChange={(event) => setAgentsAutoScroll(event.target.checked)} />
+                {t('sim.autoScroll')}
+              </label>
+            </div>
             <CompactSelect
               options={agents.map((agent) => ({ value: agent.name, label: agent.name }))}
               value={selectedAgent}
               placeholder="No agents"
               onChange={setSelectedAgent}
             />
-            <div ref={agentRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem" }}>
+            <div
+              ref={agentRef}
+              className="card scroll-panel"
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                padding: "0.75rem",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+                whiteSpace: "pre-wrap",
+              }}
+            >
               {agentMessages.length ? (
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {agentMessages.map((message, index) => (
-                    <li key={`${message.role}-${index}`}>
+                    <li key={`${message.role}-${index}`} style={{ wordBreak: "break-word", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>
                       <span style={{ color: "#94a3b8" }}>[{message.role}]</span> {message.content}
                     </li>
                   ))}
@@ -742,7 +816,7 @@ function CompactSelect({
     <div ref={ref} style={{ position: "relative" }}>
       <button
         type="button"
-        className="input"
+        className="input fancy-select-trigger"
         style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}
         onClick={() => setOpen((prev) => !prev)}
       >
@@ -770,13 +844,13 @@ function CompactSelect({
               <button
                 key={option.value}
                 type="button"
+                className={`select-option ${option.value === value ? 'active' : ''}`}
                 onClick={() => {
                   onChange(option.value);
                   setOpen(false);
                 }}
                 style={{
                   textAlign: "left",
-                  background: option.value === value ? "rgba(59,130,246,0.2)" : "transparent",
                   border: "none",
                   padding: "0.35rem 0.5rem",
                   borderRadius: "0.5rem",
@@ -796,7 +870,7 @@ function CompactSelect({
   );
 }
 
-function formatEvent(event: SimEvent, key: number): JSX.Element | null {
+function formatEvent(event: SimEvent, key: number, t: (k: string) => string): JSX.Element | null {
   if (!event) return null;
   const type = event.type;
   const data = event.data ?? {};
@@ -805,7 +879,7 @@ function formatEvent(event: SimEvent, key: number): JSX.Element | null {
     if (data.type === "PublicEvent") {
       return (
         <div key={key} style={{ lineHeight: 1.5 }}>
-          <span style={{ color: "#38bdf8", fontWeight: 600 }}>[{(window as any).i18next?.t?.('sim.eventTag') ?? 'Event'}]</span> {String(data.text ?? "")}
+          <span style={{ color: "#38bdf8", fontWeight: 600 }}>[{t('sim.eventTag') || 'Event'}]</span> {String(data.text ?? "")}
         </div>
       );
     }
@@ -820,15 +894,15 @@ function formatEvent(event: SimEvent, key: number): JSX.Element | null {
       const message = String(((data.result as Record<string, unknown> | undefined)?.message) ?? action.message ?? data.summary ?? "");
       return (
         <div key={key} style={{ lineHeight: 1.5 }}>
-          <span style={{ color: "#22c55e", fontWeight: 600 }}>[{(window as any).i18next?.t?.('sim.actionTag') ?? 'Action'}]</span>{" "}
-          <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{name}:</span> {message}
+          <span style={{ color: "#22c55e", fontWeight: 600 }}>[{t('sim.messageTag') || 'Message'}]</span>{" "}
+          <span style={{ color: "var(--text)", fontWeight: 600 }}>{name}:</span> {message}
         </div>
       );
     }
     if (actionName && actionName !== "yield") {
       return (
         <div key={key} style={{ lineHeight: 1.5 }}>
-          <span style={{ color: "#94a3b8", fontWeight: 600 }}>[Action {actionName}]</span>{" "}
+          <span style={{ color: "var(--accent-b)", fontWeight: 600 }}>[{t('sim.actionTag') || 'Action'} {actionName}]</span>{" "}
           {String(data.summary ?? "")}
         </div>
       );
@@ -840,14 +914,10 @@ function formatEvent(event: SimEvent, key: number): JSX.Element | null {
     const bottom = (data.bottom as string[]) ?? [];
     return (
       <div key={key} style={{ lineHeight: 1.5 }}>
-        <span style={{ color: "#0ea5e9", fontWeight: 600 }}>[{(window as any).i18next?.t?.('sim.dealTag') ?? 'Deal'}]</span> {(window as any).i18next?.t?.('sim.bottom') ?? 'Bottom'}: {bottom.join(" ")}
+        <span style={{ color: "#0ea5e9", fontWeight: 600 }}>[{t('sim.dealTag') || 'Deal'}]</span> {t('sim.bottom') || 'Bottom'}: {bottom.join(" ")}
       </div>
     );
   }
 
-  return (
-    <div key={key} style={{ lineHeight: 1.5, color: "#94a3b8" }}>
-      {type}
-    </div>
-  );
+  return null;
 }

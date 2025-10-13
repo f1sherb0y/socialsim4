@@ -213,6 +213,32 @@ textarea, select {
   font-size: 0.95rem;
 }
 
+/* Enhanced select styling */
+select.select,
+.select select { /* support wrapper+native select pattern */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--card);
+  background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%2394a3b8' d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 14px 14px;
+  padding-right: 2rem;
+  border: 1px solid var(--border);
+}
+
+select.select:focus {
+  outline: none;
+  border-color: var(--link);
+}
+
+/* Small size variant */
+select.select.small {
+  padding: 0.35rem 2rem 0.35rem 0.5rem;
+  font-size: 0.9rem;
+}
+
 textarea { resize: vertical; }
 
 /* Placeholder text should match Cantarell */
@@ -253,8 +279,39 @@ textarea::placeholder {
 .menu-item { display: block; width: 100%; text-align: left; background: transparent; border: none; color: var(--text); padding: 0.4rem 0.5rem; border-radius: 8px; cursor: pointer; font: inherit; }
 .menu-item:hover, .menu-item.active { background: rgba(148,163,184,0.18); }
 
+/* FancySelect trigger + options */
+.fancy-select-trigger { cursor: pointer; }
+:root.theme-dark .fancy-select-trigger:hover { background: rgba(148,163,184,0.12); }
+:root.theme-light .fancy-select-trigger:hover { background: rgba(15,23,42,0.06); }
+
+.select-option { background: transparent; }
+.select-option.active { background: rgba(59,130,246,0.2); }
+:root.theme-dark .select-option:hover { background: rgba(148,163,184,0.18); }
+:root.theme-light .select-option:hover { background: rgba(15,23,42,0.08); }
+
 /* Small warning badge icon */
 .badge-warning { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--danger-a), var(--danger-b)); color: #fff; font-weight: 800; font-size: 0.8rem; margin-right: 0.35rem; }
 
 /* Resizable column handle */
 .resizer { width: 2px; cursor: col-resize; background: var(--border); }
+
+/* Theme-aware scrollbars for scrollable panels */
+.scroll-panel { scrollbar-width: thin; scrollbar-color: var(--muted) transparent; }
+.scroll-panel::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll-panel::-webkit-scrollbar-track { background: transparent; }
+.scroll-panel::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+:root.theme-dark .scroll-panel::-webkit-scrollbar-thumb { background-color: rgba(148,163,184,0.35); }
+:root.theme-light .scroll-panel::-webkit-scrollbar-thumb { background-color: rgba(15,23,42,0.2); }
+
+/* React Flow theming */
+/* React Flow theming */
+.react-flow__minimap { background: var(--panel) !important; border: 1px solid var(--border) !important; }
+.react-flow__controls { background: transparent !important; border: none !important; box-shadow: none !important; }
+.react-flow__controls .react-flow__controls-button { background: var(--panel) !important; border: 1px solid var(--border) !important; color: var(--text) !important; }
+.react-flow__controls .react-flow__controls-button:hover { filter: brightness(1.05); }
+.react-flow__controls .react-flow__controls-button svg * { fill: var(--text) !important; stroke: var(--text) !important; }
+.rf-controls { background: transparent !important; }

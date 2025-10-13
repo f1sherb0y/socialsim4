@@ -1,7 +1,8 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createProvider as apiCreateProvider, listProviders, testProvider as apiTestProvider, type Provider } from "../api/providers";
+import { createProvider as apiCreateProvider, listProviders, testProvider as apiTestProvider, updateProvider, type Provider } from "../api/providers";
+import { listSearchProviders, createSearchProvider, updateSearchProvider, type SearchProvider } from "../api/searchProviders";
 import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
 
@@ -22,6 +23,17 @@ export function SettingsPage() {
     queryFn: () => listProviders(),
   });
 
+  const searchProvidersQuery = useQuery({
+    queryKey: ["searchProviders"],
+    enabled: activeTab === "providers",
+    queryFn: () => listSearchProviders(),
+  });
+
+  const searchProvider = useMemo(() => {
+    const items = searchProvidersQuery.data || [];
+    return items[0] || null;
+  }, [searchProvidersQuery.data]);
+
   const [providerDraft, setProviderDraft] = useState({
     name: "",
     provider: "openai",
@@ -30,6 +42,23 @@ export function SettingsPage() {
     api_key: "",
   });
   const [keyVisible, setKeyVisible] = useState(false);
+
+  const [searchDraft, setSearchDraft] = useState({
+    provider: "ddg",
+    base_url: "",
+    api_key: "",
+    config: { region: "", safesearch: "moderate" } as Record<string, any>,
+  });
+
+  useEffect(() => {
+    if (!searchProvider) return;
+    setSearchDraft({
+      provider: searchProvider.provider || "ddg",
+      base_url: String(searchProvider.base_url || ""),
+      api_key: "",
+      config: (searchProvider as any).config || {},
+    });
+  }, [searchProvider]);
 
   const createProvider = useMutation({
     mutationFn: async () =>
@@ -44,6 +73,28 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["providers"] });
       setProviderDraft({ name: "", provider: "openai", model: "gpt-4", base_url: "https://api.openai.com/v1", api_key: "" });
       setKeyVisible(false);
+    },
+  });
+
+  const upsertSearch = useMutation({
+    mutationFn: async () => {
+      if (searchProvider) {
+        return updateSearchProvider(searchProvider.id, {
+          provider: searchDraft.provider,
+          base_url: searchDraft.base_url || null,
+          api_key: searchDraft.api_key || null,
+          config: searchDraft.config,
+        });
+      }
+      return createSearchProvider({
+        provider: searchDraft.provider,
+        base_url: searchDraft.base_url || "",
+        api_key: searchDraft.api_key || "",
+        config: searchDraft.config,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["searchProviders"] });
     },
   });
 
@@ -93,6 +144,124 @@ export function SettingsPage() {
         <div className="panel-header">
           <div className="panel-title">{t('settings.providers.title')}</div>
         </div>
+
+        <div className="card" style={{ gap: "0.5rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Search Provider</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+            <label>
+              Provider
+              <FancySelect
+                value={searchDraft.provider}
+                options={[
+                  { value: "ddg", label: "DuckDuckGo" },
+                  { value: "serpapi", label: "SerpAPI" },
+                  { value: "serper", label: "Serper" },
+                  { value: "tavily", label: "Tavily" },
+                  { value: "mock", label: "Mock" },
+                ]}
+                onChange={(val) => setSearchDraft((p) => ({ ...p, provider: val }))}
+              />
+            </label>
+            {(searchDraft.provider === "serpapi" || searchDraft.provider === "serper" || searchDraft.provider === "tavily") && (
+              <>
+                <label>
+                  Base URL
+                  <input className="input" value={searchDraft.base_url} onChange={(e) => setSearchDraft((p) => ({ ...p, base_url: e.target.value }))} />
+                </label>
+                <label>
+                  API Key
+                  <input className="input" value={searchDraft.api_key} onChange={(e) => setSearchDraft((p) => ({ ...p, api_key: e.target.value }))} />
+                </label>
+              </>
+            )}
+            {searchDraft.provider === "ddg" && (
+              <>
+                <label>
+                  Region
+                  <input className="input" value={String((searchDraft.config as any).region || "")} onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), region: e.target.value } }))} />
+                </label>
+                <label>
+                  SafeSearch
+                  <input className="input" value={String((searchDraft.config as any).safesearch || "moderate")} onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), safesearch: e.target.value } }))} />
+                </label>
+              </>
+            )}
+            {searchDraft.provider === "tavily" && (
+              <>
+                <label>
+                  Search Depth
+                  <FancySelect
+                    value={String((searchDraft.config as any).search_depth || "basic")}
+                    options={[
+                      { value: "basic", label: "basic" },
+                      { value: "advanced", label: "advanced" },
+                    ]}
+                    onChange={(val) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), search_depth: val } }))}
+                  />
+                </label>
+                <label>
+                  Include Answer
+                  <input
+                    type="checkbox"
+                    checked={Boolean((searchDraft.config as any).include_answer || false)}
+                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), include_answer: e.target.checked } }))}
+                  />
+                </label>
+                <label>
+                  Topic
+                  <input
+                    className="input"
+                    value={String((searchDraft.config as any).topic || "")}
+                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), topic: e.target.value } }))}
+                  />
+                </label>
+                <label>
+                  Days (time range)
+                  <input
+                    className="input"
+                    type="number"
+                    min={1}
+                    value={Number((searchDraft.config as any).days || 7)}
+                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), days: Number(e.target.value || 0) } }))}
+                  />
+                </label>
+                <label>
+                  Include Domains (comma-separated)
+                  <input
+                    className="input"
+                    value={String((searchDraft.config as any).include_domains || "")}
+                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), include_domains: e.target.value } }))}
+                  />
+                </label>
+                <label>
+                  Exclude Domains (comma-separated)
+                  <input
+                    className="input"
+                    value={String((searchDraft.config as any).exclude_domains || "")}
+                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), exclude_domains: e.target.value } }))}
+                  />
+                </label>
+              </>
+            )}
+            {searchDraft.provider === "mock" && (
+              <>
+                <div />
+                <div />
+              </>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <button type="button" className="button" onClick={() => upsertSearch.mutate()} disabled={upsertSearch.isPending}>
+              Save Search Provider
+            </button>
+            {searchProvider && (
+              <div style={{ color: "#94a3b8", lineHeight: 1 }}>
+                Active: {searchProvider.provider}
+              </div>
+            )}
+          </div>
+        </div>
+
         <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.5rem" }}>
           <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.add')}</h2>
           <label>
@@ -168,15 +337,17 @@ export function SettingsPage() {
                   {t('dashboard.status')}: {provider.last_test_status ?? t('settings.providers.neverTested')}
                 </div>
                 <div style={{ color: "#94a3b8" }}>{t('settings.providers.hasKey')}: {provider.has_api_key ? t('common.yes') : t('common.no')}</div>
-                <button
-                  type="button"
-                  className="button"
-                  style={{ width: "fit-content", padding: "0.4rem 0.7rem" }}
-                  onClick={() => testProvider.mutate(provider.id)}
-                  disabled={testProvider.isPending}
-                >
-                  {testProvider.isPending ? t('settings.providers.test') + '…' : t('settings.providers.test')}
-                </button>
+                {provider.model !== 'search' && provider.name !== 'search' && (
+                  <button
+                    type="button"
+                    className="button"
+                    style={{ width: "fit-content", padding: "0.4rem 0.7rem" }}
+                    onClick={() => testProvider.mutate(provider.id)}
+                    disabled={testProvider.isPending}
+                  >
+                    {testProvider.isPending ? t('settings.providers.test') + '…' : t('settings.providers.test')}
+                  </button>
+                )}
               </div>
             ))}
             {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>{t('settings.providers.none')}</div>}
@@ -187,26 +358,115 @@ export function SettingsPage() {
   }, [activeTab, user, providerDraft, providersQuery, createProvider, testProvider, clearSession, keyVisible]);
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1 style={{ margin: 0 }}>{t('settings.title')}</h1>
-      </header>
-      <main className="app-main">
-        <div className="tab-layout">
-          <nav className="tab-nav">
-            <button type="button" className={`tab-button ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
-              {t('settings.tabs.profile')}
+    <div style={{ height: "100%", overflow: "auto" }}>
+      <div className="panel" style={{ marginBottom: "0.75rem" }}>
+        <div className="panel-title">{t('settings.title')}</div>
+      </div>
+      <div className="tab-layout">
+        <nav className="tab-nav">
+          <button type="button" className={`tab-button ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
+            {t('settings.tabs.profile')}
+          </button>
+          <button type="button" className={`tab-button ${activeTab === "security" ? "active" : ""}`} onClick={() => setActiveTab("security")}>
+            {t('settings.tabs.security')}
+          </button>
+          <button type="button" className={`tab-button ${activeTab === "providers" ? "active" : ""}`} onClick={() => setActiveTab("providers")}>
+            {t('settings.tabs.providers')}
+          </button>
+        </nav>
+        <section>{tabContent}</section>
+      </div>
+    </div>
+  );
+}
+
+type FancyOption = { value: string; label: string };
+
+function FancySelect({
+  options,
+  value,
+  onChange,
+}: {
+  options: FancyOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const selected = options.find((o) => o.value === value) || options[0] || { value: "", label: "" };
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (ref.current && !ref.current.contains(t)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        className="input fancy-select-trigger"
+        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen((p) => !p);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setOpen(false);
+          }
+        }}
+      >
+        <span>{selected.label}</span>
+        <span style={{ color: "#94a3b8" }}>▾</span>
+      </button>
+      {open && (
+        <div
+          className="card"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 0.25rem)",
+            left: 0,
+            right: 0,
+            zIndex: 40,
+            display: "grid",
+            gap: "0.25rem",
+            padding: "0.5rem",
+            maxHeight: "240px",
+            overflowY: "auto",
+          }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`select-option ${opt.value === value ? 'active' : ''}`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              onClick={(e) => e.preventDefault()}
+              style={{
+                textAlign: "left",
+                border: "none",
+                padding: "0.35rem 0.5rem",
+                borderRadius: "0.5rem",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              {opt.label}
             </button>
-            <button type="button" className={`tab-button ${activeTab === "security" ? "active" : ""}`} onClick={() => setActiveTab("security")}>
-              {t('settings.tabs.security')}
-            </button>
-            <button type="button" className={`tab-button ${activeTab === "providers" ? "active" : ""}`} onClick={() => setActiveTab("providers")}>
-              {t('settings.tabs.providers')}
-            </button>
-          </nav>
-          <section>{tabContent}</section>
+          ))}
         </div>
-      </main>
+      )}
     </div>
   );
 }

@@ -54,13 +54,31 @@
   },
   "settings": {
     "title": "设置",
-    "tabs": { "profile": "个人信息", "security": "安全", "providers": "提供商" },
-    "profile": { "email": "邮箱", "username": "用户名", "fullName": "姓名", "organization": "组织" },
-    "security": { "signoutAll": "退出所有会话", "placeholder": "这里将展示双因素认证和密码重置流程。" },
+    "tabs": {
+      "profile": "个人信息",
+      "security": "安全",
+      "providers": "提供商"
+    },
+    "profile": {
+      "email": "邮箱",
+      "username": "用户名",
+      "fullName": "姓名",
+      "organization": "组织"
+    },
+    "security": {
+      "signoutAll": "退出所有会话",
+      "placeholder": "这里将展示双因素认证和密码重置流程。"
+    },
     "providers": {
       "title": "提供商集成",
       "add": "新增提供商",
-      "fields": { "label": "名称", "provider": "提供商", "model": "模型", "baseUrl": "Base URL", "apiKey": "API 密钥" },
+      "fields": {
+        "label": "名称",
+        "provider": "提供商",
+        "model": "模型",
+        "baseUrl": "Base URL",
+        "apiKey": "API 密钥"
+      },
       "save": "保存提供商",
       "test": "测试连接",
       "hasKey": "是否保存密钥",
@@ -93,7 +111,15 @@
     "fetchScenesError": "无法获取场景。"
   },
   "auth": {
-    "login": { "welcome": "欢迎回来", "email": "邮箱", "password": "密码", "signin": "登录", "noAccount": "还没有账号？", "create": "去注册", "invalid": "账号或密码错误" },
+    "login": {
+      "welcome": "欢迎回来",
+      "email": "邮箱",
+      "password": "密码",
+      "signin": "登录",
+      "noAccount": "还没有账号？",
+      "create": "去注册",
+      "invalid": "账号或密码错误"
+    },
     "register": {
       "title": "创建你的工作空间",
       "organization": "组织",
@@ -137,6 +163,7 @@
     "noAgents": "没有智能体",
     "eventTag": "事件",
     "actionTag": "动作",
+    "messageTag": "发言",
     "dealTag": "发牌",
     "bottom": "底牌",
     "status": "状态",

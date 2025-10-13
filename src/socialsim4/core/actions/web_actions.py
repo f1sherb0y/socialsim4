@@ -3,7 +3,6 @@ import httpx
 
 from socialsim4.core.action import Action
 from socialsim4.core.tools.web import view_page as tool_view_page
-from socialsim4.core.tools.web import web_search as tool_web_search
 
 
 class WebSearchAction(Action):
@@ -18,7 +17,10 @@ class WebSearchAction(Action):
         max_results = int((action_data or {}).get("max_results", 5))
         max_results = max(1, min(10, max_results))
 
-        results = tool_web_search(query, max_results)
+        search_client = simulator.clients.get("search")
+        if search_client is None:
+            raise ValueError("Search client not configured")
+        results = search_client.search(query, max_results)
 
         if not results:
             error = "web_search: no results or network unavailable."

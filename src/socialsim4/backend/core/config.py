@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     backend_port: int = 8000
 
     database_url: str = "sqlite+aiosqlite:///./socialsim4.db"
+    # Optional SQLAlchemy engine pool tuning
+    db_pool_size: int | None = None
+    db_max_overflow: int | None = None
+    db_pool_timeout: int | None = None
+    db_pool_recycle: int | None = None
+    db_pool_pre_ping: bool | None = None
 
     jwt_signing_key: SecretStr = SecretStr("change-me")
     jwt_algorithm: str = "HS256"

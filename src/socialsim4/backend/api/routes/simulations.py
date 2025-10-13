@@ -1,5 +1,4 @@
 import asyncio
-from contextlib import suppress
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
@@ -10,9 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.database import get_session
 from ...dependencies import get_current_user, get_db_session, settings
 from ...models.simulation import Simulation, SimulationLog, SimulationSnapshot
-from ...models.user import User, ProviderConfig
+from ...models.user import User, ProviderConfig, SearchProviderConfig
 from socialsim4.core.llm import create_llm_client
 from socialsim4.core.llm_config import LLMConfig
+from socialsim4.core.search_config import SearchConfig
+from socialsim4.core.tools.web.search import create_search_client
+from socialsim4.core.simtree import SimTree
 from ...schemas.common import Message
 from ...schemas.simtree import (
     SimulationTreeAdvanceChainPayload,
@@ -41,7 +43,7 @@ async def _get_simulation_for_owner(
 
 
 async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int) -> SimTreeRecord:
-    # Build LLM clients from the user's provider configuration
+    # Build LLM client
     result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == user_id))
     provider = result.scalars().first()
     if provider is None:
@@ -65,12 +67,23 @@ async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int)
         presence_penalty=0.0,
         max_tokens=1024,
     )
-    client = create_llm_client(cfg)
-    clients = {"chat": client, "default": client}
-    try:
-        return await SIM_TREE_REGISTRY.get_or_create(sim.id, sim.scene_type, clients)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    llm_client = create_llm_client(cfg)
+
+    # Build Search client (from SearchProviderConfig; default to ddg if missing)
+    result_s = await session.execute(select(SearchProviderConfig).where(SearchProviderConfig.user_id == user_id))
+    sprov = result_s.scalars().first()
+    if sprov is None:
+        s_cfg = SearchConfig(dialect="ddg", api_key="", base_url=None, params={})
+    else:
+        s_cfg = SearchConfig(
+            dialect=(sprov.provider or "ddg"),
+            api_key=sprov.api_key or "",
+            base_url=sprov.base_url,
+            params=sprov.config or {},
+        )
+    search_client = create_search_client(s_cfg)
+    clients = {"chat": llm_client, "default": llm_client, "search": search_client}
+    return await SIM_TREE_REGISTRY.get_or_create(sim.id, sim.scene_type, clients)
 
 
 async def _get_simulation_and_tree(
@@ -113,9 +126,7 @@ async def _drain_websocket_messages(websocket: WebSocket) -> None:
         try:
             await websocket.receive_text()
         except WebSocketDisconnect:
-            break
-        except Exception:
-            break
+            raise
 
 
 @router.get("/", response_model=list[SimulationBase])
@@ -215,16 +226,25 @@ async def create_snapshot(
     session: AsyncSession = Depends(get_db_session),
 ) -> SnapshotBase:
     sim = await _get_simulation_for_owner(session, current_user.id, simulation_id)
-    if sim.latest_state is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Simulation has no state to save")
-
+    # Serialize current SimTree for this simulation
+    record = SIM_TREE_REGISTRY.get(simulation_id)
+    if record is None:
+        # Build (or rebuild) a fresh tree if not present
+        record = await _get_tree_record(sim, session, current_user.id)
+    tree_state = record.tree.serialize()
+    # Derive a simple turns metric: max turns across nodes
+    max_turns = 0
+    for node in tree_state.get("nodes", []):
+        sim_snap = node.get("sim") or {}
+        t = int(sim_snap.get("turns", 0)) if isinstance(sim_snap, dict) else 0
+        if t > max_turns:
+            max_turns = t
     label = payload.label or f"Snapshot {datetime.now(timezone.utc).isoformat()}"
-    turns = int(sim.latest_state.get("turns", 0)) if isinstance(sim.latest_state, dict) else 0
     snapshot = SimulationSnapshot(
         simulation_id=sim.id,
         label=label,
-        state=sim.latest_state,
-        turns=turns,
+        state=tree_state,
+        turns=max_turns,
     )
     session.add(snapshot)
     await session.commit()
@@ -280,11 +300,28 @@ async def resume_simulation(
 ) -> Message:
     sim = await _get_simulation_for_owner(session, current_user.id, simulation_id)
 
+    # Build or fetch current runtime record (for clients and subs)
+    record = await _get_tree_record(sim, session, current_user.id)
+
     if snapshot_id is not None:
         snapshot = await session.get(SimulationSnapshot, snapshot_id)
         if snapshot is None or snapshot.simulation_id != sim.id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Snapshot not found")
-        sim.latest_state = snapshot.state
+        # Deserialize tree from snapshot and replace in registry record
+        tree_state = snapshot.state
+        new_tree = SimTree.deserialize(tree_state, record.tree.clients)
+        loop = asyncio.get_running_loop()
+        new_tree.attach_event_loop(loop)
+
+        def _fanout(event: dict) -> None:
+            if int(event.get("node", -1)) not in record.running:
+                return
+            for q in list(record.subs):
+                loop.call_soon_threadsafe(q.put_nowait, event)
+
+        new_tree.set_tree_broadcast(_fanout)
+        record.running.clear()
+        record.tree = new_tree
 
     sim.status = "running"
     sim.updated_at = datetime.now(timezone.utc)
@@ -308,7 +345,6 @@ async def copy_simulation(
         scene_type=sim.scene_type,
         scene_config=sim.scene_config,
         agent_config=sim.agent_config,
-        latest_state=sim.latest_state,
         status="draft",
     )
     session.add(new_sim)
@@ -326,7 +362,7 @@ async def simulation_tree_graph(
     current_user: UserPublic = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> dict:
-    _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+    sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
     tree = record.tree
     attached_ids = {int(nid) for nid, node in tree.nodes.items() if node.get("depth") is not None}
     nodes = [{"id": int(node["id"]), "depth": int(node["depth"])} for node in tree.nodes.values() if node.get("depth") is not None]
@@ -370,7 +406,6 @@ async def simulation_tree_advance_frontier(
     for pid, cid in allocations.items():
         tree.attach(pid, [{"op": "advance", "turns": turns}], cid)
         node = tree.nodes[cid]
-        print(f"subs:{len(record.subs)}")
         _broadcast(
             record,
             {
@@ -392,12 +427,8 @@ async def simulation_tree_advance_frontier(
     async def _run(parent_id: int) -> tuple[int, int, bool]:
         child_id = allocations[parent_id]
         simulator = tree.nodes[child_id]["sim"]
-        errored = False
-        try:
-            await asyncio.to_thread(simulator.run, max_turns=turns)
-        except Exception:
-            errored = True
-        return parent_id, child_id, errored
+        await asyncio.to_thread(simulator.run, max_turns=turns)
+        return parent_id, child_id, False
 
     results = await asyncio.gather(*[_run(pid) for pid in parents])
     produced: list[int] = []
@@ -416,7 +447,7 @@ async def simulation_tree_advance_multi(
     current_user: UserPublic = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> dict:
-    _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+    sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
     tree = record.tree
     parent = int(payload.parent)
     count = int(payload.count)
@@ -446,12 +477,8 @@ async def simulation_tree_advance_multi(
 
     async def _run(child_id: int) -> tuple[int, bool]:
         simulator = tree.nodes[child_id]["sim"]
-        errored = False
-        try:
-            await asyncio.to_thread(simulator.run, max_turns=turns)
-        except Exception:
-            errored = True
-        return child_id, errored
+        await asyncio.to_thread(simulator.run, max_turns=turns)
+        return child_id, False
 
     finished = await asyncio.gather(*[_run(cid) for cid in children])
     result_children: list[int] = []
@@ -470,7 +497,7 @@ async def simulation_tree_advance_chain(
     current_user: UserPublic = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> dict:
-    _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+    sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
     tree = record.tree
     parent = int(payload.parent)
     steps = max(1, int(payload.turns))
@@ -497,10 +524,7 @@ async def simulation_tree_advance_chain(
         await asyncio.sleep(0)
 
         simulator = tree.nodes[cid]["sim"]
-        try:
-            await asyncio.to_thread(simulator.run, max_turns=1)
-        except Exception:
-            pass
+        await asyncio.to_thread(simulator.run, max_turns=1)
 
         if cid in record.running:
             record.running.remove(cid)
@@ -544,10 +568,7 @@ async def simulation_tree_delete_subtree(
     session: AsyncSession = Depends(get_db_session),
 ) -> dict:
     _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
-    try:
-        record.tree.delete_subtree(int(node_id))
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    record.tree.delete_subtree(int(node_id))
     _broadcast(record, {"type": "deleted", "data": {"node": int(node_id)}})
     return {"ok": True}
 
@@ -595,6 +616,7 @@ async def simulation_tree_state(
 async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) -> None:
     print("incoming conn!!!!")
     token = websocket.query_params.get("token")
+    # Scope DB session strictly to auth/setup to avoid holding pool connections
     async with get_session() as session:
         user = await _resolve_user_from_token(token or "", session)
         if user is None:
@@ -606,27 +628,23 @@ async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) ->
         except HTTPException:
             await websocket.close(code=1008)
             return
-
-        await websocket.accept()
-        queue: asyncio.Queue = asyncio.Queue()
-        record.subs.append(queue)
-        print("sub added, record accepted")
-        drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
-        try:
-            while True:
-                event = await queue.get()
-                try:
-                    await websocket.send_json(event)
-                except Exception:
-                    break
-        except WebSocketDisconnect:
-            pass
-        finally:
-            if queue in record.subs:
-                record.subs.remove(queue)
-            drain_task.cancel()
-            with suppress(Exception):
-                await drain_task
+    # From here on, do not keep a DB session open for the websocket lifetime
+    await websocket.accept()
+    queue: asyncio.Queue = asyncio.Queue()
+    record.subs.append(queue)
+    print("sub added, record accepted")
+    drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
+    try:
+        while True:
+            event = await queue.get()
+            await websocket.send_json(event)
+    except WebSocketDisconnect:
+        raise
+    finally:
+        if queue in record.subs:
+            record.subs.remove(queue)
+        drain_task.cancel()
+        await drain_task
 
 
 @router.websocket("/{simulation_id}/tree/{node_id}/events")
@@ -637,6 +655,7 @@ async def simulation_tree_node_events_ws(
 ) -> None:
     print("incoming conn!!!!")
     token = websocket.query_params.get("token")
+    # Scope DB session strictly to auth/setup to avoid holding pool connections
     async with get_session() as session:
         user = await _resolve_user_from_token(token or "", session)
         if user is None:
@@ -652,22 +671,18 @@ async def simulation_tree_node_events_ws(
         if int(node_id) not in record.tree.nodes:
             await websocket.close(code=1008)
             return
-
-        await websocket.accept()
-        queue: asyncio.Queue = asyncio.Queue()
-        record.tree.add_node_sub(int(node_id), queue)
-        drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
-        try:
-            while True:
-                event = await queue.get()
-                try:
-                    await websocket.send_json(event)
-                except Exception:
-                    break
-        except WebSocketDisconnect:
-            pass
-        finally:
-            record.tree.remove_node_sub(int(node_id), queue)
-            drain_task.cancel()
-            with suppress(Exception):
-                await drain_task
+    # From here on, do not keep a DB session open for the websocket lifetime
+    await websocket.accept()
+    queue: asyncio.Queue = asyncio.Queue()
+    record.tree.add_node_sub(int(node_id), queue)
+    drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
+    try:
+        while True:
+            event = await queue.get()
+            await websocket.send_json(event)
+    except WebSocketDisconnect:
+        raise
+    finally:
+        record.tree.remove_node_sub(int(node_id), queue)
+        drain_task.cancel()
+        await drain_task

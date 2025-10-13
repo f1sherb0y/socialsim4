@@ -23,6 +23,7 @@ class User(TimestampMixin, Base):
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     providers: Mapped[list["ProviderConfig"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    search_providers: Mapped[list["SearchProviderConfig"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     simulations: Mapped[list["Simulation"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
     verification_tokens: Mapped[list["VerificationToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
@@ -44,3 +45,17 @@ class ProviderConfig(TimestampMixin, Base):
     last_error: Mapped[str | None] = mapped_column(String(512))
 
     user: Mapped[User] = relationship(back_populates="providers")
+
+
+class SearchProviderConfig(TimestampMixin, Base):
+    __tablename__ = "search_provider_configs"
+    __table_args__ = (UniqueConstraint("user_id", name="uq_search_provider_user"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    provider: Mapped[str] = mapped_column(String(64))
+    base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    api_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    config: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+    user: Mapped[User] = relationship(back_populates="search_providers")
