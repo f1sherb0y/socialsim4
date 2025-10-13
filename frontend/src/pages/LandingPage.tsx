@@ -23,7 +23,7 @@ export function LandingPage() {
         .
       </p>
       <div style={{ display: "flex", gap: "0.5rem" }}>
-        <Link to="/register" className="button">Launch your first simulation</Link>
+        <Link to="/simulations/new" className="button">Launch your first simulation</Link>
         <Link to="/login" className="button" style={{ background: "linear-gradient(135deg, rgba(148,163,184,0.6), rgba(148,163,184,0.4))" }}>
           Resume your work
         </Link>
