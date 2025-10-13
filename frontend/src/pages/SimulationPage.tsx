@@ -454,20 +454,11 @@ export function SimulationPage() {
   }, [events]);
 
   if (!simulationSlug) {
-    return (
-      <div className="app-container">
-        <header className="app-header">
-          <h1 style={{ margin: 0 }}>Simulation</h1>
-        </header>
-        <main className="app-main">
-          <div className="panel">Invalid simulation ID.</div>
-        </main>
-      </div>
-    );
+    return <div className="panel">Invalid simulation ID.</div>;
   }
 
   return (
-    <div className="app-container">
+    <>
       <style>{`
         @keyframes simulation-running {
           0% { opacity: 1; }
@@ -475,41 +466,43 @@ export function SimulationPage() {
           100% { opacity: 1; }
         }
       `}</style>
-      <header className="app-header">
-        <div>
-          <h1 style={{ margin: 0 }}>{simulationQuery.data?.name ?? "Simulation"}</h1>
-          <p style={{ color: "#94a3b8" }}>
-            {simulationQuery.isFetching ? "Syncing…" : `Status: ${simulationQuery.data?.status ?? "unknown"}`}
-          </p>
+      <div style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100%", minHeight: 0, rowGap: "0.5rem" }}>
+        <div className="panel compact-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div className="panel-title">{simulationQuery.data?.name ?? "Simulation"}</div>
+            <div style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
+              {simulationQuery.isFetching ? "Syncing…" : `Status: ${simulationQuery.data?.status ?? "unknown"}`}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "0.35rem" }}>
+            <button
+              type="button"
+              className="button small"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["simulation", simulationSlug] })}
+            >
+              Refresh metadata
+            </button>
+            <button
+              type="button"
+              className="button small"
+              onClick={() => refreshSelected()}
+              disabled={treeIdRef.current == null || selectedNode == null}
+            >
+              Refresh node
+            </button>
+            <button
+              type="button"
+              className="button small"
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? "Saving…" : "Save snapshot"}
+            </button>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "0.4rem" }}>
-          <button
-            type="button"
-            className="button small"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["simulation", simulationSlug] })}
-          >
-            Refresh metadata
-          </button>
-          <button
-            type="button"
-            className="button small"
-            onClick={() => refreshSelected()}
-            disabled={treeIdRef.current == null || selectedNode == null}
-          >
-            Refresh node
-          </button>
-          <button
-            type="button"
-            className="button small"
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-          >
-            {saveMutation.isPending ? "Saving…" : "Save snapshot"}
-          </button>
-        </div>
-      </header>
-      <main className="app-main" style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%" }} ref={containerRef}>
-        <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
+
+        <div className="app-main" style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%" }} ref={containerRef}>
+          <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Simulation tree</div>
           <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
             <ReactFlow
@@ -639,53 +632,54 @@ export function SimulationPage() {
               </button>
             </div>
           </div>
-        </section>
+          </section>
 
-        <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />
+          <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />
 
-        <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[1]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>Events</span>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
-              <input type="checkbox" checked={eventsAutoScroll} onChange={(event) => setEventsAutoScroll(event.target.checked)} />
-              Auto-scroll
-            </label>
-          </div>
-          <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
-            {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
-          </div>
-        </section>
+          <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[1]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>Events</span>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+                <input type="checkbox" checked={eventsAutoScroll} onChange={(event) => setEventsAutoScroll(event.target.checked)} />
+                Auto-scroll
+              </label>
+            </div>
+            <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
+              {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
+            </div>
+          </section>
 
-        <div className="resizer" onMouseDown={(e) => onResizerMouseDown(1, e)} />
+          <div className="resizer" onMouseDown={(e) => onResizerMouseDown(1, e)} />
 
-        <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[2]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>Agents</span>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
-              <input type="checkbox" checked={agentsAutoScroll} onChange={(event) => setAgentsAutoScroll(event.target.checked)} />
-              Auto-scroll
-            </label>
-          </div>
-          <CompactSelect
-            options={agents.map((agent) => ({ value: agent.name, label: agent.name }))}
-            value={selectedAgent}
-            placeholder="No agents"
-            onChange={setSelectedAgent}
-          />
-          <div ref={agentRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem" }}>
-            {agentMessages.length ? (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
-                {agentMessages.map((message, index) => (
-                  <li key={`${message.role}-${index}`}>
-                    <span style={{ color: "#94a3b8" }}>[{message.role}]</span> {message.content}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div style={{ color: "#94a3b8" }}>No agent messages yet.</div>
-            )}
-          </div>
-        </section>
+          <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[2]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>Agents</span>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+                <input type="checkbox" checked={agentsAutoScroll} onChange={(event) => setAgentsAutoScroll(event.target.checked)} />
+                Auto-scroll
+              </label>
+            </div>
+            <CompactSelect
+              options={agents.map((agent) => ({ value: agent.name, label: agent.name }))}
+              value={selectedAgent}
+              placeholder="No agents"
+              onChange={setSelectedAgent}
+            />
+            <div ref={agentRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem" }}>
+              {agentMessages.length ? (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
+                  {agentMessages.map((message, index) => (
+                    <li key={`${message.role}-${index}`}>
+                      <span style={{ color: "#94a3b8" }}>[{message.role}]</span> {message.content}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{ color: "#94a3b8" }}>No agent messages yet.</div>
+              )}
+            </div>
+          </section>
+        </div>
 
         <div style={{ position: "fixed", bottom: "1.5rem", right: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem", zIndex: 1000 }}>
           {toasts.map((toast) => (
@@ -705,8 +699,8 @@ export function SimulationPage() {
             </div>
           ))}
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
 
