@@ -545,8 +545,6 @@ export function SimulationPage() {
                       <MiniMap
                         pannable
                         zoomable
-                        width={110}
-                        height={70}
                         maskColor={panel}
                         nodeColor={() => muted}
                         nodeStrokeColor={accentB}
