@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { apiClient } from "../api/client";
 import { useAuthStore } from "../store/auth";
@@ -11,6 +12,7 @@ type LoginResponse = {
 };
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: { pathname?: string } } };
   const setSession = useAuthStore((state) => state.setSession);
@@ -49,23 +51,23 @@ export function LoginPage() {
 
   return (
     <section className="panel" style={{ maxWidth: 420, margin: "0 auto", gap: "0.75rem" }}>
-      <div className="panel-title">Welcome back</div>
+      <div className="panel-title">{t('auth.login.welcome')}</div>
       <form onSubmit={onSubmit} className="card" style={{ gap: "0.5rem" }}>
         <label>
-          Email
+          {t('auth.login.email')}
           <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
         <label>
-          Password
+          {t('auth.login.password')}
           <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
-        {error && <div style={{ color: "#f87171" }}>{error}</div>}
+        {error && <div style={{ color: "#f87171" }}>{t('auth.login.invalid')}</div>}
         <button type="submit" className="button" disabled={loading}>
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? t('auth.login.signin') + '…' : t('auth.login.signin')}
         </button>
       </form>
       <div style={{ color: "var(--muted)" }}>
-        No account yet? <Link to="/register">Create one</Link>
+        {t('auth.login.noAccount')} <Link to="/register">{t('auth.login.create')}</Link>
       </div>
     </section>
   );

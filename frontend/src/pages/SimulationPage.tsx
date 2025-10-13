@@ -467,7 +467,7 @@ export function SimulationPage() {
         }
       `}</style>
       <main className="app-main" style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100%", minHeight: 0, rowGap: "0.5rem" }}>
-        <div className="panel compact-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="panel compact-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexDirection: "row" }}>
           <div>
             <div className="panel-title">{simulationQuery.data?.name ?? "Simulation"}</div>
             <div style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
@@ -503,135 +503,135 @@ export function SimulationPage() {
 
         <div style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%" }} ref={containerRef}>
           <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div className="panel-title">Simulation tree</div>
-          <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
-            <ReactFlow
-              nodes={rfGraph.nodes}
-              edges={rfGraph.edges}
-              fitView
-              onNodeClick={(_, node) => {
-                const parsed = Number(node.id);
-                if (!Number.isNaN(parsed)) {
-                  setSelectedNode(parsed);
-                  selectedRef.current = parsed;
-                }
-              }}
-            >
-              <MiniMap pannable zoomable />
-              <Controls position="bottom-left" />
-              <Background />
-            </ReactFlow>
-          </div>
-          {graph && (
-            <div className="card" style={{ marginTop: "0.5rem", fontSize: "0.9rem", display: "grid", gap: "0.35rem" }}>
-              <div>Selected node: {selectedNode ?? "-"}</div>
-              <div>Nodes: {graph.nodes.length} · Edges: {graph.edges.length} · Running: {(graph.running || []).length}</div>
-              <div>Turns at node: {turns}</div>
+            <div className="panel-title">Simulation tree</div>
+            <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
+              <ReactFlow
+                nodes={rfGraph.nodes}
+                edges={rfGraph.edges}
+                fitView
+                onNodeClick={(_, node) => {
+                  const parsed = Number(node.id);
+                  if (!Number.isNaN(parsed)) {
+                    setSelectedNode(parsed);
+                    selectedRef.current = parsed;
+                  }
+                }}
+              >
+                <MiniMap pannable zoomable />
+                <Controls position="bottom-left" />
+                <Background />
+              </ReactFlow>
             </div>
-          )}
-          <div className="card" style={{ marginTop: "0.5rem", display: "grid", gap: "0.5rem" }}>
-            <div>
-              <div className="panel-subtitle">Run frontier leaves</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
-                <input
-                  className="input small"
-                  type="number"
-                  min={1}
-                  value={frontierTurns}
-                  onChange={(event) => setFrontierTurns(event.target.value)}
-                />
+            {graph && (
+              <div className="card" style={{ marginTop: "0.5rem", fontSize: "0.9rem", display: "grid", gap: "0.35rem" }}>
+                <div>Selected node: {selectedNode ?? "-"}</div>
+                <div>Nodes: {graph.nodes.length} · Edges: {graph.edges.length} · Running: {(graph.running || []).length}</div>
+                <div>Turns at node: {turns}</div>
+              </div>
+            )}
+            <div className="card" style={{ marginTop: "0.5rem", display: "grid", gap: "0.5rem" }}>
+              <div>
+                <div className="panel-subtitle">Run frontier leaves</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
+                  <input
+                    className="input small"
+                    type="number"
+                    min={1}
+                    value={frontierTurns}
+                    onChange={(event) => setFrontierTurns(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={async () => {
+                      const tree = treeIdRef.current;
+                      if (tree == null) return;
+                      await treeAdvanceFrontier(tree, frontierTurnsNum);
+                      await refreshSelected();
+                    }}
+                    disabled={treeIdRef.current == null}
+                  >
+                    Run
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="panel-subtitle">Parallel advance</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.35rem", alignItems: "center" }}>
+                  <input className="input small" type="number" min={1} value={multiTurns} onChange={(event) => setMultiTurns(event.target.value)} />
+                  <input className="input small" type="number" min={1} value={multiCount} onChange={(event) => setMultiCount(event.target.value)} />
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={async () => {
+                      const tree = treeIdRef.current;
+                      if (tree == null || selectedNode == null) return;
+                      await treeAdvanceMulti(tree, selectedNode, multiTurnsNum, multiCountNum);
+                      await refreshSelected(tree, selectedNode);
+                    }}
+                    disabled={treeIdRef.current == null || selectedNode == null}
+                  >
+                    Run
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="panel-subtitle">Advance chain</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
+                  <input className="input small" type="number" min={1} value={chainTurns} onChange={(event) => setChainTurns(event.target.value)} />
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={async () => {
+                      const tree = treeIdRef.current;
+                      if (tree == null || selectedNode == null) return;
+                      await treeAdvanceChain(tree, selectedNode, chainTurnsNum);
+                      await refreshSelected(tree, selectedNode);
+                    }}
+                    disabled={treeIdRef.current == null || selectedNode == null}
+                  >
+                    Run
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="panel-subtitle">Broadcast announcement</div>
+                <textarea className="input" value={broadcastText} onChange={(event) => setBroadcastText(event.target.value)} rows={2} />
                 <button
                   type="button"
-                  className="button small"
+                  className="button"
                   onClick={async () => {
                     const tree = treeIdRef.current;
-                    if (tree == null) return;
-                    await treeAdvanceFrontier(tree, frontierTurnsNum);
+                    if (tree == null || selectedNode == null) return;
+                    await treeBranchPublic(tree, selectedNode, broadcastText);
+                    await refreshSelected(tree, selectedNode);
+                  }}
+                  disabled={treeIdRef.current == null || selectedNode == null}
+                >
+                  Apply
+                </button>
+              </div>
+
+              <div>
+                <div className="panel-subtitle">Delete subtree</div>
+                <button
+                  type="button"
+                  className="button"
+                  onClick={async () => {
+                    const tree = treeIdRef.current;
+                    if (tree == null || selectedNode == null || !graph || selectedNode === graph.root) return;
+                    await treeDeleteSubtree(tree, selectedNode);
                     await refreshSelected();
                   }}
-                  disabled={treeIdRef.current == null}
+                  disabled={!graph || selectedNode == null || (graph && selectedNode === graph.root)}
                 >
-                  Run
+                  Delete
                 </button>
               </div>
             </div>
-
-            <div>
-              <div className="panel-subtitle">Parallel advance</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.35rem", alignItems: "center" }}>
-                <input className="input small" type="number" min={1} value={multiTurns} onChange={(event) => setMultiTurns(event.target.value)} />
-                <input className="input small" type="number" min={1} value={multiCount} onChange={(event) => setMultiCount(event.target.value)} />
-                <button
-                  type="button"
-                  className="button small"
-                  onClick={async () => {
-                    const tree = treeIdRef.current;
-                    if (tree == null || selectedNode == null) return;
-                    await treeAdvanceMulti(tree, selectedNode, multiTurnsNum, multiCountNum);
-                    await refreshSelected(tree, selectedNode);
-                  }}
-                  disabled={treeIdRef.current == null || selectedNode == null}
-                >
-                  Run
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div className="panel-subtitle">Advance chain</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
-                <input className="input small" type="number" min={1} value={chainTurns} onChange={(event) => setChainTurns(event.target.value)} />
-                <button
-                  type="button"
-                  className="button small"
-                  onClick={async () => {
-                    const tree = treeIdRef.current;
-                    if (tree == null || selectedNode == null) return;
-                    await treeAdvanceChain(tree, selectedNode, chainTurnsNum);
-                    await refreshSelected(tree, selectedNode);
-                  }}
-                  disabled={treeIdRef.current == null || selectedNode == null}
-                >
-                  Run
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div className="panel-subtitle">Broadcast announcement</div>
-              <textarea className="input" value={broadcastText} onChange={(event) => setBroadcastText(event.target.value)} rows={2} />
-              <button
-                type="button"
-                className="button"
-                onClick={async () => {
-                  const tree = treeIdRef.current;
-                  if (tree == null || selectedNode == null) return;
-                  await treeBranchPublic(tree, selectedNode, broadcastText);
-                  await refreshSelected(tree, selectedNode);
-                }}
-                disabled={treeIdRef.current == null || selectedNode == null}
-              >
-                Apply
-              </button>
-            </div>
-
-            <div>
-              <div className="panel-subtitle">Delete subtree</div>
-              <button
-                type="button"
-                className="button"
-                onClick={async () => {
-                  const tree = treeIdRef.current;
-                  if (tree == null || selectedNode == null || !graph || selectedNode === graph.root) return;
-                  await treeDeleteSubtree(tree, selectedNode);
-                  await refreshSelected();
-                }}
-                disabled={!graph || selectedNode == null || (graph && selectedNode === graph.root)}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
           </section>
 
           <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />

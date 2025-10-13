@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { listSimulations, type Simulation } from "../api/simulations";
+import { useTranslation } from "react-i18next";
 
 type Simulation = {
   id: string;
@@ -11,6 +12,7 @@ type Simulation = {
 };
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: () => listSimulations(),
@@ -20,56 +22,46 @@ export function DashboardPage() {
     <div className="app-container">
       <header className="app-header">
         <div>
-          <h1 style={{ margin: 0 }}>Dashboard</h1>
-          <p style={{ color: "#94a3b8" }}>Pick up where you left off or launch something new.</p>
+          <h1 style={{ margin: 0 }}>{t('dashboard.title')}</h1>
+          <p style={{ color: "#94a3b8" }}>{t('dashboard.subtitle')}</p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link to="/simulations/new" className="button">
-            New simulation
-          </Link>
-          <Link to="/simulations/saved" className="button button-ghost">
-            Resume saved
-          </Link>
+          <Link to="/simulations/new" className="button">{t('dashboard.new')}</Link>
+          <Link to="/simulations/saved" className="button button-ghost">{t('dashboard.resume')}</Link>
         </div>
       </header>
       <main className="app-main">
         <section className="card-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           <div className="card">
-            <div className="panel-title">Quick start</div>
-            <p style={{ color: "#94a3b8" }}>Jump directly into the guided setup wizard.</p>
-            <Link to="/simulations/new" className="button">
-              Launch wizard
-            </Link>
+            <div className="panel-title">{t('dashboard.quick')}</div>
+            <p style={{ color: "#94a3b8" }}>{t('dashboard.subtitle')}</p>
+            <Link to="/simulations/new" className="button">{t('dashboard.launchWizard')}</Link>
           </div>
           <div className="card">
-            <div className="panel-title">Connect providers</div>
-            <p style={{ color: "#94a3b8" }}>Add your OpenAI, Azure, or custom endpoints once and reuse them across simulations.</p>
-            <Link to="/settings/providers" className="button button-ghost" style={{ alignSelf: "flex-start" }}>
-              Manage providers
-            </Link>
+            <div className="panel-title">{t('dashboard.providers')}</div>
+            <p style={{ color: "#94a3b8" }}>{t('dashboard.providersHint')}</p>
+            <Link to="/settings/providers" className="button button-ghost" style={{ alignSelf: "flex-start" }}>{t('dashboard.manageProviders')}</Link>
           </div>
         </section>
 
         <section style={{ marginTop: "2rem" }}>
           <div className="panel">
             <div className="panel-header">
-              <div className="panel-title">Recent simulations</div>
-              <Link to="/simulations/saved" className="link">
-                View all
-              </Link>
+              <div className="panel-title">{t('dashboard.recent')}</div>
+              <Link to="/simulations/saved" className="link">{t('dashboard.viewAll')}</Link>
             </div>
-            {simulationsQuery.isLoading && <div>Loading simulations…</div>}
-            {simulationsQuery.error && <div style={{ color: "#f87171" }}>Unable to load simulations.</div>}
+            {simulationsQuery.isLoading && <div>{t('dashboard.loading')}</div>}
+            {simulationsQuery.error && <div style={{ color: "#f87171" }}>{t('dashboard.error')}</div>}
             <div style={{ display: "grid", gap: "0.75rem" }}>
               {(simulationsQuery.data ?? []).slice(0, 5).map((simulation) => (
                 <Link key={simulation.id} to={`/simulations/${simulation.id}`} className="card" style={{ margin: 0 }}>
                   <div style={{ fontWeight: 600 }}>{simulation.name}</div>
-                  <div style={{ color: "#94a3b8" }}>Status: {simulation.status}</div>
-                  <div style={{ color: "#64748b" }}>Created {new Date(simulation.created_at).toLocaleString()}</div>
+                  <div style={{ color: "#94a3b8" }}>{t('dashboard.status')}: {simulation.status}</div>
+                  <div style={{ color: "#64748b" }}>{t('dashboard.created')} {new Date(simulation.created_at).toLocaleString()}</div>
                 </Link>
               ))}
               {simulationsQuery.data && simulationsQuery.data.length === 0 && (
-                <div style={{ color: "#94a3b8" }}>No simulations yet. Create one to get started.</div>
+                <div style={{ color: "#94a3b8" }}>{t('dashboard.empty')}</div>
               )}
             </div>
           </div>

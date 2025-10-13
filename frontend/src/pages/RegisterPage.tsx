@@ -2,8 +2,10 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { apiClient } from "../api/client";
+import { useTranslation } from "react-i18next";
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     organization: "",
@@ -45,40 +47,40 @@ export function RegisterPage() {
 
   return (
     <section className="panel" style={{ maxWidth: 520, margin: "0 auto", gap: "0.75rem" }}>
-      <div className="panel-title">Create your workspace</div>
+      <div className="panel-title">{t('auth.register.title')}</div>
       <form onSubmit={onSubmit} className="card" style={{ gap: "0.5rem" }}>
         <label>
-          Organization
+          {t('auth.register.organization')}
           <input className="input" value={form.organization} onChange={(e) => handleChange("organization", e.target.value)} required />
         </label>
         <label>
-          Email
+          {t('auth.register.email')}
           <input className="input" type="email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} required />
         </label>
         <label>
-          Username
+          {t('auth.register.username')}
           <input className="input" value={form.username} onChange={(e) => handleChange("username", e.target.value)} required />
         </label>
         <label>
-          Full name
+          {t('auth.register.fullName')}
           <input className="input" value={form.full_name} onChange={(e) => handleChange("full_name", e.target.value)} required />
         </label>
         <label>
-          Phone number
+          {t('auth.register.phone')}
           <input className="input" value={form.phone_number} onChange={(e) => handleChange("phone_number", e.target.value)} required />
         </label>
         <label>
-          Password
+          {t('auth.register.password')}
           <input className="input" type="password" value={form.password} onChange={(e) => handleChange("password", e.target.value)} required />
         </label>
-        {error && <div style={{ color: "#f87171" }}>{error}</div>}
-        {success && <div style={{ color: "#34d399" }}>Registration successful. Check your email.</div>}
+        {error && <div style={{ color: "#f87171" }}>{t('auth.register.failed')}</div>}
+        {success && <div style={{ color: "#34d399" }}>{t('auth.register.success')}</div>}
         <button type="submit" className="button" disabled={loading}>
-          {loading ? "Submitting…" : "Create account"}
+          {loading ? t('auth.register.submit') + '…' : t('auth.register.submit')}
         </button>
       </form>
       <div style={{ color: "var(--muted)" }}>
-        Already registered? <Link to="/login">Sign in</Link>
+        {t('auth.register.have')} <Link to="/login">{t('auth.register.signin')}</Link>
       </div>
     </section>
   );

@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import i18n, { setLanguage } from "../i18n";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
 
@@ -6,18 +8,19 @@ export function NavBar() {
   const location = useLocation();
   const { user, isAuthenticated, clearSession } = useAuthStore((s) => ({ user: s.user, isAuthenticated: s.isAuthenticated, clearSession: s.clearSession }));
   const { mode, toggle } = useThemeStore((s) => ({ mode: s.mode, toggle: s.toggle }));
+  const { t } = useTranslation();
 
   const navItems = [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/simulations/new", label: "New" },
-    { to: "/simulations/saved", label: "Saved" },
-    { to: "/settings/providers", label: "Settings" },
+    { to: "/dashboard", label: t('nav.dashboard') },
+    { to: "/simulations/new", label: t('nav.new') },
+    { to: "/simulations/saved", label: t('nav.saved') },
+    { to: "/settings/providers", label: t('nav.settings') },
   ];
 
   return (
     <nav className="nav">
       <div className="nav-left">
-        <Link to="/" className="nav-brand">SocialSim4</Link>
+        <Link to="/" className="nav-brand">{t('brand')}</Link>
         <div className="nav-links">
           {navItems.map((item) => (
             <Link key={item.to} to={item.to} className={`nav-link ${location.pathname.startsWith(item.to) ? "active" : ""}`}>
@@ -30,15 +33,25 @@ export function NavBar() {
         <button type="button" className="icon-button" onClick={toggle} title="Toggle theme">
           {mode === "dark" ? "🌙" : "☀️"}
         </button>
+        <select
+          className="input small"
+          value={i18n.language.startsWith('zh') ? 'zh' : 'en'}
+          onChange={(e) => setLanguage(e.target.value as 'en' | 'zh')}
+          style={{ width: 'auto' }}
+          aria-label="Language"
+        >
+          <option value="en">EN</option>
+          <option value="zh">中文</option>
+        </select>
         {isAuthenticated ? (
           <div className="nav-user">
             <span className="nav-username">{String((user as any)?.email ?? "")}</span>
-            <button type="button" className="text-button" onClick={clearSession}>Sign out</button>
+            <button type="button" className="text-button" onClick={clearSession}>{t('nav.signout')}</button>
           </div>
         ) : (
           <div className="nav-user">
-            <Link to="/login" className="nav-link">Login</Link>
-            <Link to="/register" className="nav-link">Register</Link>
+            <Link to="/login" className="nav-link">{t('nav.login')}</Link>
+            <Link to="/register" className="nav-link">{t('nav.register')}</Link>
           </div>
         )}
       </div>

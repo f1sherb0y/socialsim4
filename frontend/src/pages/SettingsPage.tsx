@@ -3,12 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createProvider as apiCreateProvider, listProviders, testProvider as apiTestProvider, type Provider } from "../api/providers";
 import { useAuthStore } from "../store/auth";
+import { useTranslation } from "react-i18next";
 
 type Tab = "profile" | "security" | "providers";
 
 // Provider type comes from ../api/providers
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
@@ -187,19 +189,19 @@ export function SettingsPage() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1 style={{ margin: 0 }}>Settings</h1>
+        <h1 style={{ margin: 0 }}>{t('settings.title')}</h1>
       </header>
       <main className="app-main">
         <div className="tab-layout">
           <nav className="tab-nav">
             <button type="button" className={`tab-button ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
-              Profile
+              {t('settings.tabs.profile')}
             </button>
             <button type="button" className={`tab-button ${activeTab === "security" ? "active" : ""}`} onClick={() => setActiveTab("security")}>
-              Security
+              {t('settings.tabs.security')}
             </button>
             <button type="button" className={`tab-button ${activeTab === "providers" ? "active" : ""}`} onClick={() => setActiveTab("providers")}>
-              Providers
+              {t('settings.tabs.providers')}
             </button>
           </nav>
           <section>{tabContent}</section>

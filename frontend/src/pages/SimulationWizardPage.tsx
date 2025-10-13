@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 import { listScenes, type SceneOption } from "../api/scenes";
 import { createSimulation } from "../api/simulations";
+import { useTranslation } from "react-i18next";
 
 type Step = "scene" | "scene-config" | "agents" | "review";
 
 export function SimulationWizardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const scenesQuery = useQuery({
     queryKey: ["scenes"],
@@ -69,23 +71,19 @@ export function SimulationWizardPage() {
   return (
     <form onSubmit={handleSubmit} className="panel" style={{ gap: "0.75rem" }}>
       <div className="panel-header">
-        <div className="panel-title">Simulation wizard</div>
+        <div className="panel-title">{t('wizard.title')}</div>
         <div style={{ display: "flex", gap: "0.4rem" }}>
           {step !== "scene" && (
-            <button type="button" className="button" onClick={previousStep}>
-              Back
-            </button>
+            <button type="button" className="button" onClick={previousStep}>{t('wizard.back')}</button>
           )}
           {step !== "review" && (
-            <button type="button" className="button" onClick={nextStep} disabled={step === "scene" && !sceneType}>
-              Continue
-            </button>
+            <button type="button" className="button" onClick={nextStep} disabled={step === "scene" && !sceneType}>{t('wizard.continue')}</button>
           )}
         </div>
       </div>
       {step === "scene" && (
         <div>
-          <div className="panel-title">Select scene</div>
+          <div className="panel-title">{t('wizard.selectScene')}</div>
           {scenesQuery.isLoading && <div>Loading scenes…</div>}
           {scenesQuery.error && <div style={{ color: "#f87171" }}>Unable to fetch scenes.</div>}
           <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -111,11 +109,11 @@ export function SimulationWizardPage() {
 
       {step === "scene-config" && (
         <div>
-          <div className="panel-title">Configure scene</div>
+          <div className="panel-title">{t('wizard.configureScene')}</div>
           {currentScene ? (
             <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
               {Object.keys(currentScene.config_schema ?? {}).length === 0 && (
-                <div style={{ color: "#94a3b8" }}>This scene has no additional configuration.</div>
+                <div style={{ color: "#94a3b8" }}>{t('wizard.noExtraConfig')}</div>
               )}
               {Object.entries(currentScene.config_schema ?? {}).map(([key, value]) => (
                 <label key={key}>
@@ -136,7 +134,7 @@ export function SimulationWizardPage() {
 
       {step === "agents" && (
         <div>
-          <div className="panel-title">Define agents</div>
+          <div className="panel-title">{t('wizard.defineAgents')}</div>
           <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
             {agents.map((agent, index) => (
               <div key={index} className="card" style={{ gap: "0.5rem" }}>
@@ -158,36 +156,32 @@ export function SimulationWizardPage() {
                 </label>
               </div>
             ))}
-            <button type="button" className="button" onClick={handleAddAgent} style={{ width: "fit-content" }}>
-              Add agent
-            </button>
+            <button type="button" className="button" onClick={handleAddAgent} style={{ width: "fit-content" }}>{t('wizard.addAgent')}</button>
           </div>
         </div>
       )}
 
       {step === "review" && (
         <div style={{ display: "grid", gap: "0.5rem" }}>
-          <div className="panel-title">Review</div>
+          <div className="panel-title">{t('wizard.review')}</div>
           <div className="card">
             <div style={{ fontWeight: 600 }}>Scene</div>
             <div>{sceneType}</div>
           </div>
           <div className="card">
-            <div style={{ fontWeight: 600 }}>Configuration</div>
+            <div style={{ fontWeight: 600 }}>{t('wizard.config')}</div>
             <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{JSON.stringify(sceneConfig, null, 2)}</pre>
           </div>
           <div className="card">
-            <div style={{ fontWeight: 600 }}>Agents</div>
+            <div style={{ fontWeight: 600 }}>{t('wizard.agents')}</div>
             <ul>
               {agents.map((agent, index) => (
                 <li key={index}>{agent.name} — {agent.profile || "No profile"}</li>
               ))}
             </ul>
           </div>
-          <button type="submit" className="button" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Creating…" : "Start simulation"}
-          </button>
-          {createMutation.error && <div style={{ color: "#f87171" }}>Failed to create simulation.</div>}
+          <button type="submit" className="button" disabled={createMutation.isPending}>{createMutation.isPending ? t('wizard.start') + '…' : t('wizard.start')}</button>
+          {createMutation.error && <div style={{ color: "#f87171" }}>{t('wizard.createFailed')}</div>}
         </div>
       )}
     </form>

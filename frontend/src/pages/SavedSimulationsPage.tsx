@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { copySimulation as apiCopySimulation, listSimulations, resumeSimulation as apiResumeSimulation, type Simulation } from "../api/simulations";
+import { useTranslation } from "react-i18next";
 
 type Simulation = {
   id: string;
@@ -11,6 +12,7 @@ type Simulation = {
 };
 
 export function SavedSimulationsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const simulationsQuery = useQuery({
@@ -36,12 +38,12 @@ export function SavedSimulationsPage() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1 style={{ margin: 0 }}>Saved simulations</h1>
+        <h1 style={{ margin: 0 }}>{t('saved.title')}</h1>
       </header>
       <main className="app-main">
         <div className="panel" style={{ gap: "1rem" }}>
-          {simulationsQuery.isLoading && <div>Loading…</div>}
-          {simulationsQuery.error && <div style={{ color: "#f87171" }}>Unable to load simulations.</div>}
+          {simulationsQuery.isLoading && <div>{t('saved.loading')}</div>}
+          {simulationsQuery.error && <div style={{ color: "#f87171" }}>{t('saved.error')}</div>}
           <div className="card-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
             {(simulationsQuery.data ?? []).map((simulation) => (
               <div key={simulation.id} className="card">
@@ -60,7 +62,7 @@ export function SavedSimulationsPage() {
                     onClick={() => resumeSimulation.mutate(simulation.id)}
                     disabled={resumeSimulation.isPending}
                   >
-                    Resume
+                    {t('saved.resume')}
                   </button>
                   <button
                     type="button"
@@ -69,7 +71,7 @@ export function SavedSimulationsPage() {
                     onClick={() => copySimulation.mutate(simulation.id)}
                     disabled={copySimulation.isPending}
                   >
-                    Copy
+                    {t('saved.copy')}
                   </button>
                 </div>
               </div>
