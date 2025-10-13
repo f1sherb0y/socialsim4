@@ -53,6 +53,12 @@ export function SimulationWizardPage() {
   const defaultSimpleAgents = useMemo(
     () => [
       {
+        name: "Host",
+        profile:
+          "You are the Host of a chat room. Facilitate conversation, ask clarifying questions, and remain neutral to keep the discussion productive.",
+        action_space: ["send_message"],
+      },
+      {
         name: "Alice",
         profile:
           "You are Alice, optimistic and curious about technology; you ask insightful questions, synthesize viewpoints, and keep the discussion constructive.",
