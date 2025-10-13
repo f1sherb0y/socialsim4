@@ -483,7 +483,7 @@ export function SimulationPage() {
             </ReactFlow>
           </div>
           {graph && (
-            <div className="card" style={{ marginTop: "0.75rem", background: "rgba(30,41,59,0.5)", fontSize: "0.85rem", display: "grid", gap: "0.35rem" }}>
+            <div className="card" style={{ marginTop: "0.5rem", fontSize: "0.9rem", display: "grid", gap: "0.35rem" }}>
               <div>Selected node: {selectedNode ?? "-"}</div>
               <div>Nodes: {graph.nodes.length} · Edges: {graph.edges.length} · Running: {(graph.running || []).length}</div>
               <div>Turns at node: {turns}</div>
@@ -596,11 +596,7 @@ export function SimulationPage() {
 
         <section className="panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Events</div>
-          <div
-            ref={eventsRef}
-            className="card"
-            style={{ flex: 1, minHeight: 0, overflowY: "auto", background: "rgba(30,41,59,0.5)", padding: "1rem", display: "grid", gap: "0.75rem" }}
-          >
+          <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
             {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
           </div>
         </section>
@@ -610,7 +606,7 @@ export function SimulationPage() {
             <span>Agents</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
               <input type="checkbox" checked={stickBottom} onChange={(event) => setStickBottom(event.target.checked)} />
-              Stick to bottom
+              Auto-scroll
             </label>
           </div>
           <CompactSelect
@@ -619,11 +615,7 @@ export function SimulationPage() {
             placeholder="No agents"
             onChange={setSelectedAgent}
           />
-          <div
-            ref={agentRef}
-            className="card"
-            style={{ flex: 1, minHeight: 0, overflowY: "auto", background: "rgba(30,41,59,0.5)", padding: "1rem" }}
-          >
+          <div ref={agentRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem" }}>
             {agentMessages.length ? (
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
                 {agentMessages.map((message, index) => (

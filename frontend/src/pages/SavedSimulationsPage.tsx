@@ -55,7 +55,7 @@ export function SavedSimulationsPage() {
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button
                     type="button"
-                    className="button"
+                    className="button small"
                     style={{ flex: 1 }}
                     onClick={() => resumeSimulation.mutate(simulation.id)}
                     disabled={resumeSimulation.isPending}
@@ -64,8 +64,8 @@ export function SavedSimulationsPage() {
                   </button>
                   <button
                     type="button"
-                    className="button"
-                    style={{ flex: 1, background: "rgba(148,163,184,0.2)", color: "#e2e8f0" }}
+                    className="button button-ghost small"
+                    style={{ flex: 1 }}
                     onClick={() => copySimulation.mutate(simulation.id)}
                     disabled={copySimulation.isPending}
                   >
