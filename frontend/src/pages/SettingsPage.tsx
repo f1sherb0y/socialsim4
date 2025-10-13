@@ -80,7 +80,7 @@ export function SettingsPage() {
           <div className="panel-title">{t('settings.tabs.security')}</div>
           <div className="card">
             <p>{t('settings.security.placeholder')}</p>
-            <button type="button" className="button" style={{ alignSelf: "flex-start" }} onClick={() => clearSession()}>
+            <button type="button" className="button button-danger" style={{ alignSelf: "flex-start" }} onClick={() => clearSession()}>
               {t('settings.security.signoutAll')}
             </button>
           </div>
