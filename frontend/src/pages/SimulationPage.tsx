@@ -64,6 +64,7 @@ export function SimulationPage() {
   // Resizable columns
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [colWidths, setColWidths] = useState<[number, number, number]>([33, 34, 33]);
+  const gridCols = `${colWidths[0]}fr 6px ${colWidths[1]}fr 6px ${colWidths[2]}fr`;
   const dragRef = useRef<{ index: 0 | 1; startX: number; widths: [number, number, number] } | null>(null);
   const minPct = 15;
 
@@ -507,7 +508,7 @@ export function SimulationPage() {
           </button>
         </div>
       </header>
-      <main className="app-main" style={{ display: "flex", gap: "0.5rem" }} ref={containerRef}>
+      <main className="app-main" style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%" }} ref={containerRef}>
         <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Simulation tree</div>
           <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
