@@ -17,7 +17,7 @@ export function NavBar() {
   return (
     <nav className="nav">
       <div className="nav-left">
-        <Link to="/dashboard" className="nav-brand">SocialSim4</Link>
+        <Link to="/" className="nav-brand">SocialSim4</Link>
         <div className="nav-links">
           {navItems.map((item) => (
             <Link key={item.to} to={item.to} className={`nav-link ${location.pathname.startsWith(item.to) ? "active" : ""}`}>
