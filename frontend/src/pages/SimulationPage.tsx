@@ -466,7 +466,7 @@ export function SimulationPage() {
           100% { opacity: 1; }
         }
       `}</style>
-      <div style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100%", minHeight: 0, rowGap: "0.5rem" }}>
+      <main className="app-main" style={{ display: "grid", gridTemplateRows: "auto 1fr", height: "100%", minHeight: 0, rowGap: "0.5rem" }}>
         <div className="panel compact-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div className="panel-title">{simulationQuery.data?.name ?? "Simulation"}</div>
@@ -501,7 +501,7 @@ export function SimulationPage() {
           </div>
         </div>
 
-        <div className="app-main" style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%" }} ref={containerRef}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%" }} ref={containerRef}>
           <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Simulation tree</div>
           <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
@@ -699,7 +699,7 @@ export function SimulationPage() {
             </div>
           ))}
         </div>
-      </div>
+      </main>
     </>
   );
 }
