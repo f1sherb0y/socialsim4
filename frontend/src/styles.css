@@ -1,6 +1,8 @@
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
+
+/* Global font contract */
+:root { --font-sans: "Cantarell", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html { font-family: var(--font-sans); }
 
 :root.theme-dark {
   --bg: #0f172a;
@@ -28,7 +30,7 @@
 
 body {
   margin: 0;
-  font-family: "Cantarell", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: inherit;
   background: var(--bg);
   color: var(--text);
 }
@@ -37,6 +39,12 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Ensure form controls and interactive elements inherit the site font */
+button,
+input,
+select,
+textarea { font: inherit; }
 
 .app-container {
   min-height: 100vh;
@@ -199,6 +207,6 @@ textarea::placeholder {
 .nav-link.active, .nav-link:hover { color: var(--text); background: rgba(148, 163, 184, 0.15); }
 .nav-right { display: flex; align-items: center; gap: 0.5rem; }
 .icon-button { border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 8px; padding: 0.25rem 0.5rem; cursor: pointer; }
-.text-button { border: none; background: transparent; color: var(--link); cursor: pointer; padding: 0.25rem 0.5rem; }
+.text-button { border: none; background: transparent; color: var(--link); cursor: pointer; padding: 0.25rem 0.5rem; font: inherit; }
 .nav-user { display: flex; align-items: center; gap: 0.5rem; }
 .nav-username { color: var(--muted); font-size: 0.9rem; }
