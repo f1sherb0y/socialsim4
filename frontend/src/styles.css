@@ -244,6 +244,4 @@ textarea::placeholder {
 .nav-username { color: var(--muted); font-size: 0.9rem; }
 
 /* Resizable column handle */
-.resizer { width: 6px; cursor: col-resize; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
-:root.theme-light .resizer { background: rgba(15,23,42,0.04); }
-:root.theme-dark .resizer { background: rgba(148,163,184,0.08); }
+.resizer { width: 2px; cursor: col-resize; background: var(--border); }

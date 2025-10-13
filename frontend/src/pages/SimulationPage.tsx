@@ -64,7 +64,7 @@ export function SimulationPage() {
   // Resizable columns
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [colWidths, setColWidths] = useState<[number, number, number]>([33, 34, 33]);
-  const gridCols = `${colWidths[0]}fr 6px ${colWidths[1]}fr 6px ${colWidths[2]}fr`;
+  const gridCols = `${colWidths[0]}fr 2px ${colWidths[1]}fr 2px ${colWidths[2]}fr`;
   const dragRef = useRef<{ index: 0 | 1; startX: number; widths: [number, number, number] } | null>(null);
   const minPct = 15;
 
