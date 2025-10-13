@@ -6,7 +6,7 @@ import ReactFlow, { Background, Controls, MiniMap, type Edge as RFEdge, type Nod
 import { graphlib, layout } from "dagre";
 import "reactflow/dist/style.css";
 
-import { apiClient } from "../api/client";
+import { API_BASE_URL, apiClient } from "../api/client";
 import {
   AgentInfo,
   Graph,
@@ -42,7 +42,7 @@ type ToastMessage = {
 const WS_BASE = (() => {
   const wsConfigured = import.meta.env.VITE_BACKEND_WS_BASE_URL as string | undefined;
   if (wsConfigured) return wsConfigured.replace(/\/$/, "");
-  const httpConfigured = import.meta.env.VITE_BACKEND_BASE_URL as string | undefined;
+  const httpConfigured = API_BASE_URL as string | undefined;
   if (httpConfigured) {
     try {
       const u = new URL(httpConfigured);
