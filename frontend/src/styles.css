@@ -121,6 +121,13 @@ textarea.small {
 /* Subtitle style */
 .panel-subtitle { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
 
+/* Denser UI for simulation panels */
+.compact-panel { font-size: 0.88rem; }
+.compact-panel .panel-title { font-size: 0.95rem; }
+.compact-panel .card { padding: 0.6rem; }
+.compact-panel .button { padding: 0.35rem 0.6rem; font-size: 0.85rem; }
+.compact-panel .input { padding: 0.35rem 0.5rem; font-size: 0.85rem; }
+
 .three-column-grid {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr) 320px;

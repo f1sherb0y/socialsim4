@@ -461,8 +461,8 @@ export function SimulationPage() {
           </button>
         </div>
       </header>
-      <main className="app-main" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-        <section className="panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <main className="app-main" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+        <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Simulation tree</div>
           <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
             <ReactFlow
@@ -594,14 +594,14 @@ export function SimulationPage() {
           </div>
         </section>
 
-        <section className="panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title">Events</div>
           <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
             {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
           </div>
         </section>
 
-        <section className="panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>Agents</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
