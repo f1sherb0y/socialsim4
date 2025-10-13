@@ -2,7 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { apiClient } from "../api/client";
+import { listScenes, type SceneOption } from "../api/scenes";
+import { createSimulation } from "../api/simulations";
 
 type SceneOption = {
   type: string;
@@ -16,10 +17,7 @@ export function SimulationWizardPage() {
   const navigate = useNavigate();
   const scenesQuery = useQuery({
     queryKey: ["scenes"],
-    queryFn: async () => {
-      const response = await apiClient.get<SceneOption[]>("/scenes");
-      return response.data;
-    },
+    queryFn: () => listScenes(),
   });
 
   const [step, setStep] = useState<Step>("scene");
@@ -29,19 +27,17 @@ export function SimulationWizardPage() {
     { name: "Alice", profile: "Analyst", action_space: ["send_message"] },
   ]);
 
-  const createSimulation = useMutation({
+  const createMutation = useMutation({
     mutationFn: async () => {
       if (!sceneType) throw new Error("scene required");
-      const response = await apiClient.post("/simulations", {
+      const sim = await createSimulation({
         scene_type: sceneType,
         scene_config: sceneConfig,
         agent_config: { agents },
       });
-      return response.data as { id: string };
+      return sim;
     },
-    onSuccess: (data) => {
-      navigate(`/simulations/${data.id}`);
-    },
+    onSuccess: (simulation) => navigate(`/simulations/${simulation.id}`),
   });
 
   const currentScene = useMemo(
@@ -73,7 +69,7 @@ export function SimulationWizardPage() {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    createSimulation.mutate();
+    createMutation.mutate();
   };
 
   return (
@@ -199,10 +195,10 @@ export function SimulationWizardPage() {
                   ))}
                 </ul>
               </div>
-              <button type="submit" className="button" disabled={createSimulation.isPending}>
-                {createSimulation.isPending ? "Creating…" : "Start simulation"}
+              <button type="submit" className="button" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Creating…" : "Start simulation"}
               </button>
-              {createSimulation.error && <div style={{ color: "#f87171" }}>Failed to create simulation.</div>}
+              {createMutation.error && <div style={{ color: "#f87171" }}>Failed to create simulation.</div>}
             </div>
           )}
         </form>

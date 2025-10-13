@@ -6,10 +6,13 @@ import ReactFlow, { Background, Controls, MiniMap, type Edge as RFEdge, type Nod
 import { graphlib, layout } from "dagre";
 import "reactflow/dist/style.css";
 
-import { API_BASE_URL, apiClient } from "../api/client";
+import { apiClient } from "../api/client";
 import {
   AgentInfo,
   Graph,
+  SimEvent,
+  connectNodeEvents,
+  connectTreeEvents,
   getSimEvents,
   getSimState,
   getTreeGraph,
@@ -29,49 +32,14 @@ type Simulation = {
   latest_state?: Record<string, unknown> | null;
 };
 
-type SimEvent = {
-  type: string;
-  data?: Record<string, unknown> | null;
-};
+// SimEvent type is provided by ../api/simulationTree
 
 type ToastMessage = {
   id: number;
   text: string;
 };
 
-const WS_BASE = (() => {
-  const wsConfigured = import.meta.env.VITE_BACKEND_WS_BASE_URL as string | undefined;
-  if (wsConfigured) return wsConfigured.replace(/\/$/, "");
-  const httpConfigured = API_BASE_URL as string | undefined;
-  if (httpConfigured) {
-    try {
-      const u = new URL(httpConfigured);
-      u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
-      return u.toString().replace(/\/$/, "");
-    } catch {
-      // fall through to window-based default
-    }
-  }
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    return `${protocol}://${window.location.host}/api`;
-  }
-  return "";
-})();
-
-function buildWsUrl(path: string, token?: string): string {
-  const base = WS_BASE || (typeof window !== "undefined"
-    ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/api`
-    : "");
-  if (!base) {
-    throw new Error("WebSocket base URL is not configured");
-  }
-  const url = new URL(`${base}${path}`);
-  if (token) {
-    url.searchParams.set("token", token);
-  }
-  return url.toString();
-}
+// WS helpers are provided by ../api/simulationTree
 
 export function SimulationPage() {
   const params = useParams();
@@ -168,10 +136,7 @@ export function SimulationPage() {
       if (node == null) {
         return;
       }
-      const ws = new WebSocket(buildWsUrl(`/simulations/${tree}/tree/${node}/events`, accessToken || undefined));
-      ws.onopen = () => ws.send("ready");
-      ws.onmessage = (ev) => {
-        const payload: SimEvent = JSON.parse(ev.data);
+      const ws = connectNodeEvents(tree, node, accessToken, (payload: SimEvent) => {
         if (payload.type === "agent_ctx_delta") {
           const data = payload.data ?? {};
           const agentName = String(data.agent ?? "");
@@ -189,7 +154,7 @@ export function SimulationPage() {
           return;
         }
         setEvents((prev) => [...prev, payload]);
-      };
+      });
       nodeWsRef.current = ws;
     },
     [accessToken, closeNodeWs],
@@ -309,9 +274,7 @@ export function SimulationPage() {
         }
       }
 
-      const ws = new WebSocket(buildWsUrl(`/simulations/${id}/tree/events`, accessToken || undefined));
-      ws.onopen = () => ws.send("ready");
-      ws.onmessage = onTreeWsMessage;
+      const ws = connectTreeEvents(id, accessToken, (ev) => onTreeWsMessage({ data: JSON.stringify(ev) } as MessageEvent));
       treeWsRef.current = ws;
     },
     [accessToken, closeNodeWs, closeTreeWs, connectNodeWs, onTreeWsMessage, refreshSelected],

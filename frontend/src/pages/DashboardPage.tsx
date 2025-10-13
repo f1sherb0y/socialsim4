@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
-import { apiClient } from "../api/client";
+import { listSimulations, type Simulation } from "../api/simulations";
 
 type Simulation = {
   id: string;
@@ -13,10 +13,7 @@ type Simulation = {
 export function DashboardPage() {
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
-    queryFn: async () => {
-      const response = await apiClient.get<Simulation[]>("/simulations");
-      return response.data;
-    },
+    queryFn: () => listSimulations(),
   });
 
   return (

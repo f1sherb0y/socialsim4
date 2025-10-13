@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
-import { apiClient } from "../api/client";
+import { copySimulation as apiCopySimulation, listSimulations, resumeSimulation as apiResumeSimulation, type Simulation } from "../api/simulations";
 
 type Simulation = {
   id: string;
@@ -15,17 +15,11 @@ export function SavedSimulationsPage() {
   const queryClient = useQueryClient();
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
-    queryFn: async () => {
-      const response = await apiClient.get<Simulation[]>("/simulations");
-      return response.data;
-    },
+    queryFn: () => listSimulations(),
   });
 
   const copySimulation = useMutation({
-    mutationFn: async (simulationSlug: string) => {
-      const response = await apiClient.post<Simulation>(`/simulations/${simulationSlug}/copy`);
-      return response.data;
-    },
+    mutationFn: async (simulationSlug: string) => apiCopySimulation(simulationSlug),
     onSuccess: (simulation) => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
       navigate(`/simulations/${simulation.id}`);
@@ -33,9 +27,7 @@ export function SavedSimulationsPage() {
   });
 
   const resumeSimulation = useMutation({
-    mutationFn: async (simulationSlug: string) => {
-      await apiClient.post(`/simulations/${simulationSlug}/resume`);
-    },
+    mutationFn: async (simulationSlug: string) => apiResumeSimulation(simulationSlug),
     onSuccess: (_, simulationSlug) => {
       navigate(`/simulations/${simulationSlug}`);
     },

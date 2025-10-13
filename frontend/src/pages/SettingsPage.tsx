@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient } from "../api/client";
+import { createProvider as apiCreateProvider, listProviders, testProvider as apiTestProvider, type Provider } from "../api/providers";
 import { useAuthStore } from "../store/auth";
 
 type Tab = "profile" | "security" | "providers";
@@ -26,10 +26,7 @@ export function SettingsPage() {
   const providersQuery = useQuery({
     queryKey: ["providers"],
     enabled: activeTab === "providers",
-    queryFn: async () => {
-      const response = await apiClient.get<Provider[]>("/providers");
-      return response.data;
-    },
+    queryFn: () => listProviders(),
   });
 
   const [providerDraft, setProviderDraft] = useState({
@@ -42,16 +39,14 @@ export function SettingsPage() {
   const [keyVisible, setKeyVisible] = useState(false);
 
   const createProvider = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post<Provider>("/providers", {
+    mutationFn: async () =>
+      apiCreateProvider({
         name: providerDraft.name,
         provider: providerDraft.provider,
         model: providerDraft.model,
         base_url: providerDraft.base_url,
         api_key: providerDraft.api_key,
-      });
-      return response.data;
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["providers"] });
       setProviderDraft({ name: "", provider: "openai", model: "gpt-4", base_url: "https://api.openai.com/v1", api_key: "" });
@@ -60,10 +55,7 @@ export function SettingsPage() {
   });
 
   const testProvider = useMutation({
-    mutationFn: async (providerId: number) => {
-      const response = await apiClient.post<{ message: string }>(`/providers/${providerId}/test`);
-      return response.data;
-    },
+    mutationFn: async (providerId: number) => apiTestProvider(providerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["providers"] });
     },

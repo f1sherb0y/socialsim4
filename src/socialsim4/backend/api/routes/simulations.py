@@ -12,17 +12,16 @@ from ...dependencies import get_current_user, get_db_session, settings
 from ...models.simulation import Simulation, SimulationLog, SimulationSnapshot
 from ...models.user import User
 from ...schemas.common import Message
-from ...schemas.simulation import SimulationBase, SimulationCreate, SimulationLogEntry, SimulationUpdate, SnapshotBase, SnapshotCreate
 from ...schemas.simtree import (
     SimulationTreeAdvanceChainPayload,
     SimulationTreeAdvanceFrontierPayload,
     SimulationTreeAdvanceMultiPayload,
     SimulationTreeBranchPayload,
 )
+from ...schemas.simulation import SimulationBase, SimulationCreate, SimulationLogEntry, SimulationUpdate, SnapshotBase, SnapshotCreate
 from ...schemas.user import UserPublic
 from ...services.simtree_runtime import SIM_TREE_REGISTRY, SimTreeRecord
 from ...services.simulations import generate_simulation_id, generate_simulation_name
-
 
 router = APIRouter()
 
@@ -32,9 +31,7 @@ async def _get_simulation_for_owner(
     owner_id: int,
     simulation_id: str,
 ) -> Simulation:
-    result = await session.execute(
-        select(Simulation).where(Simulation.owner_id == owner_id, Simulation.id == simulation_id.upper())
-    )
+    result = await session.execute(select(Simulation).where(Simulation.owner_id == owner_id, Simulation.id == simulation_id.upper()))
     sim = result.scalar_one_or_none()
     if sim is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Simulation not found")
@@ -98,9 +95,7 @@ async def list_simulations(
     current_user: UserPublic = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[SimulationBase]:
-    result = await session.execute(
-        select(Simulation).where(Simulation.owner_id == current_user.id).order_by(Simulation.created_at.desc())
-    )
+    result = await session.execute(select(Simulation).where(Simulation.owner_id == current_user.id).order_by(Simulation.created_at.desc()))
     sims = result.scalars().all()
     return [SimulationBase.model_validate(sim) for sim in sims]
 
@@ -203,11 +198,7 @@ async def list_snapshots(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[SnapshotBase]:
     sim = await _get_simulation_for_owner(session, current_user.id, simulation_id)
-    result = await session.execute(
-        select(SimulationSnapshot)
-        .where(SimulationSnapshot.simulation_id == sim.id)
-        .order_by(SimulationSnapshot.created_at.desc())
-    )
+    result = await session.execute(select(SimulationSnapshot).where(SimulationSnapshot.simulation_id == sim.id).order_by(SimulationSnapshot.created_at.desc()))
     snapshots = result.scalars().all()
     return [SnapshotBase.model_validate(s) for s in snapshots]
 
@@ -220,12 +211,7 @@ async def list_logs(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[SimulationLogEntry]:
     sim = await _get_simulation_for_owner(session, current_user.id, simulation_id)
-    result = await session.execute(
-        select(SimulationLog)
-        .where(SimulationLog.simulation_id == sim.id)
-        .order_by(SimulationLog.sequence.desc())
-        .limit(limit)
-    )
+    result = await session.execute(select(SimulationLog).where(SimulationLog.simulation_id == sim.id).order_by(SimulationLog.sequence.desc()).limit(limit))
     logs = list(reversed(result.scalars().all()))
     return [SimulationLogEntry.model_validate(log) for log in logs]
 
@@ -301,16 +287,8 @@ async def simulation_tree_graph(
 ) -> dict:
     _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
     tree = record.tree
-    attached_ids = {
-        int(nid)
-        for nid, node in tree.nodes.items()
-        if node.get("depth") is not None
-    }
-    nodes = [
-        {"id": int(node["id"]), "depth": int(node["depth"])}
-        for node in tree.nodes.values()
-        if node.get("depth") is not None
-    ]
+    attached_ids = {int(nid) for nid, node in tree.nodes.items() if node.get("depth") is not None}
+    nodes = [{"id": int(node["id"]), "depth": int(node["depth"])} for node in tree.nodes.values() if node.get("depth") is not None]
     edges = []
     for pid, children in tree.children.items():
         if pid not in attached_ids:
@@ -320,11 +298,7 @@ async def simulation_tree_graph(
                 continue
             et = tree.nodes[cid]["edge_type"]
             edges.append({"from": int(pid), "to": int(cid), "type": et})
-    depth_map = {
-        int(node["id"]): int(node["depth"])
-        for node in tree.nodes.values()
-        if node.get("depth") is not None
-    }
+    depth_map = {int(node["id"]): int(node["depth"]) for node in tree.nodes.values() if node.get("depth") is not None}
     outdeg = {i: 0 for i in depth_map}
     for edge in edges:
         outdeg[edge["from"]] = outdeg.get(edge["from"], 0) + 1
@@ -355,6 +329,7 @@ async def simulation_tree_advance_frontier(
     for pid, cid in allocations.items():
         tree.attach(pid, [{"op": "advance", "turns": turns}], cid)
         node = tree.nodes[cid]
+        print(f"subs:{len(record.subs)}")
         _broadcast(
             record,
             {
@@ -566,6 +541,7 @@ async def simulation_tree_state(
 
 @router.websocket("/{simulation_id}/tree/events")
 async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) -> None:
+    print("incoming conn!!!!")
     token = websocket.query_params.get("token")
     async with get_session() as session:
         user = await _resolve_user_from_token(token or "", session)
@@ -582,6 +558,7 @@ async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) ->
         await websocket.accept()
         queue: asyncio.Queue = asyncio.Queue()
         record.subs.append(queue)
+        print("sub added, record accepted")
         drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
         try:
             while True:
@@ -603,6 +580,7 @@ async def simulation_tree_node_events_ws(
     simulation_id: str,
     node_id: int,
 ) -> None:
+    print("incoming conn!!!!")
     token = websocket.query_params.get("token")
     async with get_session() as session:
         user = await _resolve_user_from_token(token or "", session)
