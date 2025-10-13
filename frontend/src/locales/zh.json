@@ -45,6 +45,9 @@
     "title": "已保存的模拟",
     "resume": "继续",
     "copy": "复制",
+    "delete": "删除",
+    "type": "类型",
+    "confirmDelete": "删除该模拟？",
     "loading": "加载中…",
     "error": "无法加载模拟。"
   },

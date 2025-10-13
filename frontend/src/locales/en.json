@@ -45,6 +45,9 @@
     "title": "Saved simulations",
     "resume": "Resume",
     "copy": "Copy",
+    "delete": "Delete",
+    "type": "Type",
+    "confirmDelete": "Delete this simulation?",
     "loading": "Loading…",
     "error": "Unable to load simulations."
   },

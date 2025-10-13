@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
-import { copySimulation as apiCopySimulation, listSimulations, resumeSimulation as apiResumeSimulation, type Simulation } from "../api/simulations";
+import { copySimulation as apiCopySimulation, deleteSimulation as apiDeleteSimulation, listSimulations, resumeSimulation as apiResumeSimulation, type Simulation } from "../api/simulations";
 import { useTranslation } from "react-i18next";
 
 type Simulation = {
@@ -35,6 +35,13 @@ export function SavedSimulationsPage() {
     },
   });
 
+  const deleteSimulation = useMutation({
+    mutationFn: async (simulationSlug: string) => apiDeleteSimulation(simulationSlug),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -51,6 +58,7 @@ export function SavedSimulationsPage() {
                   <div>
                     <div style={{ fontWeight: 600 }}>{simulation.name}</div>
                     <div style={{ color: "#94a3b8" }}>{simulation.status}</div>
+                    <div style={{ color: "#94a3b8" }}>{t('saved.type')}: {simulation.scene_type}</div>
                   </div>
                   <div style={{ color: "#64748b" }}>{new Date(simulation.created_at).toLocaleDateString()}</div>
                 </div>
@@ -72,6 +80,19 @@ export function SavedSimulationsPage() {
                     disabled={copySimulation.isPending}
                   >
                     {t('saved.copy')}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-ghost small"
+                    style={{ flex: 1, color: '#f87171' }}
+                    onClick={() => {
+                      if (window.confirm(t('saved.confirmDelete'))) {
+                        deleteSimulation.mutate(simulation.id);
+                      }
+                    }}
+                    disabled={deleteSimulation.isPending}
+                  >
+                    {t('saved.delete')}
                   </button>
                 </div>
               </div>
