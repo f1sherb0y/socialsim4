@@ -54,7 +54,7 @@ export function DashboardPage() {
           <div className="panel">
             <div className="panel-header">
               <div className="panel-title">Recent simulations</div>
-              <Link to="/simulations/saved" style={{ color: "#38bdf8" }}>
+              <Link to="/simulations/saved" className="link">
                 View all
               </Link>
             </div>

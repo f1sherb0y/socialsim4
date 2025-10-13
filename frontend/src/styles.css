@@ -159,6 +159,10 @@ textarea { font: inherit; }
   font-weight: 600;
 }
 
+/* Link styling honoring theme */
+.link { color: var(--link); }
+.link:hover { text-decoration: underline; }
+
 /* Inputs */
 .input,
 input[type="text"],
