@@ -40,15 +40,23 @@ type ToastMessage = {
 };
 
 const WS_BASE = (() => {
-  const configured = import.meta.env.VITE_BACKEND_WS_BASE_URL as string | undefined;
-  if (configured) {
-    return configured.replace(/\/$/, "");
+  const wsConfigured = import.meta.env.VITE_BACKEND_WS_BASE_URL as string | undefined;
+  if (wsConfigured) return wsConfigured.replace(/\/$/, "");
+  const httpConfigured = import.meta.env.VITE_BACKEND_BASE_URL as string | undefined;
+  if (httpConfigured) {
+    try {
+      const u = new URL(httpConfigured);
+      u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+      return u.toString().replace(/\/$/, "");
+    } catch {
+      // fall through to window-based default
+    }
   }
-  if (typeof window === "undefined") {
-    return "";
+  if (typeof window !== "undefined") {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    return `${protocol}://${window.location.host}/api`;
   }
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  return `${protocol}://${window.location.host}/api`;
+  return "";
 })();
 
 function buildWsUrl(path: string, token?: string): string {
