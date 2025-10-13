@@ -58,7 +58,8 @@ export function SimulationPage() {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [turns, setTurns] = useState<number>(0);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
-  const [stickBottom, setStickBottom] = useState(true);
+  const [eventsAutoScroll, setEventsAutoScroll] = useState(true);
+  const [agentsAutoScroll, setAgentsAutoScroll] = useState(true);
 
   // Resizable columns
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -344,18 +345,18 @@ export function SimulationPage() {
   }, [selectedNode]);
 
   useEffect(() => {
-    if (stickBottom && eventsRef.current) {
+    if (eventsAutoScroll && eventsRef.current) {
       const el = eventsRef.current;
       el.scrollTop = el.scrollHeight;
     }
-  }, [events, stickBottom]);
+  }, [events, eventsAutoScroll]);
 
   useEffect(() => {
-    if (stickBottom && agentRef.current) {
+    if (agentsAutoScroll && agentRef.current) {
       const el = agentRef.current;
       el.scrollTop = el.scrollHeight;
     }
-  }, [agents, selectedAgent, stickBottom]);
+  }, [agents, selectedAgent, agentsAutoScroll]);
 
   useEffect(() => {
     const tree = treeIdRef.current;
@@ -645,7 +646,7 @@ export function SimulationPage() {
           <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>Events</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
-              <input type="checkbox" checked={stickBottom} onChange={(event) => setStickBottom(event.target.checked)} />
+              <input type="checkbox" checked={eventsAutoScroll} onChange={(event) => setEventsAutoScroll(event.target.checked)} />
               Auto-scroll
             </label>
           </div>
@@ -660,7 +661,7 @@ export function SimulationPage() {
           <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>Agents</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
-              <input type="checkbox" checked={stickBottom} onChange={(event) => setStickBottom(event.target.checked)} />
+              <input type="checkbox" checked={agentsAutoScroll} onChange={(event) => setAgentsAutoScroll(event.target.checked)} />
               Auto-scroll
             </label>
           </div>
