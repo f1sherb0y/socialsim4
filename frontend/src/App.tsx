@@ -10,19 +10,22 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SimulationWizardPage } from "./pages/SimulationWizardPage";
 import { SimulationPage } from "./pages/SimulationPage";
 import { RequireAuth } from "./components/RequireAuth";
+import { Layout } from "./components/Layout";
 
 export default function App() {
   return (
     <Suspense fallback={<div className="app-loading">Loading…</div>}>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/" element={<Layout><LandingPage /></Layout>} />
+        <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+        <Route path="/register" element={<Layout><RegisterPage /></Layout>} />
         <Route
           path="/dashboard"
           element={
             <RequireAuth>
-              <DashboardPage />
+              <Layout>
+                <DashboardPage />
+              </Layout>
             </RequireAuth>
           }
         />
@@ -30,7 +33,9 @@ export default function App() {
           path="/simulations/new/*"
           element={
             <RequireAuth>
-              <SimulationWizardPage />
+              <Layout>
+                <SimulationWizardPage />
+              </Layout>
             </RequireAuth>
           }
         />
@@ -38,7 +43,9 @@ export default function App() {
           path="/simulations/saved"
           element={
             <RequireAuth>
-              <SavedSimulationsPage />
+              <Layout>
+                <SavedSimulationsPage />
+              </Layout>
             </RequireAuth>
           }
         />
@@ -46,7 +53,9 @@ export default function App() {
           path="/simulations/:id"
           element={
             <RequireAuth>
-              <SimulationPage />
+              <Layout>
+                <SimulationPage />
+              </Layout>
             </RequireAuth>
           }
         />
@@ -54,7 +63,9 @@ export default function App() {
           path="/settings/*"
           element={
             <RequireAuth>
-              <SettingsPage />
+              <Layout>
+                <SettingsPage />
+              </Layout>
             </RequireAuth>
           }
         />
