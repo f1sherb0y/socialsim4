@@ -435,17 +435,17 @@ export function SimulationPage() {
             {simulationQuery.isFetching ? "Syncing…" : `Status: ${simulationQuery.data?.status ?? "unknown"}`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.4rem" }}>
           <button
             type="button"
-            className="button"
+            className="button small"
             onClick={() => queryClient.invalidateQueries({ queryKey: ["simulation", simulationSlug] })}
           >
             Refresh metadata
           </button>
           <button
             type="button"
-            className="button"
+            className="button small"
             onClick={() => refreshSelected()}
             disabled={treeIdRef.current == null || selectedNode == null}
           >
@@ -453,7 +453,7 @@ export function SimulationPage() {
           </button>
           <button
             type="button"
-            className="button"
+            className="button small"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
           >
@@ -489,12 +489,12 @@ export function SimulationPage() {
               <div>Turns at node: {turns}</div>
             </div>
           )}
-          <div className="card" style={{ marginTop: "0.75rem", display: "grid", gap: "0.75rem" }}>
+          <div className="card" style={{ marginTop: "0.5rem", display: "grid", gap: "0.5rem" }}>
             <div>
               <div className="panel-subtitle">Run frontier leaves</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.5rem", alignItems: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
                 <input
-                  className="input"
+                  className="input small"
                   type="number"
                   min={1}
                   value={frontierTurns}
@@ -502,7 +502,7 @@ export function SimulationPage() {
                 />
                 <button
                   type="button"
-                  className="button"
+                  className="button small"
                   onClick={async () => {
                     const tree = treeIdRef.current;
                     if (tree == null) return;
@@ -518,12 +518,12 @@ export function SimulationPage() {
 
             <div>
               <div className="panel-subtitle">Parallel advance</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.5rem", alignItems: "center" }}>
-                <input className="input" type="number" min={1} value={multiTurns} onChange={(event) => setMultiTurns(event.target.value)} />
-                <input className="input" type="number" min={1} value={multiCount} onChange={(event) => setMultiCount(event.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.35rem", alignItems: "center" }}>
+                <input className="input small" type="number" min={1} value={multiTurns} onChange={(event) => setMultiTurns(event.target.value)} />
+                <input className="input small" type="number" min={1} value={multiCount} onChange={(event) => setMultiCount(event.target.value)} />
                 <button
                   type="button"
-                  className="button"
+                  className="button small"
                   onClick={async () => {
                     const tree = treeIdRef.current;
                     if (tree == null || selectedNode == null) return;
@@ -539,11 +539,11 @@ export function SimulationPage() {
 
             <div>
               <div className="panel-subtitle">Advance chain</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.5rem", alignItems: "center" }}>
-                <input className="input" type="number" min={1} value={chainTurns} onChange={(event) => setChainTurns(event.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.35rem", alignItems: "center" }}>
+                <input className="input small" type="number" min={1} value={chainTurns} onChange={(event) => setChainTurns(event.target.value)} />
                 <button
                   type="button"
-                  className="button"
+                  className="button small"
                   onClick={async () => {
                     const tree = treeIdRef.current;
                     if (tree == null || selectedNode == null) return;
