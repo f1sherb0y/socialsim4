@@ -6,8 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base import Base
 from ..db.mixins import TimestampMixin
-from .simulation import Simulation
-from .token import VerificationToken
 
 
 class User(TimestampMixin, Base):

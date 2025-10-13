@@ -370,6 +370,8 @@ async def simulation_tree_advance_frontier(
         )
         record.running.add(cid)
         _broadcast(record, {"type": "run_start", "data": {"node": int(cid)}})
+    # Yield control so WS tasks can flush newly enqueued 'attached' events
+    await asyncio.sleep(0)
 
     async def _run(parent_id: int) -> tuple[int, int]:
         child_id = allocations[parent_id]
@@ -420,6 +422,7 @@ async def simulation_tree_advance_multi(
         )
         record.running.add(cid)
         _broadcast(record, {"type": "run_start", "data": {"node": int(cid)}})
+    await asyncio.sleep(0)
 
     async def _run(child_id: int) -> int:
         simulator = tree.nodes[child_id]["sim"]
@@ -467,6 +470,7 @@ async def simulation_tree_advance_chain(
         )
         record.running.add(cid)
         _broadcast(record, {"type": "run_start", "data": {"node": int(cid)}})
+        await asyncio.sleep(0)
 
         simulator = tree.nodes[cid]["sim"]
         await asyncio.to_thread(simulator.run, max_turns=1)
@@ -575,9 +579,9 @@ async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) ->
             await websocket.close(code=1008)
             return
 
+        await websocket.accept()
         queue: asyncio.Queue = asyncio.Queue()
         record.subs.append(queue)
-        await websocket.accept()
         drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
         try:
             while True:
@@ -616,9 +620,9 @@ async def simulation_tree_node_events_ws(
             await websocket.close(code=1008)
             return
 
+        await websocket.accept()
         queue: asyncio.Queue = asyncio.Queue()
         record.tree.add_node_sub(int(node_id), queue)
-        await websocket.accept()
         drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
         try:
             while True:
