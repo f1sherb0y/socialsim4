@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import i18n, { setLanguage } from "../i18n";
+import i18n from "../i18n";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
 
@@ -33,16 +34,7 @@ export function NavBar() {
         <button type="button" className="icon-button" onClick={toggle} title="Toggle theme">
           {mode === "dark" ? "🌙" : "☀️"}
         </button>
-        <select
-          className="lang-select"
-          value={i18n.language.startsWith('zh') ? 'zh' : 'en'}
-          onChange={(e) => setLanguage(e.target.value as 'en' | 'zh')}
-          style={{ width: 'auto' }}
-          aria-label="Language"
-        >
-          <option value="en">EN</option>
-          <option value="zh">中文</option>
-        </select>
+        <LanguageSwitcher />
         {isAuthenticated ? (
           <div className="nav-user">
             <span className="nav-username">{String((user as any)?.email ?? "")}</span>

@@ -242,7 +242,11 @@ textarea::placeholder {
 .text-button { border: none; background: transparent; color: var(--link); cursor: pointer; padding: 0.25rem 0.5rem; font: inherit; }
 .nav-user { display: flex; align-items: center; gap: 0.5rem; }
 .nav-username { color: var(--muted); font-size: 0.9rem; }
-.lang-select { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 8px; padding: 0.25rem 0.5rem; font: inherit; }
+.lang-switch { position: relative; }
+.lang-button { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 8px; padding: 0.25rem 0.5rem; font: inherit; cursor: pointer; }
+.menu { position: absolute; top: calc(100% + 0.25rem); right: 0; min-width: 120px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); padding: 0.25rem; z-index: 60; }
+.menu-item { display: block; width: 100%; text-align: left; background: transparent; border: none; color: var(--text); padding: 0.4rem 0.5rem; border-radius: 8px; cursor: pointer; font: inherit; }
+.menu-item:hover, .menu-item.active { background: rgba(148,163,184,0.18); }
 
 /* Resizable column handle */
 .resizer { width: 2px; cursor: col-resize; background: var(--border); }
