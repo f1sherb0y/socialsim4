@@ -26,6 +26,7 @@ class CouncilScene(SimpleChatScene):
             + """
 - While you have your own views, you may occasionally shift your opinion slightly if presented with compelling arguments, though it's not necessary. Once voting starts, cast your vote.
 - Participate actively in discussions, vote when appropriate, and follow the host's lead.
+- Participants should only start voting after the host explicitly initiates the voting round.
 """
         )
 

@@ -40,7 +40,8 @@
     "error": "Unable to load simulations.",
     "empty": "No simulations yet. Create one to get started.",
     "status": "Status",
-    "created": "Created"
+    "created": "Created",
+    "sceneType": "Scene type"
   },
   "saved": {
     "title": "Saved simulations",
@@ -97,10 +98,14 @@
     "continue": "Continue",
     "back": "Back",
     "noExtraConfig": "This scene has no additional configuration.",
+    "events": "Initial events",
+    "sceneSpecific": "Scene configuration",
+    "addEvent": "Add event",
     "selectPrompt": "Select a scene first.",
     "name": "Name",
     "profile": "Profile",
     "addAgent": "Add agent",
+    "deleteAgent": "Delete agent",
     "start": "Start simulation",
     "createFailed": "Failed to create simulation.",
     "config": "Configuration",
@@ -108,7 +113,9 @@
     "scene": "Scene",
     "noProfile": "No profile",
     "loadingScenes": "Loading scenes…",
-    "fetchScenesError": "Unable to fetch scenes."
+    "fetchScenesError": "Unable to fetch scenes.",
+    "basicActions": "Basic actions",
+    "allowedActions": "Allowed actions"
   },
   "auth": {
     "login": {

@@ -40,7 +40,8 @@
     "error": "无法加载模拟。",
     "empty": "还没有模拟，创建一个开始吧。",
     "status": "状态",
-    "created": "创建时间"
+    "created": "创建时间",
+    "sceneType": "场景类型"
   },
   "saved": {
     "title": "已保存的模拟",
@@ -97,10 +98,14 @@
     "continue": "继续",
     "back": "返回",
     "noExtraConfig": "该场景无需额外配置。",
+    "events": "初始事件",
+    "sceneSpecific": "场景配置",
+    "addEvent": "添加事件",
     "selectPrompt": "请先选择场景。",
     "name": "名称",
     "profile": "简介",
     "addAgent": "添加智能体",
+    "deleteAgent": "删除智能体",
     "start": "启动模拟",
     "createFailed": "创建模拟失败。",
     "config": "配置",
@@ -108,7 +113,9 @@
     "scene": "场景",
     "noProfile": "无简介",
     "loadingScenes": "正在加载场景…",
-    "fetchScenesError": "无法获取场景。"
+    "fetchScenesError": "无法获取场景。",
+    "basicActions": "基础动作",
+    "allowedActions": "可选动作"
   },
   "auth": {
     "login": {

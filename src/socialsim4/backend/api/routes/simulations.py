@@ -83,7 +83,7 @@ async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int)
         )
     search_client = create_search_client(s_cfg)
     clients = {"chat": llm_client, "default": llm_client, "search": search_client}
-    return await SIM_TREE_REGISTRY.get_or_create(sim.id, sim.scene_type, clients)
+    return await SIM_TREE_REGISTRY.get_or_create_from_sim(sim, clients)
 
 
 async def _get_simulation_and_tree(

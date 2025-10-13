@@ -5,12 +5,7 @@ import { listSimulations, type Simulation } from "../api/simulations";
 import { listProviders } from "../api/providers";
 import { useTranslation } from "react-i18next";
 
-type Simulation = {
-  id: string;
-  name: string;
-  status: string;
-  created_at: string;
-};
+// Use Simulation type from API (includes scene_type)
 
 export function DashboardPage() {
   const { t } = useTranslation();
@@ -85,6 +80,7 @@ export function DashboardPage() {
                 <Link key={simulation.id} to={`/simulations/${simulation.id}`} className="card" style={{ margin: 0 }}>
                   <div style={{ fontWeight: 600 }}>{simulation.name}</div>
                   <div style={{ color: "#94a3b8" }}>{t('dashboard.status')}: {simulation.status}</div>
+                  <div style={{ color: "#94a3b8" }}>{t('dashboard.sceneType') || 'Scene'}: {simulation.scene_type}</div>
                   <div style={{ color: "#64748b" }}>{t('dashboard.created')} {new Date(simulation.created_at).toLocaleString()}</div>
                 </Link>
               ))}

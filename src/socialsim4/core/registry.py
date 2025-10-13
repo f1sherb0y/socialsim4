@@ -89,3 +89,38 @@ SCENE_MAP = {
 }
 
 ORDERING_MAP = _ORDERING_MAP
+
+# Scene action registry: declares common (basic) actions provided by the scene
+# and optional per-agent actions that can be toggled. Keep action names aligned
+# with ACTION_SPACE_MAP keys.
+SCENE_ACTIONS: dict[str, dict[str, list[str]]] = {
+    "simple_chat_scene": {
+        "basic": ["send_message", "yield"],
+        "allowed": ["web_search", "view_page"],
+    },
+    "council_scene": {
+        "basic": ["send_message", "voting_status", "yield"],
+        "allowed": ["start_voting", "finish_meeting", "request_brief", "vote", "web_search", "view_page"],
+    },
+    "village_scene": {
+        "basic": ["talk_to", "move_to_location", "look_around", "gather_resource", "rest", "yield"],
+        "allowed": [],
+    },
+    "werewolf_scene": {
+        "basic": ["speak", "vote_lynch", "yield"],
+        "allowed": ["open_voting", "close_voting", "night_kill", "inspect", "witch_save", "witch_poison"],
+    },
+    "landlord_scene": {
+        "basic": ["yield"],
+        "allowed": ["call_landlord", "rob_landlord", "pass", "play_cards", "double", "no_double"],
+    },
+}
+
+# Scene descriptions for selection UI and docs
+SCENE_DESCRIPTIONS: dict[str, str] = {
+    "simple_chat_scene": "Open chat room with optional web tools. Agents converse naturally; use search/page tools when needed.",
+    "council_scene": "Legislative council debate and voting around a draft text; supports voting and status actions.",
+    "village_scene": "Grid-based village simulation with movement, looking around, gathering, and resting.",
+    "werewolf_scene": "Social deduction game with night/day phases and role-specific actions (moderated flow).",
+    "landlord_scene": "Dou Dizhu (Landlord) card game flow with bidding, playing, and scoring stages.",
+}
