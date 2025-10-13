@@ -24,7 +24,7 @@ export function DashboardPage() {
           <p style={{ color: "#94a3b8" }}>Pick up where you left off or launch something new.</p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link to="/simulations/new" className="button button-ghost">
+          <Link to="/simulations/new" className="button">
             New simulation
           </Link>
           <Link to="/simulations/saved" className="button button-ghost">
