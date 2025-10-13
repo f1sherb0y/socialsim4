@@ -6,16 +6,7 @@ import { useAuthStore } from "../store/auth";
 
 type Tab = "profile" | "security" | "providers";
 
-type Provider = {
-  id: number;
-  name: string;
-  provider: string;
-  model: string;
-  base_url: string | null;
-  last_test_status?: string | null;
-  last_tested_at?: string | null;
-  has_api_key: boolean;
-};
+// Provider type comes from ../api/providers
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
@@ -69,9 +60,9 @@ export function SettingsPage() {
   const tabContent = useMemo(() => {
     if (activeTab === "profile") {
       return (
-        <div className="panel" style={{ gap: "1rem" }}>
+        <div className="panel" style={{ gap: "0.5rem" }}>
           <div className="panel-title">Profile</div>
-          <div className="card" style={{ background: "rgba(30,41,59,0.6)" }}>
+          <div className="card">
             <div><strong>Email:</strong> {String(user?.email ?? "")}</div>
             <div><strong>Username:</strong> {String(user?.username ?? "")}</div>
             <div><strong>Full name:</strong> {String(user?.full_name ?? "")}</div>
@@ -83,9 +74,9 @@ export function SettingsPage() {
 
     if (activeTab === "security") {
       return (
-        <div className="panel" style={{ gap: "1rem" }}>
+        <div className="panel" style={{ gap: "0.5rem" }}>
           <div className="panel-title">Security</div>
-          <div className="card" style={{ background: "rgba(30,41,59,0.6)" }}>
+          <div className="card">
             <p>Two-factor authentication and password reset flows will appear here.</p>
             <button type="button" className="button" style={{ alignSelf: "flex-start" }} onClick={() => clearSession()}>
               Sign out of all sessions
@@ -96,46 +87,42 @@ export function SettingsPage() {
     }
 
     return (
-      <div className="panel" style={{ gap: "1.5rem" }}>
+      <div className="panel" style={{ gap: "0.75rem" }}>
         <div className="panel-header">
           <div className="panel-title">Provider integrations</div>
         </div>
-        <form onSubmit={handleCreateProvider} className="card" style={{ gap: "1rem" }}>
+        <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.5rem" }}>
           <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Add provider</h2>
           <label>
             Label
-            <input
+            <input className="input"
               required
               value={providerDraft.name}
               onChange={(event) => setProviderDraft((prev) => ({ ...prev, name: event.target.value }))}
-              style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
             />
           </label>
           <label>
             Provider
-            <input
+            <input className="input"
               required
               value={providerDraft.provider}
               onChange={(event) => setProviderDraft((prev) => ({ ...prev, provider: event.target.value }))}
-              style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
             />
           </label>
           <label>
             Model
-            <input
+            <input className="input"
               required
               value={providerDraft.model}
               onChange={(event) => setProviderDraft((prev) => ({ ...prev, model: event.target.value }))}
-              style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
             />
           </label>
           <label>
             Base URL
-            <input
+            <input className="input"
               required
               value={providerDraft.base_url}
               onChange={(event) => setProviderDraft((prev) => ({ ...prev, base_url: event.target.value }))}
-              style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
             />
           </label>
           <label>
@@ -144,15 +131,16 @@ export function SettingsPage() {
               <input
                 required
                 type={keyVisible ? "text" : "password"}
+                className="input"
                 value={providerDraft.api_key}
                 onChange={(event) => setProviderDraft((prev) => ({ ...prev, api_key: event.target.value }))}
-                style={{ flex: 1, padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
+                style={{ flex: 1 }}
               />
               <button
                 type="button"
                 className="button"
                 onClick={() => setKeyVisible((prev) => !prev)}
-                style={{ width: "fit-content", background: "rgba(148,163,184,0.2)", color: "#e2e8f0" }}
+                style={{ width: "fit-content" }}
               >
                 {keyVisible ? "Hide" : "Show"}
               </button>
@@ -164,13 +152,13 @@ export function SettingsPage() {
           </button>
         </form>
 
-        <div className="card" style={{ gap: "1rem", background: "rgba(30,41,59,0.6)" }}>
+        <div className="card" style={{ gap: "0.5rem" }}>
           <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Configured providers</h2>
           {providersQuery.isLoading && <div>Loading…</div>}
           {providersQuery.error && <div style={{ color: "#f87171" }}>Unable to load providers.</div>}
           <div style={{ display: "grid", gap: "1rem" }}>
             {(providersQuery.data ?? []).map((provider) => (
-              <div key={provider.id} className="panel" style={{ gap: "0.5rem", background: "rgba(15,23,42,0.5)" }}>
+              <div key={provider.id} className="panel" style={{ gap: "0.5rem" }}>
                 <div style={{ fontWeight: 600 }}>{provider.name}</div>
                 <div style={{ color: "#94a3b8" }}>{provider.provider} · {provider.model}</div>
                 <div style={{ color: "#94a3b8" }}>Base URL: {provider.base_url ?? "-"}</div>
@@ -181,7 +169,7 @@ export function SettingsPage() {
                 <button
                   type="button"
                   className="button"
-                  style={{ width: "fit-content" }}
+                  style={{ width: "fit-content", padding: "0.4rem 0.7rem" }}
                   onClick={() => testProvider.mutate(provider.id)}
                   disabled={testProvider.isPending}
                 >
