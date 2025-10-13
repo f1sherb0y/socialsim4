@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...dependencies import get_current_user, get_db_session
 from ...models.user import ProviderConfig
 from ...schemas.common import Message
+from socialsim4.core.llm import create_llm_client
+from socialsim4.core.llm_config import LLMConfig
 from ...schemas.provider import ProviderBase, ProviderCreate, ProviderUpdate
 from ...schemas.user import UserPublic
 
@@ -111,9 +113,43 @@ async def test_provider(
     if provider is None or provider.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
 
+    # Basic validation before test
+    dialect = (provider.provider or "").lower()
+    if dialect not in {"openai", "gemini", "mock"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid LLM provider dialect")
+    if dialect != "mock" and not provider.api_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM API key required")
+    if not provider.model:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM model required")
+
+    cfg = LLMConfig(
+        dialect=dialect,
+        api_key=provider.api_key or "",
+        model=provider.model,
+        base_url=provider.base_url,
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        max_tokens=64,
+    )
+
+    status_msg = ""
     provider.last_tested_at = datetime.now(timezone.utc)
-    provider.last_test_status = "success"
-    provider.last_error = None
+    try:
+        client = create_llm_client(cfg)
+        # Minimal ping to validate credentials/connectivity
+        _ = client.chat([
+            {"role": "user", "content": "ping"}
+        ])
+        provider.last_test_status = "success"
+        provider.last_error = None
+        status_msg = "Provider connectivity verified"
+    except Exception as exc:  # noqa: BLE001 - API layer may wrap exceptions
+        provider.last_test_status = "error"
+        provider.last_error = str(exc)
+        status_msg = "Provider connectivity failed"
+
     await session.commit()
 
-    return Message(message="Provider connectivity verified")
+    return Message(message=status_msg)
