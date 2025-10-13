@@ -84,8 +84,8 @@ export function SimulationWizardPage() {
       {step === "scene" && (
         <div>
           <div className="panel-title">{t('wizard.selectScene')}</div>
-          {scenesQuery.isLoading && <div>Loading scenes…</div>}
-          {scenesQuery.error && <div style={{ color: "#f87171" }}>Unable to fetch scenes.</div>}
+          {scenesQuery.isLoading && <div>{t('wizard.loadingScenes')}</div>}
+          {scenesQuery.error && <div style={{ color: "#f87171" }}>{t('wizard.fetchScenesError')}</div>}
           <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
             {(scenesQuery.data ?? []).map((scene) => (
               <label key={scene.type} className="card" style={{ cursor: "pointer", border: scene.type === sceneType ? "1px solid #38bdf8" : undefined, padding: "0.75rem" }}>
@@ -165,7 +165,7 @@ export function SimulationWizardPage() {
         <div style={{ display: "grid", gap: "0.5rem" }}>
           <div className="panel-title">{t('wizard.review')}</div>
           <div className="card">
-            <div style={{ fontWeight: 600 }}>Scene</div>
+            <div style={{ fontWeight: 600 }}>{t('wizard.scene') || 'Scene'}</div>
             <div>{sceneType}</div>
           </div>
           <div className="card">
@@ -176,7 +176,7 @@ export function SimulationWizardPage() {
             <div style={{ fontWeight: 600 }}>{t('wizard.agents')}</div>
             <ul>
               {agents.map((agent, index) => (
-                <li key={index}>{agent.name} — {agent.profile || "No profile"}</li>
+                <li key={index}>{agent.name} — {agent.profile || t('wizard.noProfile')}</li>
               ))}
             </ul>
           </div>

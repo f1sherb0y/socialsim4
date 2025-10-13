@@ -63,12 +63,12 @@ export function SettingsPage() {
     if (activeTab === "profile") {
       return (
         <div className="panel" style={{ gap: "0.5rem" }}>
-          <div className="panel-title">Profile</div>
+          <div className="panel-title">{t('settings.tabs.profile')}</div>
           <div className="card">
-            <div><strong>Email:</strong> {String(user?.email ?? "")}</div>
-            <div><strong>Username:</strong> {String(user?.username ?? "")}</div>
-            <div><strong>Full name:</strong> {String(user?.full_name ?? "")}</div>
-            <div><strong>Organization:</strong> {String(user?.organization ?? "")}</div>
+            <div><strong>{t('settings.profile.email')}:</strong> {String(user?.email ?? "")}</div>
+            <div><strong>{t('settings.profile.username')}:</strong> {String(user?.username ?? "")}</div>
+            <div><strong>{t('settings.profile.fullName')}:</strong> {String(user?.full_name ?? "")}</div>
+            <div><strong>{t('settings.profile.organization')}:</strong> {String(user?.organization ?? "")}</div>
           </div>
         </div>
       );
@@ -77,11 +77,11 @@ export function SettingsPage() {
     if (activeTab === "security") {
       return (
         <div className="panel" style={{ gap: "0.5rem" }}>
-          <div className="panel-title">Security</div>
+          <div className="panel-title">{t('settings.tabs.security')}</div>
           <div className="card">
             <p>Two-factor authentication and password reset flows will appear here.</p>
             <button type="button" className="button" style={{ alignSelf: "flex-start" }} onClick={() => clearSession()}>
-              Sign out of all sessions
+              {t('settings.security.signoutAll')}
             </button>
           </div>
         </div>
@@ -91,12 +91,12 @@ export function SettingsPage() {
     return (
       <div className="panel" style={{ gap: "0.75rem" }}>
         <div className="panel-header">
-          <div className="panel-title">Provider integrations</div>
+          <div className="panel-title">{t('settings.providers.title')}</div>
         </div>
         <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Add provider</h2>
+          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.add')}</h2>
           <label>
-            Label
+            {t('settings.providers.fields.label')}
             <input className="input"
               required
               value={providerDraft.name}
@@ -104,7 +104,7 @@ export function SettingsPage() {
             />
           </label>
           <label>
-            Provider
+            {t('settings.providers.fields.provider')}
             <input className="input"
               required
               value={providerDraft.provider}
@@ -112,7 +112,7 @@ export function SettingsPage() {
             />
           </label>
           <label>
-            Model
+            {t('settings.providers.fields.model')}
             <input className="input"
               required
               value={providerDraft.model}
@@ -120,7 +120,7 @@ export function SettingsPage() {
             />
           </label>
           <label>
-            Base URL
+            {t('settings.providers.fields.baseUrl')}
             <input className="input"
               required
               value={providerDraft.base_url}
@@ -128,7 +128,7 @@ export function SettingsPage() {
             />
           </label>
           <label>
-            API key
+            {t('settings.providers.fields.apiKey')}
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem" }}>
               <input
                 required
@@ -150,12 +150,12 @@ export function SettingsPage() {
           </label>
           {createProvider.error && <div style={{ color: "#f87171" }}>Failed to add provider.</div>}
           <button type="submit" className="button" disabled={createProvider.isPending}>
-            {createProvider.isPending ? "Saving…" : "Save provider"}
+            {createProvider.isPending ? t('settings.providers.save') + '…' : t('settings.providers.save')}
           </button>
         </form>
 
         <div className="card" style={{ gap: "0.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Configured providers</h2>
+          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.title')}</h2>
           {providersQuery.isLoading && <div>Loading…</div>}
           {providersQuery.error && <div style={{ color: "#f87171" }}>Unable to load providers.</div>}
           <div style={{ display: "grid", gap: "1rem" }}>
@@ -165,9 +165,9 @@ export function SettingsPage() {
                 <div style={{ color: "#94a3b8" }}>{provider.provider} · {provider.model}</div>
                 <div style={{ color: "#94a3b8" }}>Base URL: {provider.base_url ?? "-"}</div>
                 <div style={{ color: provider.last_test_status === "success" ? "#34d399" : "#f87171" }}>
-                  Status: {provider.last_test_status ?? "never tested"}
+                  {t('dashboard.status')}: {provider.last_test_status ?? t('settings.providers.neverTested')}
                 </div>
-                <div style={{ color: "#94a3b8" }}>Key stored: {provider.has_api_key ? "Yes" : "No"}</div>
+                <div style={{ color: "#94a3b8" }}>{t('settings.providers.hasKey')}: {provider.has_api_key ? "Yes" : "No"}</div>
                 <button
                   type="button"
                   className="button"
@@ -175,11 +175,11 @@ export function SettingsPage() {
                   onClick={() => testProvider.mutate(provider.id)}
                   disabled={testProvider.isPending}
                 >
-                  {testProvider.isPending ? "Testing…" : "Test connectivity"}
+                  {testProvider.isPending ? t('settings.providers.test') + '…' : t('settings.providers.test')}
                 </button>
               </div>
             ))}
-            {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>No providers added yet.</div>}
+            {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>{t('settings.providers.none')}</div>}
           </div>
         </div>
       </div>

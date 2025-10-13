@@ -72,7 +72,11 @@
     "start": "Start simulation",
     "createFailed": "Failed to create simulation.",
     "config": "Configuration",
-    "agents": "Agents"
+    "agents": "Agents",
+    "scene": "Scene",
+    "noProfile": "No profile",
+    "loadingScenes": "Loading scenes…",
+    "fetchScenesError": "Unable to fetch scenes."
   },
   "auth": {
     "login": { "welcome": "Welcome back", "email": "Email", "password": "Password", "signin": "Sign in", "noAccount": "No account yet?", "create": "Create one", "invalid": "Invalid credentials" },

@@ -72,7 +72,11 @@
     "start": "启动模拟",
     "createFailed": "创建模拟失败。",
     "config": "配置",
-    "agents": "智能体"
+    "agents": "智能体",
+    "scene": "场景",
+    "noProfile": "无简介",
+    "loadingScenes": "正在加载场景…",
+    "fetchScenesError": "无法获取场景。"
   },
   "auth": {
     "login": { "welcome": "欢迎回来", "email": "邮箱", "password": "密码", "signin": "登录", "noAccount": "还没有账号？", "create": "去注册", "invalid": "账号或密码错误" },
