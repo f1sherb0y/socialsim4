@@ -615,7 +615,10 @@ async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) ->
         try:
             while True:
                 event = await queue.get()
-                await websocket.send_json(event)
+                try:
+                    await websocket.send_json(event)
+                except Exception:
+                    break
         except WebSocketDisconnect:
             pass
         finally:
@@ -657,7 +660,10 @@ async def simulation_tree_node_events_ws(
         try:
             while True:
                 event = await queue.get()
-                await websocket.send_json(event)
+                try:
+                    await websocket.send_json(event)
+                except Exception:
+                    break
         except WebSocketDisconnect:
             pass
         finally:
