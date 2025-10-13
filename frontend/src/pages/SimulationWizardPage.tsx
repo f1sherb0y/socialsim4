@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { listScenes, type SceneOption } from "../api/scenes";
@@ -19,6 +19,7 @@ export function SimulationWizardPage() {
   const [step, setStep] = useState<Step>("scene");
   const [sceneType, setSceneType] = useState<string | null>(null);
   const [sceneConfig, setSceneConfig] = useState<Record<string, string>>({});
+  const [lastSceneType, setLastSceneType] = useState<string | null>(null);
   const [agents, setAgents] = useState([
     { name: "Alice", profile: "Analyst", action_space: ["send_message"] },
   ]);
@@ -26,9 +27,10 @@ export function SimulationWizardPage() {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!sceneType) throw new Error("scene required");
+      const effectiveConfig = { ...defaultConfig, ...sceneConfig };
       const sim = await createSimulation({
         scene_type: sceneType,
-        scene_config: sceneConfig,
+        scene_config: effectiveConfig,
         agent_config: { agents },
       });
       return sim;
@@ -40,6 +42,19 @@ export function SimulationWizardPage() {
     () => scenesQuery.data?.find((scene) => scene.type === sceneType),
     [sceneType, scenesQuery.data],
   );
+
+  const defaultConfig = useMemo(() => {
+    const schema = (currentScene?.config_schema ?? {}) as Record<string, unknown>;
+    const entries = Object.entries(schema).map(([k, v]) => [k, String(v ?? "")]);
+    return Object.fromEntries(entries) as Record<string, string>;
+  }, [currentScene]);
+
+  useEffect(() => {
+    if (sceneType && sceneType !== lastSceneType) {
+      setSceneConfig(defaultConfig);
+      setLastSceneType(sceneType);
+    }
+  }, [sceneType, lastSceneType, defaultConfig]);
 
   const nextStep = () => {
     if (step === "scene") setStep("scene-config");
