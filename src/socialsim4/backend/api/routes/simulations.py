@@ -591,7 +591,7 @@ async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) ->
             return
         try:
             sim = await _get_simulation_for_owner(session, user.id, simulation_id)
-            record = await _get_tree_record(sim)
+            record = await _get_tree_record(sim, session, user.id)
         except HTTPException:
             await websocket.close(code=1008)
             return
@@ -630,7 +630,7 @@ async def simulation_tree_node_events_ws(
             return
         try:
             sim = await _get_simulation_for_owner(session, user.id, simulation_id)
-            record = await _get_tree_record(sim)
+            record = await _get_tree_record(sim, session, user.id)
         except HTTPException:
             await websocket.close(code=1008)
             return
