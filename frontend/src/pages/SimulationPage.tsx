@@ -504,7 +504,7 @@ export function SimulationPage() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: gridCols, width: "100%", height: "100%" }} ref={containerRef}>
-          <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[0]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
             <div className="panel-title">{t('sim.tree')}</div>
             <div className="card" style={{ flex: 1, minHeight: 0, padding: 0 }}>
               <ReactFlow
@@ -638,7 +638,7 @@ export function SimulationPage() {
 
           <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />
 
-          <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[1]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
           <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>{t('sim.events')}</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
@@ -653,7 +653,7 @@ export function SimulationPage() {
 
           <div className="resizer" onMouseDown={(e) => onResizerMouseDown(1, e)} />
 
-          <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[2]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <section className="panel compact-panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
           <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>{t('sim.agents')}</span>
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
