@@ -9,6 +9,19 @@ export function LandingPage() {
       <p style={{ fontSize: "1rem", color: "var(--muted)", margin: 0 }}>
         Coordinate agents, branch timelines, and share live results with an interface built for experimentation teams.
       </p>
+      <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: 0 }}>
+        Learn more about
+        {" "}
+        <a
+          href="https://github.com/f1sherb0y/socialsim4"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--link)" }}
+        >
+          SocialSim4
+        </a>
+        .
+      </p>
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <Link to="/register" className="button">Launch your first simulation</Link>
         <Link to="/login" className="button" style={{ background: "linear-gradient(135deg, rgba(148,163,184,0.6), rgba(148,163,184,0.4))" }}>
