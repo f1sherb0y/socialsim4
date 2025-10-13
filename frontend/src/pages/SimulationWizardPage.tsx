@@ -49,12 +49,34 @@ export function SimulationWizardPage() {
     return Object.fromEntries(entries) as Record<string, string>;
   }, [currentScene]);
 
+  const SIMPLE_CHAT_SCENE = "simple_chat_scene";
+  const defaultSimpleAgents = useMemo(
+    () => [
+      {
+        name: "Alice",
+        profile:
+          "You are Alice, optimistic and curious about technology; you ask insightful questions, synthesize viewpoints, and keep the discussion constructive.",
+        action_space: ["send_message"],
+      },
+      {
+        name: "Bob",
+        profile:
+          "You are Bob, pragmatic and skeptical; you challenge assumptions, request evidence, and help the group converge on practical conclusions.",
+        action_space: ["send_message"],
+      },
+    ],
+    []
+  );
+
   useEffect(() => {
     if (sceneType && sceneType !== lastSceneType) {
       setSceneConfig(defaultConfig);
+      if (sceneType === SIMPLE_CHAT_SCENE) {
+        setAgents(defaultSimpleAgents);
+      }
       setLastSceneType(sceneType);
     }
-  }, [sceneType, lastSceneType, defaultConfig]);
+  }, [sceneType, lastSceneType, defaultConfig, defaultSimpleAgents]);
 
   const nextStep = () => {
     if (step === "scene") setStep("scene-config");
@@ -142,7 +164,7 @@ export function SimulationWizardPage() {
               ))}
             </div>
           ) : (
-            <div style={{ color: "#94a3b8" }}>Select a scene first.</div>
+            <div style={{ color: "#94a3b8" }}>{t('wizard.selectPrompt')}</div>
           )}
         </div>
       )}
@@ -154,7 +176,7 @@ export function SimulationWizardPage() {
             {agents.map((agent, index) => (
               <div key={index} className="card" style={{ gap: "0.5rem" }}>
                 <label>
-                  Name
+                  {t('wizard.name')}
                   <input
                     className="input"
                     value={agent.name}
@@ -162,7 +184,7 @@ export function SimulationWizardPage() {
                   />
                 </label>
                 <label>
-                  Profile
+                  {t('wizard.profile')}
                   <input
                     className="input"
                     value={agent.profile}

@@ -78,6 +78,7 @@
     "continue": "Continue",
     "back": "Back",
     "noExtraConfig": "This scene has no additional configuration.",
+    "selectPrompt": "Select a scene first.",
     "name": "Name",
     "profile": "Profile",
     "addAgent": "Add agent",

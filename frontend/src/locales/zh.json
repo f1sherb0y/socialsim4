@@ -78,6 +78,7 @@
     "continue": "继续",
     "back": "返回",
     "noExtraConfig": "该场景无需额外配置。",
+    "selectPrompt": "请先选择场景。",
     "name": "名称",
     "profile": "简介",
     "addAgent": "添加智能体",
