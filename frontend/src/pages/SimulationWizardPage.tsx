@@ -5,12 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { listScenes, type SceneOption } from "../api/scenes";
 import { createSimulation } from "../api/simulations";
 
-type SceneOption = {
-  type: string;
-  name: string;
-  config_schema: Record<string, unknown>;
-};
-
 type Step = "scene" | "scene-config" | "agents" | "review";
 
 export function SimulationWizardPage() {
@@ -73,15 +67,12 @@ export function SimulationWizardPage() {
   };
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <div>
-          <h1 style={{ margin: 0 }}>Simulation wizard</h1>
-          <p style={{ color: "#94a3b8" }}>Configure your environment, agents, and review before launch.</p>
-        </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+    <form onSubmit={handleSubmit} className="panel" style={{ gap: "0.75rem" }}>
+      <div className="panel-header">
+        <div className="panel-title">Simulation wizard</div>
+        <div style={{ display: "flex", gap: "0.4rem" }}>
           {step !== "scene" && (
-            <button type="button" className="button" style={{ background: "rgba(148,163,184,0.2)", color: "#e2e8f0" }} onClick={previousStep}>
+            <button type="button" className="button" onClick={previousStep}>
               Back
             </button>
           )}
@@ -91,118 +82,114 @@ export function SimulationWizardPage() {
             </button>
           )}
         </div>
-      </header>
-      <main className="app-main">
-        <form onSubmit={handleSubmit} className="panel" style={{ gap: "1.5rem" }}>
-          {step === "scene" && (
-            <div>
-              <div className="panel-title">Select scene</div>
-              {scenesQuery.isLoading && <div>Loading scenes…</div>}
-              {scenesQuery.error && <div style={{ color: "#f87171" }}>Unable to fetch scenes.</div>}
-              <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
-                {(scenesQuery.data ?? []).map((scene) => (
-                  <label key={scene.type} className="card" style={{ cursor: "pointer", border: scene.type === sceneType ? "1px solid #38bdf8" : undefined }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{scene.name}</div>
-                        <div style={{ color: "#94a3b8" }}>{scene.type}</div>
-                      </div>
-                      <input
-                        type="radio"
-                        name="scene"
-                        checked={scene.type === sceneType}
-                        onChange={() => setSceneType(scene.type)}
-                      />
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === "scene-config" && (
-            <div>
-              <div className="panel-title">Configure scene</div>
-              {currentScene ? (
-                <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
-                  {Object.keys(currentScene.config_schema ?? {}).length === 0 && (
-                    <div style={{ color: "#94a3b8" }}>This scene has no additional configuration.</div>
-                  )}
-                  {Object.entries(currentScene.config_schema ?? {}).map(([key, value]) => (
-                    <label key={key}>
-                      {key}
-                      <input
-                        value={sceneConfig[key] ?? String(value ?? "")}
-                        onChange={(event) => setSceneConfig((prev) => ({ ...prev, [key]: event.target.value }))}
-                        style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
-                      />
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ color: "#94a3b8" }}>Select a scene first.</div>
-              )}
-            </div>
-          )}
-
-          {step === "agents" && (
-            <div>
-              <div className="panel-title">Define agents</div>
-              <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
-                {agents.map((agent, index) => (
-                  <div key={index} className="card" style={{ gap: "0.75rem" }}>
-                    <label>
-                      Name
-                      <input
-                        value={agent.name}
-                        onChange={(event) => handleAgentChange(index, "name", event.target.value)}
-                        style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
-                      />
-                    </label>
-                    <label>
-                      Profile
-                      <input
-                        value={agent.profile}
-                        onChange={(event) => handleAgentChange(index, "profile", event.target.value)}
-                        style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem", borderRadius: "10px", border: "1px solid rgba(148,163,184,0.3)" }}
-                      />
-                    </label>
+      </div>
+      {step === "scene" && (
+        <div>
+          <div className="panel-title">Select scene</div>
+          {scenesQuery.isLoading && <div>Loading scenes…</div>}
+          {scenesQuery.error && <div style={{ color: "#f87171" }}>Unable to fetch scenes.</div>}
+          <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
+            {(scenesQuery.data ?? []).map((scene) => (
+              <label key={scene.type} className="card" style={{ cursor: "pointer", border: scene.type === sceneType ? "1px solid #38bdf8" : undefined, padding: "0.75rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{scene.name}</div>
+                    <div style={{ color: "#94a3b8" }}>{scene.type}</div>
                   </div>
-                ))}
-                <button type="button" className="button" onClick={handleAddAgent} style={{ width: "fit-content" }}>
-                  Add agent
-                </button>
-              </div>
-            </div>
-          )}
+                  <input
+                    type="radio"
+                    name="scene"
+                    checked={scene.type === sceneType}
+                    onChange={() => setSceneType(scene.type)}
+                  />
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
-          {step === "review" && (
-            <div style={{ display: "grid", gap: "1rem" }}>
-              <div className="panel-title">Review</div>
-              <div className="card" style={{ background: "rgba(30,41,59,0.6)" }}>
-                <div style={{ fontWeight: 600 }}>Scene</div>
-                <div>{sceneType}</div>
-              </div>
-              <div className="card" style={{ background: "rgba(30,41,59,0.6)" }}>
-                <div style={{ fontWeight: 600 }}>Configuration</div>
-                <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{JSON.stringify(sceneConfig, null, 2)}</pre>
-              </div>
-              <div className="card" style={{ background: "rgba(30,41,59,0.6)" }}>
-                <div style={{ fontWeight: 600 }}>Agents</div>
-                <ul>
-                  {agents.map((agent, index) => (
-                    <li key={index}>{agent.name} — {agent.profile || "No profile"}</li>
-                  ))}
-                </ul>
-              </div>
-              <button type="submit" className="button" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating…" : "Start simulation"}
-              </button>
-              {createMutation.error && <div style={{ color: "#f87171" }}>Failed to create simulation.</div>}
+      {step === "scene-config" && (
+        <div>
+          <div className="panel-title">Configure scene</div>
+          {currentScene ? (
+            <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
+              {Object.keys(currentScene.config_schema ?? {}).length === 0 && (
+                <div style={{ color: "#94a3b8" }}>This scene has no additional configuration.</div>
+              )}
+              {Object.entries(currentScene.config_schema ?? {}).map(([key, value]) => (
+                <label key={key}>
+                  {key}
+                  <input
+                    className="input"
+                    value={sceneConfig[key] ?? String(value ?? "")}
+                    onChange={(event) => setSceneConfig((prev) => ({ ...prev, [key]: event.target.value }))}
+                  />
+                </label>
+              ))}
             </div>
+          ) : (
+            <div style={{ color: "#94a3b8" }}>Select a scene first.</div>
           )}
-        </form>
-      </main>
-    </div>
+        </div>
+      )}
+
+      {step === "agents" && (
+        <div>
+          <div className="panel-title">Define agents</div>
+          <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
+            {agents.map((agent, index) => (
+              <div key={index} className="card" style={{ gap: "0.5rem" }}>
+                <label>
+                  Name
+                  <input
+                    className="input"
+                    value={agent.name}
+                    onChange={(event) => handleAgentChange(index, "name", event.target.value)}
+                  />
+                </label>
+                <label>
+                  Profile
+                  <input
+                    className="input"
+                    value={agent.profile}
+                    onChange={(event) => handleAgentChange(index, "profile", event.target.value)}
+                  />
+                </label>
+              </div>
+            ))}
+            <button type="button" className="button" onClick={handleAddAgent} style={{ width: "fit-content" }}>
+              Add agent
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === "review" && (
+        <div style={{ display: "grid", gap: "0.5rem" }}>
+          <div className="panel-title">Review</div>
+          <div className="card">
+            <div style={{ fontWeight: 600 }}>Scene</div>
+            <div>{sceneType}</div>
+          </div>
+          <div className="card">
+            <div style={{ fontWeight: 600 }}>Configuration</div>
+            <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{JSON.stringify(sceneConfig, null, 2)}</pre>
+          </div>
+          <div className="card">
+            <div style={{ fontWeight: 600 }}>Agents</div>
+            <ul>
+              {agents.map((agent, index) => (
+                <li key={index}>{agent.name} — {agent.profile || "No profile"}</li>
+              ))}
+            </ul>
+          </div>
+          <button type="submit" className="button" disabled={createMutation.isPending}>
+            {createMutation.isPending ? "Creating…" : "Start simulation"}
+          </button>
+          {createMutation.error && <div style={{ color: "#f87171" }}>Failed to create simulation.</div>}
+        </div>
+      )}
+    </form>
   );
 }
