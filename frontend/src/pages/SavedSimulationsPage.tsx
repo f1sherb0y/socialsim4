@@ -83,8 +83,8 @@ export function SavedSimulationsPage() {
                   </button>
                   <button
                     type="button"
-                    className="button button-ghost small"
-                    style={{ flex: 1, color: '#f87171' }}
+                    className="button button-danger small"
+                    style={{ flex: 1 }}
                     onClick={() => {
                       if (window.confirm(t('saved.confirmDelete'))) {
                         deleteSimulation.mutate(simulation.id);

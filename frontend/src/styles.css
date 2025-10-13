@@ -14,6 +14,8 @@ html { font-family: var(--font-sans); }
   --link: #38bdf8;
   --accent-a: #38bdf8;
   --accent-b: #6366f1;
+  --danger-a: #f87171; /* rose-400 */
+  --danger-b: #ef4444; /* red-500 */
 }
 
 :root.theme-light {
@@ -26,6 +28,8 @@ html { font-family: var(--font-sans); }
   --link: #2563eb;
   --accent-a: #0ea5e9;
   --accent-b: #6366f1;
+  --danger-a: #ef4444; /* red-500 */
+  --danger-b: #dc2626; /* red-600 */
 }
 
 body {
@@ -111,6 +115,7 @@ textarea { font: inherit; }
 .button-ghost { border: 1px solid var(--border); background: transparent; color: var(--text); }
 :root.theme-dark .button-ghost { background: rgba(148,163,184,0.12); }
 :root.theme-light .button-ghost { background: rgba(15,23,42,0.12); }
+.button-danger { background: linear-gradient(135deg, var(--danger-a), var(--danger-b)); color: #fff; }
 
 /* Small input variant */
 .input.small,

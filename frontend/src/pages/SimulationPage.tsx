@@ -619,17 +619,17 @@ export function SimulationPage() {
 
               <div>
               <div className="panel-subtitle">{t('sim.deleteSubtree')}</div>
-                <button
-                  type="button"
-                  className="button"
-                  onClick={async () => {
-                    const tree = treeIdRef.current;
-                    if (tree == null || selectedNode == null || !graph || selectedNode === graph.root) return;
-                    await treeDeleteSubtree(tree, selectedNode);
-                    await refreshSelected();
-                  }}
-                  disabled={!graph || selectedNode == null || (graph && selectedNode === graph.root)}
-                >
+              <button
+                type="button"
+                className="button button-danger small"
+                onClick={async () => {
+                  const tree = treeIdRef.current;
+                  if (tree == null || selectedNode == null || !graph || selectedNode === graph.root) return;
+                  await treeDeleteSubtree(tree, selectedNode);
+                  await refreshSelected();
+                }}
+                disabled={!graph || selectedNode == null || (graph && selectedNode === graph.root)}
+              >
                 {t('sim.delete')}
               </button>
               </div>
