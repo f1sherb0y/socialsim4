@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import i18n from "./i18n";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { DashboardPage } from "./pages/DashboardPage";
@@ -14,7 +15,7 @@ import { Layout } from "./components/Layout";
 
 export default function App() {
   return (
-    <Suspense fallback={<div className="app-loading">Loading…</div>}>
+    <Suspense fallback={<div className="app-loading">{i18n.t('common.loading')}</div>}>
       <Routes>
         <Route path="/" element={<Layout><LandingPage /></Layout>} />
         <Route path="/login" element={<Layout><LoginPage /></Layout>} />

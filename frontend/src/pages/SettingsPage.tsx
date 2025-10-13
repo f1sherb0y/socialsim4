@@ -79,7 +79,7 @@ export function SettingsPage() {
         <div className="panel" style={{ gap: "0.5rem" }}>
           <div className="panel-title">{t('settings.tabs.security')}</div>
           <div className="card">
-            <p>Two-factor authentication and password reset flows will appear here.</p>
+            <p>{t('settings.security.placeholder')}</p>
             <button type="button" className="button" style={{ alignSelf: "flex-start" }} onClick={() => clearSession()}>
               {t('settings.security.signoutAll')}
             </button>
@@ -144,7 +144,7 @@ export function SettingsPage() {
                 onClick={() => setKeyVisible((prev) => !prev)}
                 style={{ width: "fit-content" }}
               >
-                {keyVisible ? "Hide" : "Show"}
+                {keyVisible ? t('common.hide') : t('common.show')}
               </button>
             </div>
           </label>
@@ -156,8 +156,8 @@ export function SettingsPage() {
 
         <div className="card" style={{ gap: "0.5rem" }}>
           <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.title')}</h2>
-          {providersQuery.isLoading && <div>Loading…</div>}
-          {providersQuery.error && <div style={{ color: "#f87171" }}>Unable to load providers.</div>}
+          {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
+          {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
           <div style={{ display: "grid", gap: "1rem" }}>
             {(providersQuery.data ?? []).map((provider) => (
               <div key={provider.id} className="panel" style={{ gap: "0.5rem" }}>
@@ -167,7 +167,7 @@ export function SettingsPage() {
                 <div style={{ color: provider.last_test_status === "success" ? "#34d399" : "#f87171" }}>
                   {t('dashboard.status')}: {provider.last_test_status ?? t('settings.providers.neverTested')}
                 </div>
-                <div style={{ color: "#94a3b8" }}>{t('settings.providers.hasKey')}: {provider.has_api_key ? "Yes" : "No"}</div>
+                <div style={{ color: "#94a3b8" }}>{t('settings.providers.hasKey')}: {provider.has_api_key ? t('common.yes') : t('common.no')}</div>
                 <button
                   type="button"
                   className="button"

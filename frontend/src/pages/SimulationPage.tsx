@@ -456,7 +456,7 @@ export function SimulationPage() {
   }, [events]);
 
   if (!simulationSlug) {
-    return <div className="panel">Invalid simulation ID.</div>;
+    return <div className="panel">{t('sim.invalidId')}</div>;
   }
 
   return (
@@ -840,7 +840,7 @@ function formatEvent(event: SimEvent, key: number): JSX.Element | null {
     const bottom = (data.bottom as string[]) ?? [];
     return (
       <div key={key} style={{ lineHeight: 1.5 }}>
-        <span style={{ color: "#0ea5e9", fontWeight: 600 }}>[{(window as any).i18next?.t?.('sim.dealTag') ?? 'Deal'}]</span> Bottom: {bottom.join(" ")}
+        <span style={{ color: "#0ea5e9", fontWeight: 600 }}>[{(window as any).i18next?.t?.('sim.dealTag') ?? 'Deal'}]</span> {(window as any).i18next?.t?.('sim.bottom') ?? 'Bottom'}: {bottom.join(" ")}
       </div>
     );
   }

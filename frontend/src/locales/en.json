@@ -1,4 +1,11 @@
 {
+  "common": {
+    "loading": "Loading…",
+    "hide": "Hide",
+    "show": "Show",
+    "yes": "Yes",
+    "no": "No"
+  },
   "brand": "SocialSim4",
   "nav": {
     "dashboard": "Dashboard",
@@ -45,7 +52,7 @@
     "title": "Settings",
     "tabs": { "profile": "Profile", "security": "Security", "providers": "Providers" },
     "profile": { "email": "Email", "username": "Username", "fullName": "Full name", "organization": "Organization" },
-    "security": { "signoutAll": "Sign out of all sessions" },
+    "security": { "signoutAll": "Sign out of all sessions", "placeholder": "Two-factor authentication and password reset flows will appear here." },
     "providers": {
       "title": "Provider integrations",
       "add": "Add provider",
@@ -54,6 +61,8 @@
       "test": "Test connectivity",
       "hasKey": "Key stored",
       "neverTested": "never tested",
+      "loading": "Loading…",
+      "error": "Unable to load providers.",
       "none": "No providers added yet."
     }
   },
@@ -124,6 +133,7 @@
     "eventTag": "Event",
     "actionTag": "Action",
     "dealTag": "Deal",
+    "bottom": "Bottom",
     "status": "Status",
     "syncing": "Syncing…"
   }

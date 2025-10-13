@@ -1,4 +1,11 @@
 {
+  "common": {
+    "loading": "加载中…",
+    "hide": "隐藏",
+    "show": "显示",
+    "yes": "是",
+    "no": "否"
+  },
   "brand": "SocialSim4",
   "nav": {
     "dashboard": "仪表盘",
@@ -45,7 +52,7 @@
     "title": "设置",
     "tabs": { "profile": "个人信息", "security": "安全", "providers": "提供商" },
     "profile": { "email": "邮箱", "username": "用户名", "fullName": "姓名", "organization": "组织" },
-    "security": { "signoutAll": "退出所有会话" },
+    "security": { "signoutAll": "退出所有会话", "placeholder": "这里将展示双因素认证和密码重置流程。" },
     "providers": {
       "title": "提供商集成",
       "add": "新增提供商",
@@ -54,6 +61,8 @@
       "test": "测试连接",
       "hasKey": "是否保存密钥",
       "neverTested": "从未测试",
+      "loading": "加载中…",
+      "error": "无法加载提供商。",
       "none": "还没有添加任何提供商。"
     }
   },
@@ -124,6 +133,7 @@
     "eventTag": "事件",
     "actionTag": "动作",
     "dealTag": "发牌",
+    "bottom": "底牌",
     "status": "状态",
     "syncing": "同步中…"
   }
