@@ -23,11 +23,11 @@ export function DashboardPage() {
           <h1 style={{ margin: 0 }}>Dashboard</h1>
           <p style={{ color: "#94a3b8" }}>Pick up where you left off or launch something new.</p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <Link to="/simulations/new" className="button">
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Link to="/simulations/new" className="button button-ghost">
             New simulation
           </Link>
-          <Link to="/simulations/saved" className="button" style={{ background: "rgba(148,163,184,0.2)", color: "#e2e8f0" }}>
+          <Link to="/simulations/saved" className="button button-ghost">
             Resume saved
           </Link>
         </div>
