@@ -642,7 +642,13 @@ export function SimulationPage() {
         <div className="resizer" onMouseDown={(e) => onResizerMouseDown(0, e)} />
 
         <section className="panel compact-panel" style={{ flex: `0 0 ${colWidths[1]}%`, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div className="panel-title">Events</div>
+          <div className="panel-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>Events</span>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+              <input type="checkbox" checked={stickBottom} onChange={(event) => setStickBottom(event.target.checked)} />
+              Auto-scroll
+            </label>
+          </div>
           <div ref={eventsRef} className="card" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
             {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
           </div>
