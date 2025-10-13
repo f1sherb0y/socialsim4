@@ -44,12 +44,17 @@ class SimTreeRegistry:
                 return record
             tree = await asyncio.to_thread(_build_tree_for_scene, scene_type)
             record = SimTreeRecord(tree)
-            # Forward all node log events to tree-level subscribers
-            tree.set_tree_broadcast(
-                lambda event: [q.put_nowait(event) for q in record.subs]
-                if int(event["node"]) in record.running
-                else None
-            )
+            # Wire event loop for thread-safe fanout
+            loop = asyncio.get_running_loop()
+            tree.attach_event_loop(loop)
+            # Forward all node log events to tree-level subscribers (only for running nodes)
+            def _fanout(event: dict) -> None:
+                if int(event.get("node", -1)) not in record.running:
+                    return
+                for q in list(record.subs):
+                    loop.call_soon_threadsafe(q.put_nowait, event)
+
+            tree.set_tree_broadcast(_fanout)
             self._records[key] = record
             return record
 

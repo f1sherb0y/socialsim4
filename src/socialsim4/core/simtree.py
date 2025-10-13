@@ -5,6 +5,9 @@ from socialsim4.core.event import PublicEvent
 from socialsim4.core.simulator import Simulator
 
 
+import asyncio
+
+
 class SimTree:
     def __init__(self, clients: Dict[str, object]):
         self.clients = clients
@@ -15,9 +18,14 @@ class SimTree:
         self._node_subs: Dict[int, List[object]] = {}
         # Tree-level broadcast sink (wired by backend runtime to WS subscribers)
         self._tree_broadcast = lambda event: None
+        # Event loop used for thread-safe fanout (set by backend runtime)
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     def set_tree_broadcast(self, fn) -> None:
         self._tree_broadcast = fn
+
+    def attach_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        self._loop = loop
 
     @classmethod
     def new(
@@ -86,8 +94,12 @@ class SimTree:
             entry = {"type": kind, "data": data, "node": int(node_id)}
             logs.append(entry)
             subs = self._node_subs.get(node_id) or []
-            for q in subs:
-                q.put_nowait(entry)
+            if self._loop is not None:
+                for q in subs:
+                    self._loop.call_soon_threadsafe(q.put_nowait, entry)
+            else:
+                for q in subs:
+                    q.put_nowait(entry)
             # Also fan out to tree-level broadcast (e.g., WS attached to the tree)
             self._tree_broadcast(entry)
 
