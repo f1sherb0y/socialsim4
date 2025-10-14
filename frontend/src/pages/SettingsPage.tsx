@@ -5,6 +5,8 @@ import { createProvider as apiCreateProvider, listProviders, testProvider as api
 import { listSearchProviders, createSearchProvider, updateSearchProvider, type SearchProvider } from "../api/searchProviders";
 import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
+import { TitleCard } from "../components/TitleCard";
+import { Dropdown } from "../components/Dropdown";
 
 type Tab = "profile" | "security" | "providers";
 
@@ -359,9 +361,7 @@ export function SettingsPage() {
 
   return (
     <div style={{ height: "100%", overflow: "auto" }}>
-      <div className="panel" style={{ marginBottom: "0.75rem" }}>
-        <div className="panel-title">{t('settings.title')}</div>
-      </div>
+      <TitleCard title={t('settings.title')} />
       <div className="tab-layout">
         <nav className="tab-nav">
           <button type="button" className={`tab-button ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
@@ -394,21 +394,16 @@ function FancySelect({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   const selected = options.find((o) => o.value === value) || options[0] || { value: "", label: "" };
+  const btnRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (ref.current && !ref.current.contains(t)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
+  // Dropdown handles outside clicks via portal; no extra listeners here.
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button
         type="button"
         className="input fancy-select-trigger"
+        ref={btnRef}
         style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -426,47 +421,31 @@ function FancySelect({
         <span>{selected.label}</span>
         <span style={{ color: "#94a3b8" }}>▾</span>
       </button>
-      {open && (
-        <div
-          className="card"
-          style={{
-            position: "absolute",
-            top: "calc(100% + 0.25rem)",
-            left: 0,
-            right: 0,
-            zIndex: 40,
-            display: "grid",
-            gap: "0.25rem",
-            padding: "0.5rem",
-            maxHeight: "240px",
-            overflowY: "auto",
-          }}
-        >
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`select-option ${opt.value === value ? 'active' : ''}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onChange(opt.value);
-                setOpen(false);
-              }}
-              onClick={(e) => e.preventDefault()}
+      <Dropdown anchor={btnRef.current} open={open} onClose={() => setOpen(false)}>
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            className={`select-option ${opt.value === value ? 'active' : ''}`}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onChange(opt.value);
+              setOpen(false);
+            }}
+            onClick={(e) => e.preventDefault()}
               style={{
                 textAlign: "left",
                 border: "none",
-                padding: "0.35rem 0.5rem",
+                padding: "0.22rem 0.35rem",
                 borderRadius: "0.5rem",
                 color: "inherit",
                 cursor: "pointer",
               }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </Dropdown>
     </div>
   );
 }

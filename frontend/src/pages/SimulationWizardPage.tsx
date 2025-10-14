@@ -1,10 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import TextareaAutosize from 'react-textarea-autosize';
 import { useNavigate } from "react-router-dom";
 
 import { listScenes, type SceneOption } from "../api/scenes";
 import { createSimulation } from "../api/simulations";
 import { useTranslation } from "react-i18next";
+import { TitleCard } from "../components/TitleCard";
 
 type Step = "scene" | "scene-config" | "agents" | "review";
 
@@ -170,20 +172,20 @@ export function SimulationWizardPage() {
     createMutation.mutate();
   };
 
+  // (No wrapper needed: use TextareaAutosize directly where needed)
+
   return (
-    <div className="scroll-panel" style={{ height: "100%", overflow: "auto" }}>
-      <form onSubmit={handleSubmit} className="panel" style={{ gap: "0.75rem" }}>
-        <div className="panel-header" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', alignItems: 'center', gap: '0.5rem' }}>
-          <div className="panel-title" style={{ justifySelf: 'start' }}>{t('wizard.title')}</div>
-          {/* Segmented progress bar */}
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', justifyContent: 'center', width: 520, maxWidth: '100%', gridColumn: '2 / 3', justifySelf: 'center', marginTop: 4, paddingTop: 10 }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <TitleCard
+        title={t('wizard.title')}
+        center={(
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: 4 }}>
             {(() => {
               const idx = stepsOrder.indexOf(step);
               return stepsOrder.map((s, i) => {
                 const allowed = canGo(s);
                 const active = i === idx;
                 const done = i < idx;
-                const bg = done ? 'var(--accent-a)' : active ? 'var(--accent-b)' : 'var(--border)';
                 const labelColor = active ? 'var(--text)' : 'var(--muted)';
                 const labelText = s === 'scene' ? (t('wizard.selectScene') || 'Scene') : s === 'scene-config' ? (t('wizard.configureScene') || 'Config') : s === 'agents' ? (t('wizard.defineAgents') || 'Agents') : (t('wizard.review') || 'Review');
                 return (
@@ -237,7 +239,9 @@ export function SimulationWizardPage() {
               });
             })()}
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', justifySelf: 'end' }}>
+        )}
+        actions={(
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
             {step !== "scene" && (
               <button
                 type="button"
@@ -282,262 +286,282 @@ export function SimulationWizardPage() {
               </button>
             )}
           </div>
-        </div>
-        {step === "scene" && (
-          <div>
-            <div className="panel-title">{t('wizard.selectScene')}</div>
-            {scenesQuery.isLoading && <div>{t('wizard.loadingScenes')}</div>}
-            {scenesQuery.error && <div style={{ color: "#f87171" }}>{t('wizard.fetchScenesError')}</div>}
-            <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
-            {(scenesQuery.data ?? []).map((scene, idx) => (
-              <label key={idx} className="card" style={{ cursor: "pointer", border: scene.type === sceneType ? "1px solid #38bdf8" : undefined, padding: "0.75rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{scene.name}</div>
-                    <div style={{ color: "#94a3b8" }}>{scene.type}</div>
-                    {scene.description && <div style={{ color: "var(--muted)", marginTop: 4, fontSize: '0.9rem' }}>{scene.description}</div>}
-                  </div>
-                  <input
-                    type="radio"
-                    name="scene"
-                    checked={scene.type === sceneType}
-                      onChange={() => handleSelectScene(scene)}
-                    />
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
         )}
+      />
+      <div className="scroll-panel" style={{ height: '100%', overflow: 'auto' }}>
+        <form onSubmit={handleSubmit} className="panel" style={{ gap: "0.75rem" }}>
+          {step === "scene" && (
+            <div>
+              <div className="panel-title">{t('wizard.selectScene')}</div>
+              {scenesQuery.isLoading && <div>{t('wizard.loadingScenes')}</div>}
+              {scenesQuery.error && <div style={{ color: "#f87171" }}>{t('wizard.fetchScenesError')}</div>}
+              <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
+                {(scenesQuery.data ?? []).map((scene, idx) => (
+                  <label key={idx} className="card" style={{ cursor: "pointer", border: scene.type === sceneType ? "1px solid #38bdf8" : undefined, padding: "0.75rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{scene.name}</div>
+                        <div style={{ color: "#94a3b8" }}>{scene.type}</div>
+                        {scene.description && <div style={{ color: "var(--muted)", marginTop: 4, fontSize: '0.9rem' }}>{scene.description}</div>}
+                      </div>
+                      <input
+                        type="radio"
+                        name="scene"
+                        checked={scene.type === sceneType}
+                        onChange={() => handleSelectScene(scene)}
+                      />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {step === "scene-config" && (
-          <div>
-            <div className="panel-title">{t('wizard.configureScene')}</div>
-            {currentScene ? (
-              <div style={{ display: "grid", gap: "0.75rem", marginTop: "0.5rem" }}>
-                {/* Events configuration */}
-                <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
-                  <div className="panel-subtitle">{t('wizard.events') || 'Initial events'}</div>
-                  <div style={{ display: "grid", gap: "0.35rem" }}>
-                    {((sceneConfig.initial_events as any[]) || []).map((ev, idx) => (
-                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem', alignItems: 'center' }}>
-                        <input
-                          className="input"
-                          value={String(ev)}
-                          onChange={(e) => {
+          {step === "scene-config" && (
+            <div>
+              <div className="panel-title">{t('wizard.configureScene')}</div>
+              {currentScene ? (
+                <div style={{ display: "grid", gap: "0.75rem", marginTop: "0.5rem" }}>
+                  {/* Events configuration */}
+                  <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
+                    <div className="panel-subtitle">{t('wizard.events') || 'Initial events'}</div>
+                    <div style={{ display: "grid", gap: "0.35rem" }}>
+                      {((sceneConfig.initial_events as any[]) || []).map((ev, idx) => (
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem', alignItems: 'center' }}>
+                          <TextareaAutosize
+                            className="input"
+                            value={String(ev)}
+                            onChange={(e) => {
+                              setSceneConfig((prev) => {
+                                const list = Array.isArray(prev.initial_events) ? [...prev.initial_events] : [];
+                                list[idx] = e.target.value;
+                                return { ...prev, initial_events: list };
+                              })
+                            }}
+                            minRows={1}
+                            maxRows={999}
+                            style={{ resize: 'none' }}
+                          />
+                          <button type="button" className="icon-button" aria-label={t('wizard.deleteAgent') || 'Delete agent'} title={t('wizard.deleteAgent') || 'Delete agent'} onClick={() => {
                             setSceneConfig((prev) => {
                               const list = Array.isArray(prev.initial_events) ? [...prev.initial_events] : [];
-                              list[idx] = e.target.value;
+                              list.splice(idx, 1);
                               return { ...prev, initial_events: list };
                             })
-                          }}
-                        />
-                      <button type="button" className="icon-button" aria-label={t('wizard.deleteAgent') || 'Delete agent'} title={t('wizard.deleteAgent') || 'Delete agent'} onClick={() => {
-                          setSceneConfig((prev) => {
-                            const list = Array.isArray(prev.initial_events) ? [...prev.initial_events] : [];
-                            list.splice(idx, 1);
-                            return { ...prev, initial_events: list };
-                          })
-                        }}>🗑</button>
-                      </div>
-                    ))}
+                          }}>🗑</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="button" onClick={() => setSceneConfig((prev) => ({ ...prev, initial_events: [...(prev.initial_events || []), ""] }))} style={{ width: 'fit-content' }}>{t('wizard.addEvent') || 'Add event'}</button>
                   </div>
-                  <button type="button" className="button" onClick={() => setSceneConfig((prev) => ({ ...prev, initial_events: [...(prev.initial_events || []), ""] }))} style={{ width: 'fit-content' }}>{t('wizard.addEvent') || 'Add event'}</button>
+
+                  {/* Scene specific configuration */}
+                  <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
+                    <div className="panel-subtitle">{t('wizard.sceneSpecific') || 'Scene configuration'}</div>
+                    {Object.keys(currentScene.config_schema ?? {}).filter((k) => k !== 'initial_events').length === 0 && (
+                      <div style={{ color: "#94a3b8" }}>{t('wizard.noExtraConfig')}</div>
+                    )}
+                    {Object.entries(currentScene.config_schema ?? {}).filter(([key]) => key !== 'initial_events').map(([key, value]) => {
+                      const initial = sceneConfig[key] ?? value;
+                      const type = typeof value;
+                      if (type === 'boolean') {
+                        return (
+                          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                              type="checkbox"
+                              className="checkbox"
+                              checked={Boolean(initial)}
+                              onChange={(e) => setSceneConfig((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            />
+                            {key}
+                          </label>
+                        );
+                      }
+                      if (type === 'number') {
+                        return (
+                          <label key={key}>
+                            {key}
+                            <input
+                              className="input"
+                              type="number"
+                              value={Number(initial) as number}
+                              onChange={(e) => setSceneConfig((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
+                            />
+                          </label>
+                        );
+                      }
+                      if (type === 'object' && value !== null) {
+                        const json = JSON.stringify(initial, null, 2);
+                        return (
+                          <label key={key}>
+                            {key}
+                            <TextareaAutosize
+                              className="input"
+                              value={json}
+                              onChange={(e) => {
+                                try {
+                                  const parsed = JSON.parse(e.target.value);
+                                  setSceneConfig((prev) => ({ ...prev, [key]: parsed }));
+                                } catch {
+                                  // ignore invalid JSON edits
+                                }
+                              }}
+                              minRows={6}
+                              maxRows={999}
+                              style={{ resize: 'none' }}
+                            />
+                          </label>
+                        );
+                      }
+                      return (
+                        <label key={key}>
+                          {key}
+                          <TextareaAutosize
+                            className="input"
+                            value={String(initial ?? '')}
+                            onChange={(e) => setSceneConfig((prev) => ({ ...prev, [key]: e.target.value }))}
+                            minRows={2}
+                            maxRows={999}
+                            style={{ resize: 'none' }}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: "#94a3b8" }}>{t('wizard.selectPrompt')}</div>
+              )}
+            </div>
+          )}
+
+          {step === "agents" && (
+            <div>
+              <div className="panel-title">{t('wizard.defineAgents')}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "0.75rem", marginTop: "0.5rem", alignItems: "start" }}>
+                <div className="card" style={{ padding: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {agents.map((ag, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedAgentIdx(i)}
+                        className="button-ghost"
+                        style={{
+                          textAlign: "left",
+                          border: "none",
+                          borderRadius: 0,
+                          padding: "0.6rem 0.75rem",
+                          background: i === selectedAgentIdx ? "rgba(148,163,184,0.18)" : "transparent",
+                        }}
+                      >
+                        {i + 1}. {ag.name || t('wizard.name')}
+                      </button>
+                    ))}
+                    <div style={{ padding: "0.5rem" }}>
+                      <button type="button" className="button" onClick={handleAddAgent} style={{ width: "100%" }}>{t('wizard.addAgent')}</button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Scene specific configuration */}
-                <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
-                  <div className="panel-subtitle">{t('wizard.sceneSpecific') || 'Scene configuration'}</div>
-                  {Object.keys(currentScene.config_schema ?? {}).filter((k) => k !== 'initial_events').length === 0 && (
-                    <div style={{ color: "#94a3b8" }}>{t('wizard.noExtraConfig')}</div>
-                  )}
-                  {Object.entries(currentScene.config_schema ?? {}).filter(([key]) => key !== 'initial_events').map(([key, value]) => {
-                    const initial = sceneConfig[key] ?? value;
-                    const type = typeof value;
-                    if (type === 'boolean') {
-                      return (
-                        <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={Boolean(initial)}
-                            onChange={(e) => setSceneConfig((prev) => ({ ...prev, [key]: e.target.checked }))}
-                          />
-                          {key}
-                        </label>
-                      );
-                    }
-                    if (type === 'number') {
-                      return (
-                        <label key={key}>
-                          {key}
-                          <input
-                            className="input"
-                            type="number"
-                            value={Number(initial) as number}
-                            onChange={(e) => setSceneConfig((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
-                          />
-                        </label>
-                      );
-                    }
-                    if (type === 'object' && value !== null) {
-                      const json = JSON.stringify(initial, null, 2);
-                      return (
-                        <label key={key}>
-                          {key}
-                          <textarea
-                            className="input"
-                            rows={6}
-                            value={json}
-                            onChange={(e) => {
-                              try {
-                                const parsed = JSON.parse(e.target.value);
-                                setSceneConfig((prev) => ({ ...prev, [key]: parsed }));
-                              } catch {
-                                // ignore invalid JSON edits
-                              }
-                            }}
-                          />
-                        </label>
-                      );
-                    }
-                    return (
-                      <label key={key}>
-                        {key}
-                        <input
+                <div className="card" style={{ gap: "0.5rem" }}>
+                  {agents[selectedAgentIdx] ? (
+                    <>
+                      <label>
+                        {t('wizard.name')}
+                        <TextareaAutosize
                           className="input"
-                          value={String(initial ?? '')}
-                          onChange={(e) => setSceneConfig((prev) => ({ ...prev, [key]: e.target.value }))}
+                          value={agents[selectedAgentIdx].name}
+                          onChange={(e) => handleAgentChange(selectedAgentIdx, "name", e.target.value)}
+                          minRows={1}
+                          maxRows={999}
+                          style={{ resize: 'none' }}
                         />
                       </label>
-                    );
-                  })}
+                      <label>
+                        {t('wizard.profile')}
+                        <TextareaAutosize
+                          className="input"
+                          value={agents[selectedAgentIdx].profile}
+                          onChange={(e) => handleAgentChange(selectedAgentIdx, "profile", e.target.value)}
+                          minRows={2}
+                          maxRows={999}
+                          style={{ resize: 'none' }}
+                        />
+                      </label>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button type="button" className="button button-danger" onClick={() => handleRemoveAgent(selectedAgentIdx)} disabled={agents.length <= 1}>
+                          {t('wizard.deleteAgent') || 'Delete agent'}
+                        </button>
+                      </div>
+                      {currentScene && (
+                        <div>
+                          <div style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: "0.25rem" }}>{t('wizard.basicActions') || 'Basic actions'}</div>
+                          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                            {(currentScene.basic_actions || []).filter((a) => a !== 'yield').map((a) => (
+                              <span key={a} className="card" style={{ padding: "0.2rem 0.4rem", fontSize: "0.85rem" }}>{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {currentScene && (
+                        <div>
+                          <div style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.25rem 0" }}>{t('wizard.allowedActions') || 'Allowed actions'}</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.35rem" }}>
+                            {(currentScene.allowed_actions || []).map((action) => (
+                              <label key={action} style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                                <input
+                                  type="checkbox"
+                                  className="checkbox"
+                                  checked={(agents[selectedAgentIdx].action_space || []).includes(action)}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setAgents((prev) => prev.map((ag, i) => i === selectedAgentIdx ? {
+                                      ...ag,
+                                      action_space: checked ? [...(ag.action_space || []), action] : (ag.action_space || []).filter((a) => a !== action)
+                                    } : ag));
+                                  }}
+                                />
+                                <span>{action}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ color: "#94a3b8" }}>{t('wizard.selectAgent') || 'Select an agent'}</div>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div style={{ color: "#94a3b8" }}>{t('wizard.selectPrompt')}</div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {step === "agents" && (
-          <div>
-            <div className="panel-title">{t('wizard.defineAgents')}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "0.75rem", marginTop: "0.5rem", alignItems: "start" }}>
-              <div className="card" style={{ padding: 0 }}>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  {agents.map((ag, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setSelectedAgentIdx(i)}
-                      className="button-ghost"
-                      style={{
-                        textAlign: "left",
-                        border: "none",
-                        borderRadius: 0,
-                        padding: "0.6rem 0.75rem",
-                        background: i === selectedAgentIdx ? "rgba(148,163,184,0.18)" : "transparent",
-                      }}
-                    >
-                      {i + 1}. {ag.name || t('wizard.name')}
-                    </button>
+          {step === "review" && (
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              <div className="panel-title">{t('wizard.review')}</div>
+              <div className="card">
+                <div style={{ fontWeight: 600 }}>{t('wizard.scene') || 'Scene'}</div>
+                <div>{sceneType}</div>
+              </div>
+              <div className="card">
+                <div style={{ fontWeight: 600 }}>{t('wizard.config')}</div>
+                <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{JSON.stringify(sceneConfig, null, 2)}</pre>
+              </div>
+              <div className="card">
+                <div style={{ fontWeight: 600 }}>{t('wizard.agents')}</div>
+                <ul>
+                  {agents.map((agent, index) => (
+                    <li key={index}>{agent.name} — {agent.profile || t('wizard.noProfile')}</li>
                   ))}
-                  <div style={{ padding: "0.5rem" }}>
-                    <button type="button" className="button" onClick={handleAddAgent} style={{ width: "100%" }}>{t('wizard.addAgent')}</button>
-                  </div>
-                </div>
+                </ul>
               </div>
-
-              <div className="card" style={{ gap: "0.5rem" }}>
-                {agents[selectedAgentIdx] ? (
-                  <>
-                    <label>
-                      {t('wizard.name')}
-                      <input
-                        className="input"
-                        value={agents[selectedAgentIdx].name}
-                        onChange={(e) => handleAgentChange(selectedAgentIdx, "name", e.target.value)}
-                      />
-                    </label>
-                    <label>
-                      {t('wizard.profile')}
-                      <input
-                        className="input"
-                        value={agents[selectedAgentIdx].profile}
-                        onChange={(e) => handleAgentChange(selectedAgentIdx, "profile", e.target.value)}
-                      />
-                    </label>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <button type="button" className="button button-danger" onClick={() => handleRemoveAgent(selectedAgentIdx)} disabled={agents.length <= 1}>
-                        {t('wizard.deleteAgent') || 'Delete agent'}
-                      </button>
-                    </div>
-                    {currentScene && (
-                      <div>
-                      <div style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: "0.25rem" }}>{t('wizard.basicActions') || 'Basic actions'}</div>
-                        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                          {(currentScene.basic_actions || []).filter((a) => a !== 'yield').map((a) => (
-                            <span key={a} className="card" style={{ padding: "0.2rem 0.4rem", fontSize: "0.85rem" }}>{a}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {currentScene && (
-                      <div>
-                      <div style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.25rem 0" }}>{t('wizard.allowedActions') || 'Allowed actions'}</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.35rem" }}>
-                          {(currentScene.allowed_actions || []).map((action) => (
-                            <label key={action} style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                              <input
-                                type="checkbox"
-                                checked={(agents[selectedAgentIdx].action_space || []).includes(action)}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  setAgents((prev) => prev.map((ag, i) => i === selectedAgentIdx ? {
-                                    ...ag,
-                                    action_space: checked ? [...(ag.action_space || []), action] : (ag.action_space || []).filter((a) => a !== action)
-                                  } : ag));
-                                }}
-                              />
-                              <span>{action}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div style={{ color: "#94a3b8" }}>{t('wizard.selectAgent') || 'Select an agent'}</div>
-                )}
-              </div>
+              <button type="submit" className="button" disabled={createMutation.isPending}>{createMutation.isPending ? t('wizard.start') + '…' : t('wizard.start')}</button>
+              {createMutation.error && <div style={{ color: "#f87171" }}>{t('wizard.createFailed')}</div>}
             </div>
-          </div>
-        )}
-
-        {step === "review" && (
-          <div style={{ display: "grid", gap: "0.5rem" }}>
-            <div className="panel-title">{t('wizard.review')}</div>
-            <div className="card">
-              <div style={{ fontWeight: 600 }}>{t('wizard.scene') || 'Scene'}</div>
-              <div>{sceneType}</div>
-            </div>
-            <div className="card">
-              <div style={{ fontWeight: 600 }}>{t('wizard.config')}</div>
-              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{JSON.stringify(sceneConfig, null, 2)}</pre>
-            </div>
-            <div className="card">
-              <div style={{ fontWeight: 600 }}>{t('wizard.agents')}</div>
-              <ul>
-                {agents.map((agent, index) => (
-                  <li key={index}>{agent.name} — {agent.profile || t('wizard.noProfile')}</li>
-                ))}
-              </ul>
-            </div>
-            <button type="submit" className="button" disabled={createMutation.isPending}>{createMutation.isPending ? t('wizard.start') + '…' : t('wizard.start')}</button>
-            {createMutation.error && <div style={{ color: "#f87171" }}>{t('wizard.createFailed')}</div>}
-          </div>
-        )}
-      </form>
-    </div>
+          )}
+        </form>
+      </div>
+    </div >
   );
 }

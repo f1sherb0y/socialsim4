@@ -24,6 +24,7 @@ import {
 } from "../api/simulationTree";
 import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
+import { Dropdown } from "../components/Dropdown";
 
 type Simulation = {
   id: string;
@@ -762,11 +763,13 @@ export function SimulationPage() {
               className="card"
               style={{
                 padding: "0.75rem 1rem",
-                background: "rgba(15,23,42,0.9)",
+                background: "var(--overlay-bg)",
                 border: "1px solid rgba(148,163,184,0.4)",
                 boxShadow: "0 12px 24px rgba(15,23,42,0.32)",
                 color: "#e2e8f0",
                 minWidth: "220px",
+                backdropFilter: "blur(var(--overlay-blur))",
+                WebkitBackdropFilter: "blur(var(--overlay-blur))",
               }}
             >
               {toast.text}
@@ -796,17 +799,9 @@ function CompactSelect({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (ref.current && !ref.current.contains(target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  // Dropdown handles outside clicks; keep local ref for layout only.
 
   const label = value || placeholder || (options[0]?.label ?? "");
 
@@ -815,55 +810,40 @@ function CompactSelect({
       <button
         type="button"
         className="input fancy-select-trigger"
+        ref={btnRef}
         style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}
         onClick={() => setOpen((prev) => !prev)}
       >
         <span>{label}</span>
         <span style={{ color: "#94a3b8" }}>▾</span>
       </button>
-      {open && (
-        <div
-          className="card"
-          style={{
-            position: "absolute",
-            top: "calc(100% + 0.25rem)",
-            left: 0,
-            right: 0,
-            zIndex: 20,
-            display: "grid",
-            gap: "0.25rem",
-            padding: "0.5rem",
-            maxHeight: "240px",
-            overflowY: "auto",
-          }}
-        >
-          {options.length ? (
-            options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`select-option ${option.value === value ? 'active' : ''}`}
-                onClick={() => {
-                  onChange(option.value);
-                  setOpen(false);
-                }}
+      <Dropdown anchor={btnRef.current} open={open} onClose={() => setOpen(false)}>
+        {options.length ? (
+          options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`select-option ${option.value === value ? 'active' : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
                 style={{
                   textAlign: "left",
                   border: "none",
-                  padding: "0.35rem 0.5rem",
+                  padding: "0.22rem 0.35rem",
                   borderRadius: "0.5rem",
                   color: "inherit",
                   cursor: "pointer",
                 }}
-              >
-                {option.label}
-              </button>
-            ))
-          ) : (
-            <div style={{ color: "#94a3b8", padding: "0.35rem 0.5rem" }}>No options</div>
-          )}
-        </div>
-      )}
+            >
+              {option.label}
+            </button>
+          ))
+        ) : (
+          <div style={{ color: "#94a3b8", padding: "0.22rem 0.35rem" }}>No options</div>
+        )}
+      </Dropdown>
     </div>
   );
 }
