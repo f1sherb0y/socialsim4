@@ -6,7 +6,7 @@ import { listSearchProviders, createSearchProvider, updateSearchProvider, type S
 import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
 import { TitleCard } from "../components/TitleCard";
-import { Dropdown } from "../components/Dropdown";
+import { AppSelect } from "../components/AppSelect";
 
 type Tab = "profile" | "security" | "providers";
 
@@ -152,7 +152,7 @@ export function SettingsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
             <label>
               Provider
-              <FancySelect
+              <AppSelect
                 value={searchDraft.provider}
                 options={[
                   { value: "ddg", label: "DuckDuckGo" },
@@ -192,7 +192,7 @@ export function SettingsPage() {
               <>
                 <label>
                   Search Depth
-                  <FancySelect
+                  <AppSelect
                     value={String((searchDraft.config as any).search_depth || "basic")}
                     options={[
                       { value: "basic", label: "basic" },
@@ -380,72 +380,4 @@ export function SettingsPage() {
   );
 }
 
-type FancyOption = { value: string; label: string };
-
-function FancySelect({
-  options,
-  value,
-  onChange,
-}: {
-  options: FancyOption[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-  const selected = options.find((o) => o.value === value) || options[0] || { value: "", label: "" };
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-
-  // Dropdown handles outside clicks via portal; no extra listeners here.
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        type="button"
-        className="input fancy-select-trigger"
-        ref={btnRef}
-        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={(e) => {
-          e.preventDefault();
-          setOpen((p) => !p);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            setOpen(false);
-          }
-        }}
-      >
-        <span>{selected.label}</span>
-        <span style={{ color: "#94a3b8" }}>▾</span>
-      </button>
-      <Dropdown anchor={btnRef.current} open={open} onClose={() => setOpen(false)}>
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            className={`select-option ${opt.value === value ? 'active' : ''}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              onChange(opt.value);
-              setOpen(false);
-            }}
-            onClick={(e) => e.preventDefault()}
-              style={{
-                textAlign: "left",
-                border: "none",
-                padding: "0.22rem 0.35rem",
-                borderRadius: "0.5rem",
-                color: "inherit",
-                cursor: "pointer",
-              }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </Dropdown>
-    </div>
-  );
-}
+// (Radix-based AppSelect replaces local FancySelect)

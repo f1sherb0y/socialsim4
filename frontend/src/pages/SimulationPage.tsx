@@ -24,7 +24,7 @@ import {
 } from "../api/simulationTree";
 import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../components/Dropdown";
+import { AppSelect } from "../components/AppSelect";
 
 type Simulation = {
   id: string;
@@ -722,11 +722,12 @@ export function SimulationPage() {
                 {t('sim.autoScroll')}
               </label>
             </div>
-            <CompactSelect
+            <AppSelect
               options={agents.map((agent) => ({ value: agent.name, label: agent.name }))}
               value={selectedAgent}
               placeholder="No agents"
               onChange={setSelectedAgent}
+              size="small"
             />
             <div
               ref={agentRef}
@@ -781,72 +782,7 @@ export function SimulationPage() {
   );
 }
 
-type SelectOption = {
-  value: string;
-  label: string;
-};
-
-function CompactSelect({
-  options,
-  value,
-  placeholder,
-  onChange,
-}: {
-  options: SelectOption[];
-  value: string;
-  placeholder?: string;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-
-  // Dropdown handles outside clicks; keep local ref for layout only.
-
-  const label = value || placeholder || (options[0]?.label ?? "");
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        type="button"
-        className="input fancy-select-trigger"
-        ref={btnRef}
-        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}
-        onClick={() => setOpen((prev) => !prev)}
-      >
-        <span>{label}</span>
-        <span style={{ color: "#94a3b8" }}>▾</span>
-      </button>
-      <Dropdown anchor={btnRef.current} open={open} onClose={() => setOpen(false)}>
-        {options.length ? (
-          options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`select-option ${option.value === value ? 'active' : ''}`}
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-                style={{
-                  textAlign: "left",
-                  border: "none",
-                  padding: "0.22rem 0.35rem",
-                  borderRadius: "0.5rem",
-                  color: "inherit",
-                  cursor: "pointer",
-                }}
-            >
-              {option.label}
-            </button>
-          ))
-        ) : (
-          <div style={{ color: "#94a3b8", padding: "0.22rem 0.35rem" }}>No options</div>
-        )}
-      </Dropdown>
-    </div>
-  );
-}
+// (Radix-based AppSelect used instead of inline CompactSelect)
 
 function formatEvent(event: SimEvent, key: number, t: (k: string) => string): JSX.Element | null {
   if (!event) return null;
