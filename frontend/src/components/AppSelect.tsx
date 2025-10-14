@@ -26,10 +26,10 @@ export function AppSelect({
         <span style={{ color: '#94a3b8' }}>▾</span>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Content className="card select-dropdown" position="popper" sideOffset={4}>
-          <Select.Viewport style={{ display: 'grid', gap: 4 }}>
+        <Select.Content className="card select-dropdown" position="popper" sideOffset={2}>
+          <Select.Viewport style={{ display: 'grid', gap: 2 }}>
             {options.map((opt) => (
-              <Select.Item key={opt.value} value={opt.value} className="select-option" style={{ textAlign: 'left', border: 'none', padding: '0.22rem 0.35rem', borderRadius: 8, cursor: 'pointer' }}>
+              <Select.Item key={opt.value} value={opt.value} className="select-option" style={{ textAlign: 'left', border: 'none', padding: '0.16rem 0.28rem', borderRadius: 8, cursor: 'pointer' }}>
                 <Select.ItemText>{opt.label}</Select.ItemText>
               </Select.Item>
             ))}
@@ -39,4 +39,3 @@ export function AppSelect({
     </Select.Root>
   );
 }
-
