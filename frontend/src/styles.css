@@ -417,7 +417,7 @@ textarea::placeholder {
   background: transparent;
   border: none;
   color: var(--text);
-  padding: 0.16rem 0.28rem;
+  padding: 0.2rem 0.32rem;
   border-radius: 8px;
   cursor: pointer;
   font: inherit;
@@ -446,7 +446,8 @@ textarea::placeholder {
   background: var(--overlay-bg);
   backdrop-filter: blur(var(--overlay-blur));
   -webkit-backdrop-filter: blur(var(--overlay-blur));
-  padding: 2px;
+  padding: 3px; /* slightly relaxed */
+  z-index: 1000; /* above navbar */
 }
 
 .select-option {

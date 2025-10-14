@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content className="card select-dropdown" align="end" sideOffset={2}>
+          <DropdownMenu.Content className="card select-dropdown" align="end" sideOffset={4}>
             <DropdownMenu.Item className={`menu-item ${current === 'en' ? 'active' : ''}`} onSelect={() => setLanguage('en')}>
               EN
             </DropdownMenu.Item>
