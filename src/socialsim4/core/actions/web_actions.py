@@ -1,4 +1,5 @@
 import re
+
 import httpx
 
 from socialsim4.core.action import Action
@@ -7,12 +8,13 @@ from socialsim4.core.tools.web import view_page as tool_view_page
 
 class WebSearchAction(Action):
     NAME = "web_search"
-    DESC = "Search the web and return top results (title, URL, snippet)."
+    DESC = "Search the web and return top results (title, URL, snippet). Use this action to find up-to-date information with a concrete query.                                                                  "
     INSTRUCTION = """- To search the web for information:
 <Action name=\"web_search\"><query>[keywords or question]</query><max_results>5</max_results></Action>
 """
 
     def handle(self, action_data, agent, simulator, scene):
+        print(f"{agent.name} Searching {action_data}")
         query = action_data["query"]
         max_results = int((action_data or {}).get("max_results", 5))
         max_results = max(1, min(10, max_results))

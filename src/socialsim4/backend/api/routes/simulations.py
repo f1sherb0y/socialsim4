@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, WebSocket, status
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,10 +36,7 @@ async def _get_simulation_for_owner(
     simulation_id: str,
 ) -> Simulation:
     result = await session.execute(select(Simulation).where(Simulation.owner_id == owner_id, Simulation.id == simulation_id.upper()))
-    sim = result.scalar_one_or_none()
-    if sim is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Simulation not found")
-    return sim
+    return result.scalar_one()
 
 
 async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int) -> SimTreeRecord:
@@ -47,14 +44,14 @@ async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int)
     result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == user_id))
     provider = result.scalars().first()
     if provider is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM provider not configured")
+        raise RuntimeError("LLM provider not configured")
     dialect = (provider.provider or "").lower()
     if dialect not in {"openai", "gemini", "mock"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid LLM provider dialect")
+        raise RuntimeError("Invalid LLM provider dialect")
     if dialect != "mock" and not provider.api_key:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM API key required")
+        raise RuntimeError("LLM API key required")
     if not provider.model:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM model required")
+        raise RuntimeError("LLM model required")
 
     cfg = LLMConfig(
         dialect=dialect,
@@ -121,14 +118,6 @@ def _broadcast(record: SimTreeRecord, event: dict) -> None:
         queue.put_nowait(event)
 
 
-async def _drain_websocket_messages(websocket: WebSocket) -> None:
-    while True:
-        try:
-            await websocket.receive_text()
-        except WebSocketDisconnect:
-            raise
-
-
 @router.get("/", response_model=list[SimulationBase])
 async def list_simulations(
     current_user: UserPublic = Depends(get_current_user),
@@ -145,18 +134,18 @@ async def create_simulation(
     current_user: UserPublic = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> SimulationBase:
-    # Ensure user has a valid LLM provider configured
+    # Ensure user has a valid LLM provider configured (fail fast)
     result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
     provider = result.scalars().first()
     if provider is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM provider not configured")
+        raise RuntimeError("LLM provider not configured")
     dialect = (provider.provider or "").lower()
     if dialect not in {"openai", "gemini", "mock"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid LLM provider dialect")
+        raise RuntimeError("Invalid LLM provider dialect")
     if dialect != "mock" and not provider.api_key:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM API key required")
+        raise RuntimeError("LLM API key required")
     if not provider.model:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM model required")
+        raise RuntimeError("LLM model required")
 
     sim_id = generate_simulation_id()
     name = payload.name or generate_simulation_name(sim_id)
@@ -305,8 +294,7 @@ async def resume_simulation(
 
     if snapshot_id is not None:
         snapshot = await session.get(SimulationSnapshot, snapshot_id)
-        if snapshot is None or snapshot.simulation_id != sim.id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Snapshot not found")
+        assert snapshot is not None and snapshot.simulation_id == sim.id
         # Deserialize tree from snapshot and replace in registry record
         tree_state = snapshot.state
         new_tree = SimTree.deserialize(tree_state, record.tree.clients)
@@ -582,8 +570,7 @@ async def simulation_tree_events(
 ) -> list:
     _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
     node = record.tree.nodes.get(int(node_id))
-    if node is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Node not found")
+    assert node is not None
     return node.get("logs", [])
 
 
@@ -596,8 +583,7 @@ async def simulation_tree_state(
 ) -> dict:
     _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
     node = record.tree.nodes.get(int(node_id))
-    if node is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Node not found")
+    assert node is not None
     simulator = node["sim"]
     agents = []
     for name, agent in simulator.agents.items():
@@ -622,29 +608,20 @@ async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) ->
         if user is None:
             await websocket.close(code=1008)
             return
-        try:
-            sim = await _get_simulation_for_owner(session, user.id, simulation_id)
-            record = await _get_tree_record(sim, session, user.id)
-        except HTTPException:
-            await websocket.close(code=1008)
-            return
+        sim = await _get_simulation_for_owner(session, user.id, simulation_id)
+        record = await _get_tree_record(sim, session, user.id)
     # From here on, do not keep a DB session open for the websocket lifetime
     await websocket.accept()
     queue: asyncio.Queue = asyncio.Queue()
     record.subs.append(queue)
     print("sub added, record accepted")
-    drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
     try:
         while True:
             event = await queue.get()
             await websocket.send_json(event)
-    except WebSocketDisconnect:
-        raise
     finally:
         if queue in record.subs:
             record.subs.remove(queue)
-        drain_task.cancel()
-        await drain_task
 
 
 @router.websocket("/{simulation_id}/tree/{node_id}/events")
@@ -661,12 +638,8 @@ async def simulation_tree_node_events_ws(
         if user is None:
             await websocket.close(code=1008)
             return
-        try:
-            sim = await _get_simulation_for_owner(session, user.id, simulation_id)
-            record = await _get_tree_record(sim, session, user.id)
-        except HTTPException:
-            await websocket.close(code=1008)
-            return
+        sim = await _get_simulation_for_owner(session, user.id, simulation_id)
+        record = await _get_tree_record(sim, session, user.id)
 
         if int(node_id) not in record.tree.nodes:
             await websocket.close(code=1008)
@@ -675,14 +648,9 @@ async def simulation_tree_node_events_ws(
     await websocket.accept()
     queue: asyncio.Queue = asyncio.Queue()
     record.tree.add_node_sub(int(node_id), queue)
-    drain_task = asyncio.create_task(_drain_websocket_messages(websocket))
     try:
         while True:
             event = await queue.get()
             await websocket.send_json(event)
-    except WebSocketDisconnect:
-        raise
     finally:
         record.tree.remove_node_sub(int(node_id), queue)
-        drain_task.cancel()
-        await drain_task

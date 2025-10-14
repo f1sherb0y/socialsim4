@@ -30,11 +30,10 @@ class Scene:
 
     def parse_and_handle_action(self, action_data, agent: Agent, simulator: Simulator):
         action_name = action_data.get("action")
+        print(f"Action Space({agent.name}):", agent.action_space)
         for act in agent.action_space:
             if act.NAME == action_name:
-                success, result, summary, meta, pass_control = act.handle(
-                    action_data, agent, simulator, self
-                )
+                success, result, summary, meta, pass_control = act.handle(action_data, agent, simulator, self)
                 return success, result, summary, meta, bool(pass_control)
         return False, {}, None, {}, False
 
@@ -87,7 +86,7 @@ class Scene:
         return [YieldAction()]
 
     # For ControlledOrdering reconstruction after deserialize
-    def get_controlled_next(self, simulator: 'Simulator') -> str | None:
+    def get_controlled_next(self, simulator: "Simulator") -> str | None:
         return None
 
     def serialize(self):

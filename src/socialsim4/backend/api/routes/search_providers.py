@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,8 +44,6 @@ async def create_search_provider(
     # Enforce single search provider per user (unique constraint)
     result = await session.execute(select(SearchProviderConfig).where(SearchProviderConfig.user_id == current_user.id))
     existing = result.scalars().first()
-    if existing is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Search provider already exists")
     provider = SearchProviderConfig(
         user_id=current_user.id,
         provider=payload.provider,
@@ -67,8 +65,7 @@ async def update_search_provider(
     session: AsyncSession = Depends(get_db_session),
 ) -> SearchProviderBase:
     provider = await session.get(SearchProviderConfig, provider_id)
-    if provider is None or provider.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search provider not found")
+    assert provider is not None and provider.user_id == current_user.id
     if payload.provider is not None:
         provider.provider = payload.provider
     if payload.base_url is not None:
@@ -89,8 +86,6 @@ async def delete_search_provider(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     provider = await session.get(SearchProviderConfig, provider_id)
-    if provider is None or provider.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search provider not found")
+    assert provider is not None and provider.user_id == current_user.id
     await session.delete(provider)
     await session.commit()
-

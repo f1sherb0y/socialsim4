@@ -1,9 +1,10 @@
-import re
 import json
+import re
 import xml.etree.ElementTree as ET
 
-from .config import MAX_REPEAT
 from socialsim4.core.memory import ShortTermMemory
+
+from .config import MAX_REPEAT
 
 # 假设的最大上下文字符长度（可调整，根据模型实际上下文窗口）
 MAX_CONTEXT_CHARS = 100000000
@@ -91,21 +92,12 @@ Internal Notes:
 """
 
         # If plan_state is empty, explicitly ask the model to initialize it
-        if not self.plan_state or (
-            not self.plan_state.get("goals") and not self.plan_state.get("milestones")
-        ):
+        if not self.plan_state or (not self.plan_state.get("goals") and not self.plan_state.get("milestones")):
             plan_state_block += "\nPlan State is empty. In this turn, include a plan update block using tags to initialize numbered Goals and Milestones.\n"
 
         # Build action catalog and usage
-        action_catalog = "\n".join(
-            [
-                f"- {getattr(action, 'NAME', '')}: {getattr(action, 'DESC', '')}".strip()
-                for action in self.action_space
-            ]
-        )
-        action_instructions = "".join(
-            getattr(action, "INSTRUCTION", "") for action in self.action_space
-        )
+        action_catalog = "\n".join([f"- {getattr(action, 'NAME', '')}: {getattr(action, 'DESC', '')}".strip() for action in self.action_space])
+        action_instructions = "".join(getattr(action, "INSTRUCTION", "") for action in self.action_space)
 
         base = f"""
 You are {self.name}.
@@ -207,9 +199,7 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 
     def summarize_history(self, client):
         # 构建总结prompt
-        history_content = "\n".join(
-            [f"[{msg['role']}] {msg['content']}" for msg in self.short_memory.get_all()]
-        )
+        history_content = "\n".join([f"[{msg['role']}] {msg['content']}" for msg in self.short_memory.get_all()])
         summary_prompt = f"""
 Summarize the following conversation history from {self.name}'s perspective. Be concise but capture key points, opinions, ongoing topics, and important events. Output ONLY as 'Summary: [your summary text]'.
 
@@ -235,27 +225,19 @@ History:
 
     def _parse_full_response(self, full_response):
         """Extracts thoughts, plan, action block, and optional plan update from the response."""
-        thoughts_match = re.search(
-            r"--- Thoughts ---\s*(.*?)\s*--- Plan ---", full_response, re.DOTALL
-        )
-        plan_match = re.search(
-            r"--- Plan ---\s*(.*?)\s*--- Action ---", full_response, re.DOTALL
-        )
+        thoughts_match = re.search(r"--- Thoughts ---\s*(.*?)\s*--- Plan ---", full_response, re.DOTALL)
+        plan_match = re.search(r"--- Plan ---\s*(.*?)\s*--- Action ---", full_response, re.DOTALL)
         action_match = re.search(
             r"--- Action ---\s*(.*?)(?:\n--- Plan Update ---|\Z)",
             full_response,
             re.DOTALL,
         )
-        plan_update_match = re.search(
-            r"--- Plan Update ---\s*(.*)$", full_response, re.DOTALL
-        )
+        plan_update_match = re.search(r"--- Plan Update ---\s*(.*)$", full_response, re.DOTALL)
 
         thoughts = thoughts_match.group(1).strip() if thoughts_match else ""
         plan = plan_match.group(1).strip() if plan_match else ""
         action = action_match.group(1).strip() if action_match else ""
-        plan_update_block = (
-            plan_update_match.group(1).strip() if plan_update_match else ""
-        )
+        plan_update_block = plan_update_match.group(1).strip() if plan_update_match else ""
 
         return thoughts, plan, action, plan_update_block
 
@@ -432,10 +414,11 @@ History:
 
     def process(self, clients, initiative=False, scene=None):
         current_length = len(self.short_memory)
+        print(5, current_length, self.last_history_length)
         if current_length == self.last_history_length and not initiative:
             # 没有新事件，无反应
             return {}
-
+        print(6)
         # 检查并总结如果需要
 
         system_prompt = self.system_prompt(scene)
@@ -461,22 +444,16 @@ History:
         for i in range(attempts):
             llm_output = self.call_llm(clients, ctx)
             # print(f"{self.name} LLM output:\n{llm_output}\n{'-' * 40}")
-            thoughts, plan, action_block, plan_update_block = self._parse_full_response(
-                llm_output
-            )
+            thoughts, plan, action_block, plan_update_block = self._parse_full_response(llm_output)
             try:
-                action_data = self._parse_actions(action_block) or self._parse_actions(
-                    llm_output
-                )
+                action_data = self._parse_actions(action_block) or self._parse_actions(llm_output)
                 plan_update = self._parse_plan_update(plan_update_block)
                 last_exc = None
                 break
             except Exception as e:
                 last_exc = e
                 if i < attempts - 1:
-                    print(
-                        f"{self.name} action parse error: {e}; retry {i + 1}/{attempts - 1}..."
-                    )
+                    print(f"{self.name} action parse error: {e}; retry {i + 1}/{attempts - 1}...")
                     continue
                 print(f"{self.name} action parse error after {attempts} attempts: {e}")
                 print(f"LLM output (last):\n{llm_output}\n{'-' * 40}")
@@ -488,6 +465,7 @@ History:
         if self.log_event:
             self.log_event("agent_ctx_delta", {"agent": self.name, "role": "assistant", "content": llm_output})
         self.last_history_length = len(self.short_memory)
+        print(action_data)
 
         return action_data
 
@@ -508,10 +486,7 @@ History:
 
     def serialize(self):
         # Deep-copy dict/list fields to avoid sharing across snapshots
-        mem = [
-            {"role": m.get("role"), "content": m.get("content")}
-            for m in self.short_memory.get_all()
-        ]
+        mem = [{"role": m.get("role"), "content": m.get("content")} for m in self.short_memory.get_all()]
         props = json.loads(json.dumps(self.properties))
         plan = json.loads(json.dumps(self.plan_state))
         return {
@@ -541,9 +516,7 @@ History:
             initial_instruction=data["initial_instruction"],
             role_prompt=data["role_prompt"],
             language=data.get("language", "en"),
-            action_space=[
-                ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]
-            ],
+            action_space=[ACTION_SPACE_MAP[action_name] for action_name in data["action_space"]],
             max_repeat=data.get("max_repeat", MAX_REPEAT),
             event_handler=event_handler,
             **props,

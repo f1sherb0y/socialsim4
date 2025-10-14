@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,8 +72,7 @@ async def update_provider(
     session: AsyncSession = Depends(get_db_session),
 ) -> ProviderBase:
     provider = await session.get(ProviderConfig, provider_id)
-    if provider is None or provider.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+    assert provider is not None and provider.user_id == current_user.id
 
     if payload.name is not None:
         provider.name = payload.name
@@ -100,8 +99,7 @@ async def delete_provider(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     provider = await session.get(ProviderConfig, provider_id)
-    if provider is None or provider.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+    assert provider is not None and provider.user_id == current_user.id
     await session.delete(provider)
     await session.commit()
 
@@ -113,17 +111,9 @@ async def test_provider(
     session: AsyncSession = Depends(get_db_session),
 ) -> Message:
     provider = await session.get(ProviderConfig, provider_id)
-    if provider is None or provider.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+    assert provider is not None and provider.user_id == current_user.id
 
-    # Basic validation before test
     dialect = (provider.provider or "").lower()
-    if dialect not in {"openai", "gemini", "mock"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid LLM provider dialect")
-    if dialect != "mock" and not provider.api_key:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM API key required")
-    if not provider.model:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LLM model required")
 
     cfg = LLMConfig(
         dialect=dialect,
@@ -139,19 +129,13 @@ async def test_provider(
 
     status_msg = ""
     provider.last_tested_at = datetime.now(timezone.utc)
-    try:
-        client = create_llm_client(cfg)
-        # Minimal ping to validate credentials/connectivity
-        _ = client.chat([
-            {"role": "user", "content": "ping"}
-        ])
-        provider.last_test_status = "success"
-        provider.last_error = None
-        status_msg = "Provider connectivity verified"
-    except Exception as exc:  # noqa: BLE001 - API layer may wrap exceptions
-        provider.last_test_status = "error"
-        provider.last_error = str(exc)
-        status_msg = "Provider connectivity failed"
+    client = create_llm_client(cfg)
+    _ = client.chat([
+        {"role": "user", "content": "ping"}
+    ])
+    provider.last_test_status = "success"
+    provider.last_error = None
+    status_msg = "Provider connectivity verified"
 
     await session.commit()
 

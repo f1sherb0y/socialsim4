@@ -32,6 +32,7 @@ async def register(
     payload: RegisterRequest,
     session: AsyncSession = Depends(get_db_session),
     email_sender: EmailSender = Depends(get_email_sender),
+
 ) -> UserPublic:
     if settings.require_email_verification:
         if not settings.email_enabled:

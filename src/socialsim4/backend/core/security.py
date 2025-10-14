@@ -47,10 +47,7 @@ def create_refresh_token(subject: str) -> tuple[str, datetime]:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     encoded = _normalize_password(plain_password)
-    try:
-        return bcrypt.checkpw(encoded, hashed_password.encode("utf-8"))
-    except ValueError:
-        return False
+    return bcrypt.checkpw(encoded, hashed_password.encode("utf-8"))
 
 
 def hash_password(password: str) -> str:

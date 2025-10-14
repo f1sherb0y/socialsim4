@@ -27,7 +27,7 @@
     "title": "仪表盘",
     "subtitle": "从上次的进度继续，或开启新的模拟。",
     "new": "新建模拟",
-    "resume": "继续已保存",
+    "resume": "继续模拟",
     "quick": "快速开始",
     "launchWizard": "启动向导",
     "providers": "连接服务提供商",

@@ -3,10 +3,13 @@ from __future__ import annotations
 import asyncio
 from typing import Dict
 
-from socialsim4.core.simtree import SimTree
+from socialsim4.core.agent import Agent
+from socialsim4.core.event import PublicEvent
+from socialsim4.core.ordering import ControlledOrdering, CycledOrdering, SequentialOrdering
 from socialsim4.core.registry import ACTION_SPACE_MAP, SCENE_ACTIONS, SCENE_MAP
-from socialsim4.scenarios.basic import make_clients_from_env
+from socialsim4.core.simtree import SimTree
 from socialsim4.core.simulator import Simulator
+from socialsim4.scenarios.basic import make_clients_from_env
 
 
 class SimTreeRecord:
@@ -28,17 +31,19 @@ def _build_tree_for_scene(scene_type: str, clients: dict | None = None) -> SimTr
     scene = scene_cls("preview", "")
     agents = [
         # minimal placeholder agent; real agents come from agent_config at runtime
-        __import__("socialsim4.core.agent").core.agent.Agent.deserialize({
-            "name": "Alice",
-            "user_profile": "",
-            "style": "",
-            "initial_instruction": "",
-            "role_prompt": "",
-            "action_space": [],
-            "properties": {},
-        })
+        Agent.deserialize(
+            {
+                "name": "Alice",
+                "user_profile": "",
+                "style": "",
+                "initial_instruction": "",
+                "role_prompt": "",
+                "action_space": [],
+                "properties": {},
+            }
+        )
     ]
-    sim = Simulator(agents, scene, active, event_handler=_quiet_logger)
+    sim = Simulator(agents, scene, active, event_handler=_quiet_logger, ordering=SequentialOrdering())
     return SimTree.new(sim, active)
 
 
@@ -101,6 +106,7 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
         scene = scene_cls(name, "")
     elif scene_type == "village_scene":
         from socialsim4.core.scenes.village_scene import GameMap
+
         map_data = cfg.get("map")
         game_map = GameMap.deserialize(map_data)
         movement_cost = int(cfg.get("movement_cost", 1))
@@ -129,21 +135,8 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
         selected = [str(a) for a in (cfg_agent.get("action_space") or [])]
         # scene common actions from registry (fallback to scene introspection)
         reg = SCENE_ACTIONS.get(scene_type)
-        if reg:
-            basic_names = list(reg.get("basic", []))
-        else:
-            dummy = __import__("socialsim4.core.agent").core.agent.Agent.deserialize({
-                "name": "Preview",
-                "user_profile": "",
-                "style": "",
-                "initial_instruction": "",
-                "role_prompt": "",
-                "action_space": [],
-                "properties": {},
-            })
-            basic = scene.get_scene_actions(dummy) or []
-            basic_names = [getattr(a, "NAME", None) for a in basic if getattr(a, "NAME", None)]
-        # merge
+        basic_names = list(reg.get("basic", []))
+
         seen = set()
         merged_names = []
         for n in basic_names + selected:
@@ -151,43 +144,83 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
                 seen.add(n)
                 merged_names.append(n)
         built_agents.append(
-            __import__("socialsim4.core.agent").core.agent.Agent.deserialize({
-                "name": aname,
-                "user_profile": profile,
-                "style": "",
-                "initial_instruction": "",
-                "role_prompt": "",
-                "action_space": merged_names,
-                "properties": {},
-            })
+            Agent.deserialize(
+                {
+                    "name": aname,
+                    "user_profile": profile,
+                    "style": "",
+                    "initial_instruction": "",
+                    "role_prompt": "",
+                    "action_space": merged_names,
+                    "properties": {},
+                }
+            )
         )
 
-    if not built_agents:
-        # Fallback minimal agent
-        built_agents = [
-            __import__("socialsim4.core.agent").core.agent.Agent.deserialize({
-                "name": "Alice",
-                "user_profile": "",
-                "style": "",
-                "initial_instruction": "",
-                "role_prompt": "",
-                "action_space": [],
-                "properties": {},
-            })
-        ]
+    ordering = SequentialOrdering()
+    if scene_type == "landlord_scene":
 
-    sim = Simulator(built_agents, scene, clients or make_clients_from_env(), event_handler=_quiet_logger)
+        def next_active(sim):
+            s = sim.scene
+            p = s.state.get("phase")
+            if p == "bidding":
+                if s.state.get("bidding_stage") == "call":
+                    i = s.state.get("bid_turn_index")
+                    return (s.state.get("players") or [None])[i]
+                elig = list(s.state.get("rob_eligible") or [])
+                acted = dict(s.state.get("rob_acted") or {})
+                if not elig:
+                    return None
+                names = list(s.state.get("players") or [])
+                start = s.state.get("bid_turn_index", 0)
+                for off in range(len(names)):
+                    idx = (start + off) % len(names)
+                    name = names[idx]
+                    if name in elig and not acted.get(name, False):
+                        return name
+                return None
+            if p == "doubling":
+                order = list(s.state.get("doubling_order") or [])
+                acted = dict(s.state.get("doubling_acted") or {})
+                for name in order:
+                    if not acted.get(name, False):
+                        return name
+                return None
+            if p == "playing":
+                players = s.state.get("players") or []
+                idx = s.state.get("current_turn", 0)
+                if players:
+                    return players[idx % len(players)]
+            return None
+
+        ordering = ControlledOrdering(next_fn=next_active)
+    elif scene_type == "werewolf_scene":
+        # Build cycled schedule similar to scenario builder
+        roles = cfg.get("role_map") or {}
+        names = [a.name for a in built_agents]
+        wolves = [n for n in names if roles.get(n) == "werewolf"]
+        witches = [n for n in names if roles.get(n) == "witch"]
+        seers = [n for n in names if roles.get(n) == "seer"]
+        seq = wolves + wolves + seers + witches + names + names + ["Moderator"]
+        ordering = CycledOrdering(seq)
+
+    sim = Simulator(
+        built_agents,
+        scene,
+        clients or make_clients_from_env(),
+        event_handler=_quiet_logger,
+        ordering=ordering,
+        max_steps_per_turn=3 if scene_type == "landlord_scene" else 5,
+    )
     # Broadcast configured initial events as public events
-    for text in (cfg.get("initial_events") or []):
+    for text in cfg.get("initial_events") or []:
         if isinstance(text, str) and text.strip():
-            sim.broadcast(__import__("socialsim4.core.event").core.event.PublicEvent(text))
+            sim.broadcast(PublicEvent(text))
     # For council, include draft announcement as an initial event if provided
     if scene_type == "council_scene":
         draft = str(cfg.get("draft_text") or "").strip()
         if draft:
-            sim.broadcast(__import__("socialsim4.core.event").core.event.PublicEvent(
-                f"The chamber will now consider the following draft for debate and vote:\n{draft}"
-            ))
+            sim.broadcast(PublicEvent(f"The chamber will now consider the following draft for debate and vote:\n{draft}"))
     return SimTree.new(sim, sim.clients)
 
 
@@ -210,6 +243,7 @@ class SimTreeRegistry:
             # Wire event loop for thread-safe fanout
             loop = asyncio.get_running_loop()
             tree.attach_event_loop(loop)
+
             # Forward all node log events to tree-level subscribers (only for running nodes)
             def _fanout(event: dict) -> None:
                 if int(event.get("node", -1)) not in record.running:

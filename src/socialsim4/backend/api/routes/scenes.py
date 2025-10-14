@@ -75,9 +75,5 @@ async def list_scenes() -> list[dict]:
     for key, cls in SCENE_MAP.items():
         if key not in PUBLIC_SCENE_KEYS:
             continue
-        try:
-            scenes.append(scene_config_template(key, cls))
-        except TypeError:
-            # Scene requires additional constructor args; skip exposing for now.
-            continue
+        scenes.append(scene_config_template(key, cls))
     return scenes

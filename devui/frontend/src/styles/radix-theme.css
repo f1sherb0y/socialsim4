@@ -8,6 +8,9 @@
   --muted: #6b7280;
   --border: #e6e8eb;
   --brand: #3355aa;
+  /* Unified overlay tokens */
+  --overlay-bg: rgba(255, 255, 255, 0.72);
+  --overlay-blur: 10px;
   /* Neutral button hover (light theme) should remain light */
   --btn-hover-bg: var(--panel-hover);
   --btn-hover-text: var(--text);
@@ -21,6 +24,9 @@ html[data-theme='dark'] {
   --muted: #9ca3af;
   --border: #1f2937;
   --brand: #93c5fd;
+  /* Unified overlay tokens */
+  --overlay-bg: rgba(15, 17, 21, 0.72);
+  --overlay-blur: 10px;
   /* Ensure strong contrast on neutral button hover (dark theme) */
   --btn-hover-bg: #e6e8eb;
   --btn-hover-text: #111111;
@@ -85,7 +91,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: system
 .select { position: relative; width: 100%; }
 .select-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
 .select-caret { margin-left: 8px; color: var(--muted); font-size: 0.9em; }
-.select-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: var(--panel); border: 0.75px solid var(--border); border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.08); padding: 4px; max-height: 220px; overflow: auto; z-index: 30; }
+.select-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: var(--overlay-bg); border: 0.75px solid var(--border); border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.08); padding: 4px; max-height: 220px; overflow: auto; z-index: 30; backdrop-filter: blur(var(--overlay-blur)); -webkit-backdrop-filter: blur(var(--overlay-blur)); }
 .select-item { padding: 6px 8px; border-radius: 6px; cursor: pointer; }
 .select-item:hover, .select-item-active { background: var(--panel-hover); }
 

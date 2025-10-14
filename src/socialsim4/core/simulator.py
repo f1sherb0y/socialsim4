@@ -128,10 +128,7 @@ class Simulator:
             raise ValueError(f"Unknown scene type: {scene_type}")
         scene = scene_class.deserialize(scenario_data)
 
-        agents = [
-            Agent.deserialize(agent_data, event_handler=None)
-            for agent_data in data["agents"].values()
-        ]
+        agents = [Agent.deserialize(agent_data, event_handler=None) for agent_data in data["agents"].values()]
 
         # Restore ordering if available; fall back to sequential
         ordering_name = data.get("ordering", "sequential")
@@ -175,6 +172,7 @@ class Simulator:
 
     def run(self, max_turns=1000):
         turns = 0
+        print(f"Running for {max_turns} turns.")
 
         while turns < max_turns:
             if self.scene.is_complete():
@@ -184,8 +182,12 @@ class Simulator:
             agent_name = next(self.order_iter)
 
             agent = self.agents.get(agent_name)
+            print(f"Turn {turns}: {agent_name}")
+
             if not agent:
                 continue
+
+            print("Running turn..")
             # Optional: provide a status prompt at the start of each turn
             status_prompt = self.scene.get_agent_status_prompt(agent)
             if status_prompt:
@@ -206,52 +208,53 @@ class Simulator:
             continue_turn = True
             self.emit_remaining_events()
 
+            print(2)
+
             while continue_turn and steps < self.max_steps_per_turn:
-                self.emit_event(
-                    "agent_process_start", {"agent": agent.name, "step": steps + 1}
-                )
-                action_datas = agent.process(
-                    self.clients,
-                    initiative=False,
-                    scene=self.scene,
-                )
-                self.emit_event(
-                    "agent_process_end",
-                    {
-                        "agent": agent.name,
-                        "step": steps + 1,
-                        "actions": action_datas,
-                    },
-                )
-
-                if not action_datas:
-                    break
-
-                yielded = False
-                for action_data in action_datas:
-                    if not action_data:
-                        continue
-                    self.emit_event(
-                        "action_start", {"agent": agent.name, "action": action_data}
+                try:
+                    print(3)
+                    self.emit_event("agent_process_start", {"agent": agent.name, "step": steps + 1})
+                    action_datas = agent.process(
+                        self.clients,
+                        initiative=False,
+                        scene=self.scene,
                     )
-                    success, result, summary, meta, pass_control = (
-                        self.scene.parse_and_handle_action(action_data, agent, self)
-                    )
+                    print(4)
                     self.emit_event(
-                        "action_end",
+                        "agent_process_end",
                         {
                             "agent": agent.name,
-                            "action": action_data,
-                            "success": success,
-                            "result": result,
-                            "summary": summary,
-                            "pass_control": bool(pass_control),
+                            "step": steps + 1,
+                            "actions": action_datas,
                         },
                     )
-                    self.emit_remaining_events()
-                    if bool(pass_control):
-                        yielded = True
+
+                    if not action_datas:
                         break
+
+                    yielded = False
+                    for action_data in action_datas:
+                        if not action_data:
+                            continue
+                        self.emit_event("action_start", {"agent": agent.name, "action": action_data})
+                        success, result, summary, meta, pass_control = self.scene.parse_and_handle_action(action_data, agent, self)
+                        self.emit_event(
+                            "action_end",
+                            {
+                                "agent": agent.name,
+                                "action": action_data,
+                                "success": success,
+                                "result": result,
+                                "summary": summary,
+                                "pass_control": bool(pass_control),
+                            },
+                        )
+                        self.emit_remaining_events()
+                        if bool(pass_control):
+                            yielded = True
+                            break
+                except Exception as e:
+                    print(f"Exception: {e}")
 
                 steps += 1
                 if yielded:

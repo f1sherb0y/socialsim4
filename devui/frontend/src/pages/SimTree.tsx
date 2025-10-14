@@ -346,7 +346,7 @@ export default function SimTree() {
             key={t.id}
             duration={5000}
             style={{
-              background: 'var(--panel)',
+              background: 'var(--overlay-bg)',
               border: '1px solid var(--border)',
               borderLeft: '4px solid var(--brand)',
               borderRadius: 10,
@@ -358,7 +358,9 @@ export default function SimTree() {
               gap: 8,
               minWidth: 240,
               maxWidth: 360,
-              overflow: 'hidden'
+              overflow: 'hidden',
+              backdropFilter: 'blur(var(--overlay-blur))',
+              WebkitBackdropFilter: 'blur(var(--overlay-blur))'
             }}
           >
             <div style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--brand)' }} />
