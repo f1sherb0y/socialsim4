@@ -446,12 +446,14 @@ textarea::placeholder {
   background: var(--overlay-bg);
   backdrop-filter: blur(var(--overlay-blur));
   -webkit-backdrop-filter: blur(var(--overlay-blur));
-  padding: 3px; /* slightly relaxed */
+  padding: 5px; /* slightly relaxed */
   z-index: 1000; /* above navbar */
+  font: inherit; /* match trigger font if wrapped in context */
 }
 
 .select-option {
   background: transparent;
+  font: inherit;
 }
 
 .select-option.active {

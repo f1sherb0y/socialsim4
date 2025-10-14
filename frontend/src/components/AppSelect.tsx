@@ -26,7 +26,12 @@ export function AppSelect({
         <span style={{ color: '#94a3b8' }}>▾</span>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Content className="card select-dropdown" position="popper" sideOffset={4}>
+        <Select.Content
+          className={`card select-dropdown${size === 'small' ? ' small' : ''}`}
+          position="popper"
+          sideOffset={4}
+          style={{ width: 'var(--radix-select-trigger-width)' }}
+        >
           <Select.Viewport style={{ display: 'grid', gap: 3 }}>
             {options.map((opt) => (
               <Select.Item key={opt.value} value={opt.value} className="select-option" style={{ textAlign: 'left', border: 'none', padding: '0.2rem 0.32rem', borderRadius: 8, cursor: 'pointer' }}>
