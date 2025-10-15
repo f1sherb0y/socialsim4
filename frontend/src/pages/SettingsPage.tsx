@@ -104,8 +104,8 @@ export function SettingsPage() {
 
   const testProvider = useMutation({
     mutationFn: async (providerId: number) => apiTestProvider(providerId),
-    onSuccess: (data, providerId) => {
-      setTestHints((prev) => ({ ...prev, [providerId]: { ok: true, msg: data.message || 'OK' } }));
+    onSuccess: (_data, providerId) => {
+      setTestHints((prev) => ({ ...prev, [providerId]: { ok: true, msg: t('settings.providers.testOk') || 'OK' } }));
       setTimeout(() => {
         setTestHints((prev) => {
           const copy = { ...prev } as Record<number, { ok: boolean; msg: string }>;
@@ -116,7 +116,7 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["providers"] });
     },
     onError: (_err, providerId) => {
-      setTestHints((prev) => ({ ...prev, [providerId]: { ok: false, msg: 'Failed' } }));
+      setTestHints((prev) => ({ ...prev, [providerId]: { ok: false, msg: t('settings.providers.testFail') || 'Failed' } }));
       setTimeout(() => {
         setTestHints((prev) => {
           const copy = { ...prev } as Record<number, { ok: boolean; msg: string }>;
@@ -181,10 +181,48 @@ export function SettingsPage() {
           <div className="panel-title">{t('settings.providers.title')}</div>
         </div>
 
-        {/* LLM Providers: add + list */}
+        {/* LLM Providers: list above, add form below */}
         {activeTab === 'providers_llm' && (
           <>
-            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem' }}>
+            {/* List (no outer card) */}
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
+              {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
+              {(providersQuery.data ?? []).map((provider) => {
+                const active = Boolean((provider.config as any)?.active);
+                return (
+                  <div key={provider.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '0.5rem 0.6rem' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.name}</div>
+                        {active && (
+                          <span style={{ fontSize: '0.75rem', color: '#22c55e', border: '1px solid #22c55e', padding: '0 6px', borderRadius: 6 }}>
+                            {t('settings.providers.activeTag') || 'Active'}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ color: 'var(--muted)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {provider.provider} · {provider.model} · {provider.base_url || '-'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                      <button type="button" className="button small" onClick={() => testProvider.mutate(provider.id)} disabled={testProvider.isPending}>{t('settings.providers.test')}</button>
+                      {!active && <button type="button" className="button small" onClick={() => activateProvider.mutate(provider.id)} disabled={activateProvider.isPending}>{t('settings.providers.makeActive') || 'Use'}</button>}
+                      {testHints[provider.id] && (
+                        <span style={{ fontSize: '0.8rem', color: testHints[provider.id].ok ? '#22c55e' : '#f87171' }}>
+                          {testHints[provider.id].ok ? '✓' : '✕'} {testHints[provider.id].msg}
+                        </span>
+                      )}
+                      <button type="button" className="button button-danger small" onClick={() => deleteProvider.mutate(provider.id)} disabled={deleteProvider.isPending}>{t('saved.delete')}</button>
+                    </div>
+                  </div>
+                );
+              })}
+              {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>{t('settings.providers.none')}</div>}
+            </div>
+
+            {/* Add form */}
+            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem', marginTop: '0.6rem' }}>
               <h2 style={{ margin: 0, fontSize: "1rem" }}>{t('settings.providers.add')}</h2>
               <label>
                 {t('settings.providers.fields.label')}
@@ -242,50 +280,11 @@ export function SettingsPage() {
                   </button>
                 </div>
               </label>
-              {createProvider.error && <div style={{ color: "#f87171" }}>Failed to add provider.</div>}
+              {createProvider.error && <div style={{ color: "#f87171" }}>{t('settings.providers.createFailed') || 'Failed to add provider.'}</div>}
               <button type="submit" className="button" disabled={createProvider.isPending}>
                 {createProvider.isPending ? t('settings.providers.save') + '…' : t('settings.providers.save')}
               </button>
             </form>
-
-            <div className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem' }}>
-              <h2 style={{ margin: 0, fontSize: "1rem" }}>{t('settings.providers.title')}</h2>
-              {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
-              {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
-              <div style={{ display: "grid", gap: "0.5rem" }}>
-                {(providersQuery.data ?? []).map((provider) => {
-                  const active = Boolean((provider.config as any)?.active);
-                  return (
-                    <div key={provider.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '0.5rem 0.6rem' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
-                          <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.name}</div>
-                          {active && (
-                            <span style={{ fontSize: '0.75rem', color: '#22c55e', border: '1px solid #22c55e', padding: '0 6px', borderRadius: 6 }}>
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {provider.provider} · {provider.model} · {provider.base_url || '-'}
-                        </div>
-                      </div>
-                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                    <button type="button" className="button small" onClick={() => testProvider.mutate(provider.id)} disabled={testProvider.isPending}>{t('settings.providers.test')}</button>
-                    {testHints[provider.id] && (
-                      <span style={{ fontSize: '0.8rem', color: testHints[provider.id].ok ? '#22c55e' : '#f87171' }}>
-                        {testHints[provider.id].ok ? '✓' : '✕'} {testHints[provider.id].msg}
-                      </span>
-                    )}
-                    {!active && <button type="button" className="button small" onClick={() => activateProvider.mutate(provider.id)} disabled={activateProvider.isPending}>{t('settings.providers.makeActive') || 'Use'}</button>}
-                    <button type="button" className="button button-danger small" onClick={() => deleteProvider.mutate(provider.id)} disabled={deleteProvider.isPending}>{t('saved.delete')}</button>
-                  </div>
-                    </div>
-                  );
-                })}
-                {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>{t('settings.providers.none')}</div>}
-              </div>
-            </div>
           </>
         )}
 
