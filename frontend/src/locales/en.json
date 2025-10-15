@@ -59,7 +59,9 @@
     "tabs": {
       "profile": "Profile",
       "security": "Security",
-      "providers": "Providers"
+      "providers": "Providers",
+      "llmProviders": "LLM providers",
+      "searchProviders": "Search providers"
     },
     "profile": {
       "email": "Email",

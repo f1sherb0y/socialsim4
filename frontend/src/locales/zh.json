@@ -59,7 +59,9 @@
     "tabs": {
       "profile": "个人信息",
       "security": "安全",
-      "providers": "提供商"
+      "providers": "提供商",
+      "llmProviders": "LLM提供商",
+      "searchProviders": "搜索提供商"
     },
     "profile": {
       "email": "邮箱",
