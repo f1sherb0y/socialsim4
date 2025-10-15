@@ -220,14 +220,22 @@ export function SettingsPage() {
                       )}
                       <button
                         type="button"
-                        className="icon-button"
+                        className="icon-button square"
                         title={t('settings.providers.test')}
                         aria-label={t('settings.providers.test')}
                         onClick={() => testProvider.mutate(provider.id)}
                         disabled={testingId !== null}
                         style={{ borderColor: 'var(--border)', color: '#2563eb' }}
                       >
-                        {testingId === provider.id ? <span className="spinner" aria-hidden /> : '🔌'}
+                        {testingId === provider.id ? (
+                          <span className="spinner" aria-hidden />
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M9 2v4M15 2v4"/>
+                            <path d="M7 6h10v5a5 5 0 0 1-10 0V6z"/>
+                            <path d="M12 16v6"/>
+                          </svg>
+                        )}
                       </button>
                       {!active && (
                         <button
@@ -241,14 +249,19 @@ export function SettingsPage() {
                       )}
                       <button
                         type="button"
-                        className="icon-button"
+                        className="icon-button square"
                         title={t('saved.delete')}
                         aria-label={t('saved.delete')}
                         onClick={() => deleteProvider.mutate(provider.id)}
                         disabled={deleteProvider.isPending}
                         style={{ borderColor: 'var(--border)', color: '#ef4444' }}
                       >
-                        🗑
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M3 6h18"/>
+                          <path d="M8 6V4h8v2"/>
+                          <path d="M6 6l1 14h10l1-14"/>
+                          <path d="M10 11v6M14 11v6"/>
+                        </svg>
                       </button>
                     </div>
                   </div>

@@ -374,6 +374,26 @@ textarea::placeholder {
   cursor: pointer;
 }
 
+.icon-button:hover {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: var(--muted);
+}
+
+/* Square icon-only button variant */
+.icon-button.square {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button.square svg {
+  width: 16px;
+  height: 16px;
+}
+
 .text-button {
   border: none;
   background: transparent;
