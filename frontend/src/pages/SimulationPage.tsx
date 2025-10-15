@@ -763,50 +763,37 @@ export function SimulationPage() {
               onChange={setSelectedAgent}
               size="small"
             />
-            <div className="card" style={{ marginTop: "0.5rem", display: "grid", gap: "0.35rem" }}>
-              <div className="panel-subtitle">{t('sim.agentStatus.title')}</div>
-              <div>
-                <strong>{t('sim.agentStatus.emotion')}:</strong> {String(selectedEmotion)}
-              </div>
-              <div>
-                <strong>{t('sim.agentStatus.plan')}</strong>
-                <div style={{ marginTop: 4 }}>
-                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.goals')}</div>
-                  {Array.isArray(selectedPlan?.goals) && selectedPlan.goals.length ? (
-                    <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
-                      {selectedPlan.goals.map((g: any) => (
-                        <li key={g.id}>
-                          [{String(g.id)}] {String(g.desc)} ({t('sim.agentStatus.priority')}: {String(g.priority)}, {t('sim.status').toLowerCase()}: {String(g.status)})
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div style={{ color: "#94a3b8" }}>{t('common.none')}</div>
-                  )}
-                </div>
-                <div style={{ marginTop: 6 }}>
-                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.milestones')}</div>
-                  {Array.isArray(selectedPlan?.milestones) && selectedPlan.milestones.length ? (
-                    <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
-                      {selectedPlan.milestones.map((m: any) => (
-                        <li key={m.id}>
-                          [{String(m.id)}] {String(m.desc)} ({t('sim.status')}: {String(m.status)})
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div style={{ color: "#94a3b8" }}>{t('common.none')}</div>
-                  )}
-                </div>
-                <div style={{ marginTop: 6 }}>
-                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.strategy')}</div>
-                  <div>{String(selectedPlan?.strategy || "") || t('common.none')}</div>
-                </div>
-                <div style={{ marginTop: 6 }}>
-                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.notes')}</div>
-                  <div>{String(selectedPlan?.notes || "") || t('common.none')}</div>
-                </div>
-              </div>
+            <div className="card" style={{ marginTop: "0.5rem", padding: "0.5rem 0.6rem", display: "grid", gap: "0.25rem" }}>
+              <div className="panel-subtitle" style={{ margin: 0 }}>{t('sim.agentStatus.title')}</div>
+              {(() => {
+                const plan: any = selectedPlan;
+                const goals = Array.isArray(plan?.goals) ? plan.goals : [];
+                const milestones = Array.isArray(plan?.milestones) ? plan.milestones : [];
+                const goalsText = goals.length
+                  ? goals
+                      .map((g: any) => `[${String(g.id)}] ${String(g.desc)} (${t('sim.agentStatus.priority')}: ${String(g.priority)}, ${t('sim.status').toLowerCase()}: ${String(g.status)})`)
+                      .join(' · ')
+                  : t('common.none');
+                const msText = milestones.length
+                  ? milestones.map((m: any) => `[${String(m.id)}] ${String(m.desc)} (${t('sim.status')}: ${String(m.status)})`).join(' · ')
+                  : t('common.none');
+                const cellLabel = { color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' } as const;
+                const gridStyle = { display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '0.5rem', rowGap: '0.2rem', alignItems: 'baseline', fontSize: '0.9rem', lineHeight: 1.25 } as const;
+                return (
+                  <div style={gridStyle}>
+                    <div style={cellLabel}>{t('sim.agentStatus.emotion')}</div>
+                    <div>{String(selectedEmotion)}</div>
+                    <div style={cellLabel}>{t('sim.agentStatus.goals')}</div>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{goalsText}</div>
+                    <div style={cellLabel}>{t('sim.agentStatus.milestones')}</div>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{msText}</div>
+                    <div style={cellLabel}>{t('sim.agentStatus.strategy')}</div>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(plan?.strategy || '') || t('common.none')}</div>
+                    <div style={cellLabel}>{t('sim.agentStatus.notes')}</div>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{String(plan?.notes || '') || t('common.none')}</div>
+                  </div>
+                );
+              })()}
             </div>
             <div
               ref={agentRef}
