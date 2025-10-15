@@ -206,13 +206,13 @@ export function SettingsPage() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      <button type="button" className="button small" onClick={() => testProvider.mutate(provider.id)} disabled={testProvider.isPending}>{t('settings.providers.test')}</button>
-                      {!active && <button type="button" className="button small" onClick={() => activateProvider.mutate(provider.id)} disabled={activateProvider.isPending}>{t('settings.providers.makeActive') || 'Use'}</button>}
                       {testHints[provider.id] && (
                         <span style={{ fontSize: '0.8rem', color: testHints[provider.id].ok ? '#22c55e' : '#f87171' }}>
                           {testHints[provider.id].ok ? '✓' : '✕'} {testHints[provider.id].msg}
                         </span>
                       )}
+                      <button type="button" className="button small" onClick={() => testProvider.mutate(provider.id)} disabled={testProvider.isPending}>{t('settings.providers.test')}</button>
+                      {!active && <button type="button" className="button small" onClick={() => activateProvider.mutate(provider.id)} disabled={activateProvider.isPending}>{t('settings.providers.makeActive') || 'Use'}</button>}
                       <button type="button" className="button button-danger small" onClick={() => deleteProvider.mutate(provider.id)} disabled={deleteProvider.isPending}>{t('saved.delete')}</button>
                     </div>
                   </div>
