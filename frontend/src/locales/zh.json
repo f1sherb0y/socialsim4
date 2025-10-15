@@ -88,6 +88,7 @@
       "save": "保存提供商",
       "test": "测试连接",
       "makeActive": "设为当前",
+      "current": "当前提供商：{{name}}",
       "activeTag": "当前",
       "testOk": "连接已验证",
       "testFail": "测试失败",

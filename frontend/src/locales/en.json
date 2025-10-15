@@ -88,6 +88,7 @@
       "save": "Save provider",
       "test": "Test connectivity",
       "makeActive": "Use",
+      "current": "Current provider: {{name}}",
       "activeTag": "Active",
       "testOk": "Connectivity verified",
       "testFail": "Test failed",

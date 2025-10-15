@@ -184,8 +184,19 @@ export function SettingsPage() {
 
     return (
       <div className="panel" style={{ gap: "0.75rem" }}>
-        <div className="panel-header">
+        <div className="panel-header" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <div className="panel-title">{t('settings.providers.title')}</div>
+          {activeTab === 'providers_llm' && (
+            (() => {
+              const activeProv = (providersQuery.data || []).find((p) => Boolean((p.config as any)?.active));
+              const name = activeProv ? activeProv.name : '-';
+              return (
+                <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
+                  {t('settings.providers.current', { name })}
+                </div>
+              );
+            })()
+          )}
         </div>
 
         {/* LLM Providers: list above, add form below */}
@@ -200,14 +211,7 @@ export function SettingsPage() {
                 return (
                   <div key={provider.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '0.5rem 0.6rem' }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
-                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.name}</div>
-                        {active && (
-                          <span style={{ fontSize: '0.75rem', color: '#22c55e', border: '1px solid #22c55e', padding: '0 6px', borderRadius: 6 }}>
-                            {t('settings.providers.activeTag') || 'Active'}
-                          </span>
-                        )}
-                      </div>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.name}</div>
                       <div style={{ color: 'var(--muted)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {provider.provider} · {provider.model} · {provider.base_url || '-'}
                       </div>
@@ -237,16 +241,25 @@ export function SettingsPage() {
                           </svg>
                         )}
                       </button>
-                      {!active && (
-                        <button
-                          type="button"
-                          className="button small"
-                          onClick={() => activateProvider.mutate(provider.id)}
-                          disabled={activateProvider.isPending}
-                        >
-                          {t('settings.providers.makeActive') || 'Use'}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="icon-button square"
+                        title={active ? (t('settings.providers.activeTag') || 'Active') : (t('settings.providers.makeActive') || 'Use')}
+                        aria-label={active ? (t('settings.providers.activeTag') || 'Active') : (t('settings.providers.makeActive') || 'Use')}
+                        onClick={() => !active && activateProvider.mutate(provider.id)}
+                        disabled={active || activateProvider.isPending}
+                        style={{ borderColor: 'var(--border)', color: '#f59e0b' }}
+                      >
+                        {active ? (
+                          <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0" aria-hidden>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.9 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.9 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+                          </svg>
+                        )}
+                      </button>
                       <button
                         type="button"
                         className="icon-button square"
