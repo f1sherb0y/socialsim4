@@ -165,8 +165,8 @@ export function SettingsPage() {
         {/* LLM Providers: add + list */}
         {activeTab === 'providers_llm' && (
           <>
-            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.5rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.add')}</h2>
+            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem' }}>
+              <h2 style={{ margin: 0, fontSize: "1rem" }}>{t('settings.providers.add')}</h2>
               <label>
                 {t('settings.providers.fields.label')}
                 <input className="input"
@@ -229,8 +229,8 @@ export function SettingsPage() {
               </button>
             </form>
 
-            <div className="card" style={{ gap: "0.5rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.title')}</h2>
+            <div className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem' }}>
+              <h2 style={{ margin: 0, fontSize: "1rem" }}>{t('settings.providers.title')}</h2>
               {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
               {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
               <div style={{ display: "grid", gap: "0.5rem" }}>
@@ -267,8 +267,18 @@ export function SettingsPage() {
 
         {/* Search Providers */}
         {activeTab === 'providers_search' && (
-          <div className="card" style={{ gap: "0.5rem" }}>
-            <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Search Provider</h2>
+        <>
+        <div className="card" style={{ padding: '0.6rem 0.7rem', display: 'grid', gap: '0.25rem' }}>
+          <div className="panel-subtitle" style={{ margin: 0 }}>{t('settings.providers.searchTab') || 'Search providers'}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '0.5rem', rowGap: '0.2rem', alignItems: 'baseline', fontSize: '0.9rem', lineHeight: 1.25 }}>
+            <div style={{ color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{t('settings.providers.fields.provider')}</div>
+            <div>{searchProvider ? (searchProvider.provider || '-') : '-'}</div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{t('settings.providers.fields.baseUrl')}</div>
+            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{searchProvider ? (searchProvider.base_url || '-') : '-'}</div>
+          </div>
+        </div>
+        <div className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem' }}>
+          <h2 style={{ margin: 0, fontSize: "1rem" }}>Search Provider</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
               <label>
                 Provider
@@ -379,8 +389,9 @@ export function SettingsPage() {
               {searchProvider && (
                 <div style={{ color: "#94a3b8", lineHeight: 1 }}>
                   Active: {searchProvider.provider}
-                </div>
-              )}
+        </div>
+        </>
+        )}
             </div>
           </div>
         )}
