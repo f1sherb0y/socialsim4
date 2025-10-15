@@ -202,8 +202,7 @@
       "notes": "Notes",
       "priority": "priority"
     }
-  }
-}
+  },
   "admin": {
     "title": "Admin Console",
     "noAccess": "You do not have permission to view this page.",
@@ -266,3 +265,4 @@
       "userSignups": "User signups"
     }
   }
+}

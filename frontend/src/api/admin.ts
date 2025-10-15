@@ -56,3 +56,7 @@ export async function adminGetStats(period: "day" | "week" | "month"): Promise<A
   return data;
 }
 
+export async function adminUpdateUserRole(userId: number, role: 'user' | 'admin'): Promise<AdminUser> {
+  const { data } = await apiClient.patch<AdminUser>(`/admin/users/${userId}/role`, { role });
+  return data;
+}

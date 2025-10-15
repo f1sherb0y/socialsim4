@@ -9,6 +9,7 @@ from ...models.simulation import Simulation
 from ...models.user import User
 from ...schemas.simulation import SimulationBase
 from ...schemas.user import UserPublic
+from pydantic import BaseModel
 
 
 router = APIRouter()
@@ -227,3 +228,25 @@ async def admin_stats(
         "user_visits": [{"date": k, "count": visit_map[k]} for k in buckets],
         "user_signups": [{"date": k, "count": signup_map[k]} for k in buckets],
     }
+
+
+@router.patch("/users/{user_id}/role", response_model=UserPublic)
+async def admin_update_user_role(
+    user_id: int,
+    payload: RoleUpdate,
+    current_user: UserPublic = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> UserPublic:
+    _require_admin(current_user)
+    role = (payload.role or '').strip()
+    if role not in {"user", "admin"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
+    db_user = await session.get(User, int(user_id))
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db_user.role = role
+    await session.commit()
+    await session.refresh(db_user)
+    return UserPublic.model_validate(db_user)
+class RoleUpdate(BaseModel):
+  role: str
