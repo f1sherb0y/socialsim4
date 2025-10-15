@@ -4,12 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth';
 import { adminGetStats, adminListSimulations, adminListUsers, adminUpdateUserRole } from '../api/admin';
 import { AppSelect } from '../components/AppSelect';
-import { BarChartIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
+import { TitleCard } from '../components/TitleCard';
+import { BarChartIcon, CaretUpIcon, CaretDownIcon } from '@radix-ui/react-icons';
+import { ResponsiveContainer, LineChart as RLineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 
 export function AdminPage() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const isAdmin = String((user as any)?.role || '') === 'admin';
+  const [tab, setTab] = useState<'overview' | 'users' | 'sims'>('overview');
 
   if (!isAdmin) {
     return (
@@ -21,11 +24,26 @@ export function AdminPage() {
   }
 
   return (
-    <div className="panel" style={{ gap: '0.75rem' }}>
-      <div className="panel-title">{t('admin.title')}</div>
-      <UsersCard />
-      <SimulationsCard />
-      <StatsCard />
+    <div className="scroll-panel" style={{ height: '100%', overflow: 'auto' }}>
+      <TitleCard title={t('admin.title')} />
+      <div className="tab-layout">
+        <nav className="tab-nav">
+          <button type="button" className={`tab-button ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>
+            {t('admin.stats.title')}
+          </button>
+          <button type="button" className={`tab-button ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>
+            {t('admin.users.title')}
+          </button>
+          <button type="button" className={`tab-button ${tab === 'sims' ? 'active' : ''}`} onClick={() => setTab('sims')}>
+            {t('admin.sims.title')}
+          </button>
+        </nav>
+        <section style={{ display: 'grid', gap: '0.75rem' }}>
+          {tab === 'overview' && <StatsCard />}
+          {tab === 'users' && <UsersCard />}
+          {tab === 'sims' && <SimulationsCard />}
+        </section>
+      </div>
     </div>
   );
 }
@@ -66,15 +84,15 @@ function UsersCard() {
       </div>
       <div className="card" style={{ padding: 0 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 0.8fr 0.8fr', gap: '0.35rem', padding: '0.5rem 0.6rem', color: 'var(--muted)', fontSize: '0.85rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ cursor: 'pointer' }} onClick={() => setSort(sort === 'name_asc' ? 'name_desc' : 'name_asc')}>
-            {t('admin.users.columns.name')} {sort.startsWith('name_') ? (sort.endsWith('asc') ? <ChevronUpIcon /> : <ChevronDownIcon />) : null}
+          <div style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setSort(sort === 'name_asc' ? 'name_desc' : 'name_asc')}>
+            {t('admin.users.columns.name')} {sort.startsWith('name_') ? (sort.endsWith('asc') ? <CaretUpIcon /> : <CaretDownIcon />) : null}
           </div>
           <div>{t('admin.users.columns.email')}</div>
-          <div style={{ cursor: 'pointer' }} onClick={() => setSort(sort === 'org_asc' ? 'org_desc' : 'org_asc')}>
-            {t('admin.users.columns.organization')} {sort.startsWith('org_') ? (sort.endsWith('asc') ? <ChevronUpIcon /> : <ChevronDownIcon />) : null}
+          <div style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setSort(sort === 'org_asc' ? 'org_desc' : 'org_asc')}>
+            {t('admin.users.columns.organization')} {sort.startsWith('org_') ? (sort.endsWith('asc') ? <CaretUpIcon /> : <CaretDownIcon />) : null}
           </div>
-          <div style={{ cursor: 'pointer' }} onClick={() => setSort(sort === 'created_asc' ? 'created_desc' : 'created_asc')}>
-            {t('admin.users.columns.created')} {sort.startsWith('created_') ? (sort.endsWith('asc') ? <ChevronUpIcon /> : <ChevronDownIcon />) : null}
+          <div style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setSort(sort === 'created_asc' ? 'created_desc' : 'created_asc')}>
+            {t('admin.users.columns.created')} {sort.startsWith('created_') ? (sort.endsWith('asc') ? <CaretUpIcon /> : <CaretDownIcon />) : null}
           </div>
           <div>{t('admin.users.columns.status')}</div>
           <div>{t('admin.users.columns.role') || 'Role'}</div>
@@ -143,15 +161,15 @@ function SimulationsCard() {
       </div>
       <div className="card" style={{ padding: 0 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.35rem', padding: '0.5rem 0.6rem', color: 'var(--muted)', fontSize: '0.85rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ cursor: 'pointer' }} onClick={() => setSort(sort === 'username_asc' ? 'username_desc' : 'username_asc')}>
-            {t('admin.sims.columns.user')} {sort.startsWith('username_') ? (sort.endsWith('asc') ? <ChevronUpIcon /> : <ChevronDownIcon />) : null}
+          <div style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setSort(sort === 'username_asc' ? 'username_desc' : 'username_asc')}>
+            {t('admin.sims.columns.user')} {sort.startsWith('username_') ? (sort.endsWith('asc') ? <CaretUpIcon /> : <CaretDownIcon />) : null}
           </div>
           <div>{t('admin.sims.columns.name')}</div>
-          <div style={{ cursor: 'pointer' }} onClick={() => setSort(sort === 'scene_asc' ? 'scene_desc' : 'scene_asc')}>
-            {t('admin.sims.columns.scene')} {sort.startsWith('scene_') ? (sort.endsWith('asc') ? <ChevronUpIcon /> : <ChevronDownIcon />) : null}
+          <div style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setSort(sort === 'scene_asc' ? 'scene_desc' : 'scene_asc')}>
+            {t('admin.sims.columns.scene')} {sort.startsWith('scene_') ? (sort.endsWith('asc') ? <CaretUpIcon /> : <CaretDownIcon />) : null}
           </div>
-          <div style={{ cursor: 'pointer' }} onClick={() => setSort(sort === 'created_asc' ? 'created_desc' : 'created_asc')}>
-            {t('admin.sims.columns.created')} {sort.startsWith('created_') ? (sort.endsWith('asc') ? <ChevronUpIcon /> : <ChevronDownIcon />) : null}
+          <div style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setSort(sort === 'created_asc' ? 'created_desc' : 'created_asc')}>
+            {t('admin.sims.columns.created')} {sort.startsWith('created_') ? (sort.endsWith('asc') ? <CaretUpIcon /> : <CaretDownIcon />) : null}
           </div>
         </div>
         <div>
@@ -183,8 +201,8 @@ function StatsCard() {
       <div className="panel-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
         <BarChartIcon /> {t('admin.stats.title')}
       </div>
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{t('admin.stats.period')}</span>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+        <span style={{ color: 'var(--muted)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{t('admin.stats.period')}</span>
         <AppSelect
           value={period}
           onChange={(v) => setPeriod(v as any)}
@@ -197,21 +215,40 @@ function StatsCard() {
         />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-        <div className="card" style={{ padding: '0.6rem' }}>
+        <div className="card" style={{ padding: '0.6rem', gap: '0.35rem' }}>
           <div style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>{t('admin.stats.simRuns')}</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{toTotal(stats?.sim_runs)}</div>
+          <LineChart series={stats?.sim_runs || []} color="var(--accent-b)" />
         </div>
-        <div className="card" style={{ padding: '0.6rem' }}>
+        <div className="card" style={{ padding: '0.6rem', gap: '0.35rem' }}>
           <div style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>{t('admin.stats.userVisits')}</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{toTotal(stats?.user_visits)}</div>
+          <LineChart series={stats?.user_visits || []} color="#22c55e" />
         </div>
-        <div className="card" style={{ padding: '0.6rem' }}>
+        <div className="card" style={{ padding: '0.6rem', gap: '0.35rem' }}>
           <div style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>{t('admin.stats.userSignups')}</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{toTotal(stats?.user_signups)}</div>
+          <LineChart series={stats?.user_signups || []} color="#f59e0b" />
         </div>
       </div>
       {query.isLoading && <div style={{ color: 'var(--muted)' }}>{t('common.loading')}</div>}
       {query.error && <div style={{ color: '#f87171' }}>{t('admin.common.fetchError')}</div>}
+    </div>
+  );
+}
+
+function LineChart({ series, color }: { series: { date: string; count: number }[]; color: string }) {
+  const data = (series || []).map((s) => ({ date: s.date, value: Number(s.count || 0) }));
+  return (
+    <div style={{ width: '100%', height: 80 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <RLineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <XAxis dataKey="date" hide tick={false} axisLine={false} tickLine={false} />
+          <YAxis hide tick={false} axisLine={false} tickLine={false} domain={["dataMin", "dataMax"]} />
+          <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v: any) => [String(v), '']} labelFormatter={(l) => l} />
+          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
+        </RLineChart>
+      </ResponsiveContainer>
     </div>
   );
 }

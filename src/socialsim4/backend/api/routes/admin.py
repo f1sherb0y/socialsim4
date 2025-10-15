@@ -15,6 +15,10 @@ from pydantic import BaseModel
 router = APIRouter()
 
 
+class RoleUpdate(BaseModel):
+    role: str
+
+
 def _require_admin(user: UserPublic) -> None:
     if str(getattr(user, "role", "")) != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
@@ -248,5 +252,3 @@ async def admin_update_user_role(
     await session.commit()
     await session.refresh(db_user)
     return UserPublic.model_validate(db_user)
-class RoleUpdate(BaseModel):
-  role: str

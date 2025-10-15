@@ -232,7 +232,8 @@
         "email": "Email",
         "organization": "Organization",
         "created": "Created at",
-        "status": "Status"
+        "status": "Status",
+        "role": "Role"
       }
     },
     "sims": {

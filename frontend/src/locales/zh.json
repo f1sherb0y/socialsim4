@@ -232,7 +232,8 @@
         "email": "邮箱",
         "organization": "组织",
         "created": "注册时间",
-        "status": "状态"
+        "status": "状态",
+        "role": "角色"
       }
     },
     "sims": {

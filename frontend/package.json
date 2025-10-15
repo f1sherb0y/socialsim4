@@ -23,7 +23,8 @@
     "react-textarea-autosize": "^8.5.9",
     "reactflow": "^11.11.4",
     "zustand": "^4.5.7",
-    "@radix-ui/react-icons": "^1.3.2"
+    "@radix-ui/react-icons": "^1.3.2",
+    "recharts": "^2.10.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.26",
