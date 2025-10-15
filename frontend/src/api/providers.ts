@@ -45,3 +45,12 @@ export async function updateProvider(providerId: number, payload: {
   const { data } = await apiClient.patch<Provider>(`/providers/${providerId}`, payload);
   return data;
 }
+
+export async function deleteProvider(providerId: number): Promise<void> {
+  await apiClient.delete(`/providers/${providerId}`);
+}
+
+export async function activateProvider(providerId: number): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>(`/providers/${providerId}/activate`);
+  return data;
+}

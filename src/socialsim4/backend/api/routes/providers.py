@@ -140,3 +140,23 @@ async def test_provider(
     await session.commit()
 
     return Message(message=status_msg)
+
+
+@router.post("/{provider_id}/activate", response_model=Message)
+async def activate_provider(
+    provider_id: int,
+    current_user: UserPublic = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Message:
+    provider = await session.get(ProviderConfig, provider_id)
+    assert provider is not None and provider.user_id == current_user.id
+
+    result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+    providers = result.scalars().all()
+    for p in providers:
+        if p.id == provider.id:
+            p.config = {"active": True}
+        else:
+            p.config = {}
+    await session.commit()
+    return Message(message="Activated provider")

@@ -43,9 +43,11 @@ async def _get_simulation_for_owner(
 async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int) -> SimTreeRecord:
     # Build LLM client
     result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == user_id))
-    provider = result.scalars().first()
-    if provider is None:
-        raise RuntimeError("LLM provider not configured")
+    items = result.scalars().all()
+    active = [p for p in items if (p.config or {}).get("active")]
+    if len(active) != 1:
+        raise RuntimeError("Active LLM provider not selected")
+    provider = active[0]
     dialect = (provider.provider or "").lower()
     if dialect not in {"openai", "gemini", "mock"}:
         raise RuntimeError("Invalid LLM provider dialect")

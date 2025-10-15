@@ -74,6 +74,8 @@
     "providers": {
       "title": "提供商集成",
       "add": "新增提供商",
+      "llmTab": "LLM 提供商",
+      "searchTab": "搜索提供商",
       "fields": {
         "label": "名称",
         "provider": "提供商",
@@ -83,6 +85,7 @@
       },
       "save": "保存提供商",
       "test": "测试连接",
+      "makeActive": "设为当前",
       "hasKey": "是否保存密钥",
       "neverTested": "从未测试",
       "loading": "加载中…",

@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createProvider as apiCreateProvider, listProviders, testProvider as apiTestProvider, updateProvider, type Provider } from "../api/providers";
+import { createProvider as apiCreateProvider, listProviders, testProvider as apiTestProvider, updateProvider, deleteProvider as apiDeleteProvider, activateProvider as apiActivateProvider, type Provider } from "../api/providers";
 import { listSearchProviders, createSearchProvider, updateSearchProvider, type SearchProvider } from "../api/searchProviders";
 import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,7 @@ export function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
   const queryClient = useQueryClient();
+  const [provTab, setProvTab] = useState<'llm' | 'search'>('llm');
 
   const providersQuery = useQuery({
     queryKey: ["providers"],
@@ -107,6 +108,20 @@ export function SettingsPage() {
     },
   });
 
+  const activateProvider = useMutation({
+    mutationFn: async (providerId: number) => apiActivateProvider(providerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
+    },
+  });
+
+  const deleteProvider = useMutation({
+    mutationFn: async (providerId: number) => apiDeleteProvider(providerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
+    },
+  });
+
   const handleCreateProvider = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     createProvider.mutate();
@@ -147,6 +162,117 @@ export function SettingsPage() {
           <div className="panel-title">{t('settings.providers.title')}</div>
         </div>
 
+        {/* Providers sub-tabs */}
+        <div className="tab-layout" style={{ marginBottom: '0.5rem' }}>
+          <nav className="tab-nav">
+            <button type="button" className={`tab-button ${provTab === 'llm' ? 'active' : ''}`} onClick={() => setProvTab('llm')}>{t('settings.providers.llmTab') || 'LLM Providers'}</button>
+            <button type="button" className={`tab-button ${provTab === 'search' ? 'active' : ''}`} onClick={() => setProvTab('search')}>{t('settings.providers.searchTab') || 'Search Providers'}</button>
+          </nav>
+        </div>
+
+        {/* LLM Providers: add + list */}
+        {provTab === 'llm' && (
+        <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.5rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.add')}</h2>
+          <label>
+            {t('settings.providers.fields.label')}
+            <input className="input"
+              required
+              value={providerDraft.name}
+              onChange={(event) => setProviderDraft((prev) => ({ ...prev, name: event.target.value }))}
+            />
+          </label>
+          <label>
+            {t('settings.providers.fields.provider')}
+            <AppSelect
+              value={providerDraft.provider}
+              options={[
+                { value: 'openai', label: 'OpenAI-compatible' },
+                { value: 'gemini', label: 'Gemini' },
+              ]}
+              onChange={(val) => setProviderDraft((prev) => ({ ...prev, provider: val, base_url: val === 'openai' ? 'https://api.openai.com/v1' : '' }))}
+            />
+          </label>
+          <label>
+            {t('settings.providers.fields.model')}
+            <input className="input"
+              required
+              value={providerDraft.model}
+              onChange={(event) => setProviderDraft((prev) => ({ ...prev, model: event.target.value }))}
+            />
+          </label>
+          <label>
+            {t('settings.providers.fields.baseUrl')}
+            <input className="input"
+              required
+              value={providerDraft.base_url}
+              onChange={(event) => setProviderDraft((prev) => ({ ...prev, base_url: event.target.value }))}
+            />
+          </label>
+          <label>
+            {t('settings.providers.fields.apiKey')}
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem" }}>
+              <input
+                required
+                type={keyVisible ? "text" : "password"}
+                className="input"
+                value={providerDraft.api_key}
+                onChange={(event) => setProviderDraft((prev) => ({ ...prev, api_key: event.target.value }))}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="button"
+                onClick={() => setKeyVisible((prev) => !prev)}
+                style={{ width: "fit-content" }}
+              >
+                {keyVisible ? t('common.hide') : t('common.show')}
+              </button>
+            </div>
+          </label>
+          {createProvider.error && <div style={{ color: "#f87171" }}>Failed to add provider.</div>}
+          <button type="submit" className="button" disabled={createProvider.isPending}>
+            {createProvider.isPending ? t('settings.providers.save') + '…' : t('settings.providers.save')}
+          </button>
+        </form>
+
+        <div className="card" style={{ gap: "0.5rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.title')}</h2>
+          {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
+          {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
+          <div style={{ display: "grid", gap: "0.5rem" }}>
+            {(providersQuery.data ?? []).map((provider) => {
+              const active = Boolean((provider.config as any)?.active);
+              return (
+                <div key={provider.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '0.5rem 0.6rem' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.name}</div>
+                      {active && (
+                        <span style={{ fontSize: '0.75rem', color: '#22c55e', border: '1px solid #22c55e', padding: '0 6px', borderRadius: 6 }}>
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {provider.provider} · {provider.model} · {provider.base_url || '-'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <button type="button" className="button small" onClick={() => testProvider.mutate(provider.id)} disabled={testProvider.isPending}>{t('settings.providers.test')}</button>
+                    {!active && <button type="button" className="button small" onClick={() => activateProvider.mutate(provider.id)} disabled={activateProvider.isPending}>{t('settings.providers.makeActive') || 'Use'}</button>}
+                    <button type="button" className="button button-danger small" onClick={() => deleteProvider.mutate(provider.id)} disabled={deleteProvider.isPending}>{t('saved.delete')}</button>
+                  </div>
+                </div>
+              );
+            })}
+            {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>{t('settings.providers.none')}</div>}
+          </div>
+        </div>
+        )}
+
+        {/* Search Providers */}
+        {provTab === 'search' && (
         <div className="card" style={{ gap: "0.5rem" }}>
           <h2 style={{ margin: 0, fontSize: "1.125rem" }}>Search Provider</h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
@@ -263,97 +389,8 @@ export function SettingsPage() {
             )}
           </div>
         </div>
+        )}
 
-        <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.add')}</h2>
-          <label>
-            {t('settings.providers.fields.label')}
-            <input className="input"
-              required
-              value={providerDraft.name}
-              onChange={(event) => setProviderDraft((prev) => ({ ...prev, name: event.target.value }))}
-            />
-          </label>
-          <label>
-            {t('settings.providers.fields.provider')}
-            <input className="input"
-              required
-              value={providerDraft.provider}
-              onChange={(event) => setProviderDraft((prev) => ({ ...prev, provider: event.target.value }))}
-            />
-          </label>
-          <label>
-            {t('settings.providers.fields.model')}
-            <input className="input"
-              required
-              value={providerDraft.model}
-              onChange={(event) => setProviderDraft((prev) => ({ ...prev, model: event.target.value }))}
-            />
-          </label>
-          <label>
-            {t('settings.providers.fields.baseUrl')}
-            <input className="input"
-              required
-              value={providerDraft.base_url}
-              onChange={(event) => setProviderDraft((prev) => ({ ...prev, base_url: event.target.value }))}
-            />
-          </label>
-          <label>
-            {t('settings.providers.fields.apiKey')}
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem" }}>
-              <input
-                required
-                type={keyVisible ? "text" : "password"}
-                className="input"
-                value={providerDraft.api_key}
-                onChange={(event) => setProviderDraft((prev) => ({ ...prev, api_key: event.target.value }))}
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                className="button"
-                onClick={() => setKeyVisible((prev) => !prev)}
-                style={{ width: "fit-content" }}
-              >
-                {keyVisible ? t('common.hide') : t('common.show')}
-              </button>
-            </div>
-          </label>
-          {createProvider.error && <div style={{ color: "#f87171" }}>Failed to add provider.</div>}
-          <button type="submit" className="button" disabled={createProvider.isPending}>
-            {createProvider.isPending ? t('settings.providers.save') + '…' : t('settings.providers.save')}
-          </button>
-        </form>
-
-        <div className="card" style={{ gap: "0.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.125rem" }}>{t('settings.providers.title')}</h2>
-          {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
-          {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
-          <div style={{ display: "grid", gap: "1rem" }}>
-            {(providersQuery.data ?? []).map((provider) => (
-              <div key={provider.id} className="panel" style={{ gap: "0.5rem" }}>
-                <div style={{ fontWeight: 600 }}>{provider.name}</div>
-                <div style={{ color: "#94a3b8" }}>{provider.provider} · {provider.model}</div>
-                <div style={{ color: "#94a3b8" }}>Base URL: {provider.base_url ?? "-"}</div>
-                <div style={{ color: provider.last_test_status === "success" ? "#34d399" : "#f87171" }}>
-                  {t('dashboard.status')}: {provider.last_test_status ?? t('settings.providers.neverTested')}
-                </div>
-                <div style={{ color: "#94a3b8" }}>{t('settings.providers.hasKey')}: {provider.has_api_key ? t('common.yes') : t('common.no')}</div>
-                {provider.model !== 'search' && provider.name !== 'search' && (
-                  <button
-                    type="button"
-                    className="button"
-                    style={{ width: "fit-content", padding: "0.4rem 0.7rem" }}
-                    onClick={() => testProvider.mutate(provider.id)}
-                    disabled={testProvider.isPending}
-                  >
-                    {testProvider.isPending ? t('settings.providers.test') + '…' : t('settings.providers.test')}
-                  </button>
-                )}
-              </div>
-            ))}
-            {(providersQuery.data ?? []).length === 0 && <div style={{ color: "#94a3b8" }}>{t('settings.providers.none')}</div>}
-          </div>
         </div>
       </div>
     );

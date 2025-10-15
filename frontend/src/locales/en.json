@@ -74,6 +74,8 @@
     "providers": {
       "title": "Provider integrations",
       "add": "Add provider",
+      "llmTab": "LLM providers",
+      "searchTab": "Search providers",
       "fields": {
         "label": "Label",
         "provider": "Provider",
@@ -83,6 +85,7 @@
       },
       "save": "Save provider",
       "test": "Test connectivity",
+      "makeActive": "Use",
       "hasKey": "Key stored",
       "neverTested": "never tested",
       "loading": "Loading…",
