@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import mdx from "@mdx-js/rollup";
 import rehypePrism from 'rehype-prism-plus';
+import { preProcess, postProcess } from "./src/lib/rehype-pre-raw.js";
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -124,7 +125,15 @@ function titleize(s: string) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
-    plugins: [react(), mdx({ rehypePlugins: [rehypePrism] }), docsVirtualModule()],
+    plugins: [
+      react(),
+      mdx({
+        // Ensure MDXProvider components (e.g., custom `pre`) are respected
+        providerImportSource: '@mdx-js/react',
+        rehypePlugins: [preProcess, rehypePrism, postProcess],
+      }),
+      docsVirtualModule(),
+    ],
     define: {
       __APP_VERSION__: JSON.stringify(env.npm_package_version ?? "dev"),
     },

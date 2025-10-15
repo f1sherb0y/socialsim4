@@ -5,8 +5,8 @@ import { TitleCard } from '../components/TitleCard';
 import { MDXProvider } from '@mdx-js/react';
 import { docsIndex as _docsIndex, docsTree as _docsTree } from 'virtual:docs';
 import { CaretDownIcon, CaretRightIcon } from '@radix-ui/react-icons';
+import { Pre } from '../components/Pre';
 
-type ModMap = Record<string, () => Promise<{ default: any }>>;
 
 type Node = { name: string; path?: string; children?: Node[] };
 
@@ -53,7 +53,7 @@ export function DocsPage() {
         </nav>
         <section>
           <div className="card scroll-panel" style={{ maxWidth: 960 }}>
-            <MDXProvider>
+            <MDXProvider components={{ pre: Pre }}>
               <Suspense fallback={<div style={{ color: 'var(--muted)' }}>Loading…</div>}>
                 <article className="doc-body">
                   {Comp ? <Comp /> : <div style={{ color: '#94a3b8' }}>No document.</div>}

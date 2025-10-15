@@ -250,6 +250,7 @@ textarea.small {
   display: block;
   text-decoration: none;
 }
+
 .doc-nav-item:hover {
   background: rgba(148, 163, 184, 0.12);
 }
@@ -259,22 +260,52 @@ textarea.small {
   line-height: 1.75;
 }
 
-.doc-body h1, .doc-body h2, .doc-body h3, .doc-body h4, .doc-body h5, .doc-body h6 {
+.doc-body h1,
+.doc-body h2,
+.doc-body h3,
+.doc-body h4,
+.doc-body h5,
+.doc-body h6 {
   font-weight: 700;
   line-height: 1.25;
   margin: 1.25rem 0 0.75rem;
 }
-.doc-body h1 { font-size: 1.75rem; }
-.doc-body h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
-.doc-body h3 { font-size: 1.15rem; }
 
-.doc-body p { margin: 0.75rem 0; }
+.doc-body h1 {
+  font-size: 1.75rem;
+}
 
-.doc-body a { color: var(--link); text-decoration: underline; }
-.doc-body a:hover { opacity: 0.9; }
+.doc-body h2 {
+  font-size: 1.4rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
 
-.doc-body ul, .doc-body ol { margin: 0.5rem 0 0.75rem 1.25rem; }
-.doc-body li { margin: 0.25rem 0; }
+.doc-body h3 {
+  font-size: 1.15rem;
+}
+
+.doc-body p {
+  margin: 0.75rem 0;
+}
+
+.doc-body a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.doc-body a:hover {
+  opacity: 0.9;
+}
+
+.doc-body ul,
+.doc-body ol {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+}
+
+.doc-body li {
+  margin: 0.25rem 0;
+}
 
 .doc-body blockquote {
   margin: 0.9rem 0;
@@ -300,14 +331,24 @@ textarea.small {
   overflow: auto;
   margin: 0.9rem 0;
 }
-:root.theme-light .doc-body pre { background: rgba(148, 163, 184, 0.12); }
+
+:root.theme-light .doc-body pre {
+  background: rgba(148, 163, 184, 0.12);
+}
 
 .doc-body pre code {
   background: transparent;
   padding: 0;
 }
 
-/* copy button UX removed per request */
+.code-copy-button {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.code-block-wrapper:hover .code-copy-button {
+  opacity: 1;
+}
 
 .doc-body hr {
   border: none;
@@ -322,13 +363,21 @@ textarea.small {
   margin: 0.75rem 0;
   font-size: 0.95rem;
 }
-.doc-body th, .doc-body td {
+
+.doc-body th,
+.doc-body td {
   border: 1px solid var(--border);
   padding: 0.4rem 0.6rem;
   text-align: left;
 }
-.doc-body th { background: rgba(148, 163, 184, 0.14); }
-:root.theme-dark .doc-body th { background: rgba(255, 255, 255, 0.06); }
+
+.doc-body th {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+:root.theme-dark .doc-body th {
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .doc-body img {
   max-width: 100%;
@@ -572,9 +621,12 @@ textarea::placeholder {
   background: var(--overlay-bg);
   backdrop-filter: blur(var(--overlay-blur));
   -webkit-backdrop-filter: blur(var(--overlay-blur));
-  padding: 5px; /* slightly relaxed */
-  z-index: 1000; /* above navbar */
-  font: inherit; /* match trigger font if wrapped in context */
+  padding: 5px;
+  /* slightly relaxed */
+  z-index: 1000;
+  /* above navbar */
+  font: inherit;
+  /* match trigger font if wrapped in context */
 }
 
 .select-option {
@@ -675,7 +727,12 @@ textarea::placeholder {
 }
 
 /* Small inline spinner for icon-only buttons */
-@keyframes spin360 { to { transform: rotate(360deg); } }
+@keyframes spin360 {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .spinner {
   width: 14px;
   height: 14px;
@@ -725,18 +782,68 @@ textarea::placeholder {
 .rf-controls {
   background: transparent !important;
 }
-.doc-body pre[class*="language-"], .doc-body code[class*="language-"] {
+
+.doc-body pre[class*="language-"],
+.doc-body code[class*="language-"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.92em;
 }
+
 /* Prism token colors (theme-aware but simple) */
-.doc-body .token.comment,.doc-body .token.prolog,.doc-body .token.doctype,.doc-body .token.cdata { color: #94a3b8; }
-.doc-body .token.punctuation { color: var(--muted); }
-.doc-body .token.selector,.doc-body .token.tag { color: #f472b6; }
-.doc-body .token.property,.doc-body .token.boolean,.doc-body .token.number,.doc-body .token.constant,.doc-body .token.symbol { color: #f59e0b; }
-.doc-body .token.attr-name,.doc-body .token.string,.doc-body .token.char,.doc-body .token.builtin,.doc-body .token.inserted { color: #22c55e; }
-.doc-body .token.operator,.doc-body .token.entity,.doc-body .token.url { color: #a78bfa; }
-.doc-body .token.atrule,.doc-body .token.keyword { color: #38bdf8; }
-.doc-body .token.function,.doc-body .token.class-name { color: #fb7185; }
-.doc-body .token.regex,.doc-body .token.important,.doc-body .token.variable { color: #f97316; }
-.doc-body .token.deleted { color: #ef4444; }
+.doc-body .token.comment,
+.doc-body .token.prolog,
+.doc-body .token.doctype,
+.doc-body .token.cdata {
+  color: #94a3b8;
+}
+
+.doc-body .token.punctuation {
+  color: var(--muted);
+}
+
+.doc-body .token.selector,
+.doc-body .token.tag {
+  color: #f472b6;
+}
+
+.doc-body .token.property,
+.doc-body .token.boolean,
+.doc-body .token.number,
+.doc-body .token.constant,
+.doc-body .token.symbol {
+  color: #f59e0b;
+}
+
+.doc-body .token.attr-name,
+.doc-body .token.string,
+.doc-body .token.char,
+.doc-body .token.builtin,
+.doc-body .token.inserted {
+  color: #22c55e;
+}
+
+.doc-body .token.operator,
+.doc-body .token.entity,
+.doc-body .token.url {
+  color: #a78bfa;
+}
+
+.doc-body .token.atrule,
+.doc-body .token.keyword {
+  color: #38bdf8;
+}
+
+.doc-body .token.function,
+.doc-body .token.class-name {
+  color: #fb7185;
+}
+
+.doc-body .token.regex,
+.doc-body .token.important,
+.doc-body .token.variable {
+  color: #f97316;
+}
+
+.doc-body .token.deleted {
+  color: #ef4444;
+}
