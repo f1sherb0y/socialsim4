@@ -358,8 +358,8 @@ export function SettingsPage() {
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{searchProvider ? (searchProvider.base_url || '-') : '-'}</div>
               </div>
             </div>
-            <div className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', fontSize: '0.85rem' }}>
-              <h2 style={{ margin: 0, fontSize: "0.9rem" }}>Search Provider</h2>
+        <div className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', fontSize: '0.85rem' }}>
+          <h2 style={{ margin: 0, fontSize: "0.9rem" }}>{t('settings.providers.searchTitle') || t('settings.providers.searchTab')}</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
             <label>
               Provider

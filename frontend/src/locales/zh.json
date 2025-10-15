@@ -78,6 +78,7 @@
       "add": "新增提供商",
       "llmTab": "LLM 提供商",
       "searchTab": "搜索提供商",
+      "searchTitle": "搜索提供商",
       "fields": {
         "label": "名称",
         "provider": "提供商",

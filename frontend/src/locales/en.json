@@ -78,6 +78,7 @@
       "add": "Add provider",
       "llmTab": "LLM providers",
       "searchTab": "Search providers",
+      "searchTitle": "Search provider",
       "fields": {
         "label": "Label",
         "provider": "Provider",
