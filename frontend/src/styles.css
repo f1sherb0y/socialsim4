@@ -47,6 +47,11 @@ html {
   /* red-600 */
 }
 
+/* Control sizing tokens */
+:root {
+  --control-sm: 30px;
+}
+
 body {
   margin: 0;
   font-family: inherit;
@@ -162,6 +167,7 @@ select.small,
 textarea.small {
   padding: 0.35rem 0.5rem;
   font-size: 0.9rem;
+  height: var(--control-sm);
 }
 
 /* Subtitle style */
@@ -381,8 +387,8 @@ textarea::placeholder {
 
 /* Square icon-only button variant */
 .icon-button.square {
-  width: 28px;
-  height: 28px;
+  width: var(--control-sm);
+  height: var(--control-sm);
   padding: 0;
   display: inline-flex;
   align-items: center;

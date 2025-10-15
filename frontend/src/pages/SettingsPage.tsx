@@ -7,7 +7,7 @@ import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
 import { TitleCard } from "../components/TitleCard";
 import { AppSelect } from "../components/AppSelect";
-import { Link2Icon, TrashIcon, DownloadIcon, StarIcon, StarFilledIcon, EyeOpenIcon, EyeClosedIcon } from "@radix-ui/react-icons";
+import { Link2Icon, TrashIcon, FilePlusIcon, StarIcon, StarFilledIcon, EyeOpenIcon, EyeClosedIcon } from "@radix-ui/react-icons";
 
 type Tab = "profile" | "security" | "providers_llm" | "providers_search";
 
@@ -340,7 +340,7 @@ export function SettingsPage() {
                 disabled={createProvider.isPending}
                 style={{ color: '#16a34a' }}
               >
-                {createProvider.isPending ? <span className="spinner" aria-hidden /> : <DownloadIcon />}
+                {createProvider.isPending ? <span className="spinner" aria-hidden /> : <FilePlusIcon />}
               </button>
             </form>
           </>
@@ -475,7 +475,7 @@ export function SettingsPage() {
                   disabled={upsertSearch.isPending}
                   style={{ color: '#16a34a' }}
                 >
-                  {upsertSearch.isPending ? <span className="spinner" aria-hidden /> : <DownloadIcon />}
+                  {upsertSearch.isPending ? <span className="spinner" aria-hidden /> : <FilePlusIcon />}
                 </button>
                 {searchProvider && (
                   <div style={{ color: "#94a3b8", lineHeight: 1 }}>
