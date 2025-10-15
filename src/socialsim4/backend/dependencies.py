@@ -45,12 +45,4 @@ async def get_current_user(
     user = await session.get(User, int(subject))
     if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
-    data = UserPublic.model_validate(user)
-    # Compute admin flag from settings (email allowlist) or username 'admin'
-    is_admin = False
-    try:
-        if user.email in settings.admin_emails or user.username == 'admin':
-            is_admin = True
-    except Exception:
-        is_admin = False
-    return data.model_copy(update={"is_admin": is_admin})
+    return UserPublic.model_validate(user)

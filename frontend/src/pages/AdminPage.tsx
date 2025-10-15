@@ -8,7 +8,7 @@ import { AppSelect } from '../components/AppSelect';
 export function AdminPage() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
-  const isAdmin = Boolean((user as any)?.is_admin === true);
+  const isAdmin = String((user as any)?.role || '') === 'admin';
 
   if (!isAdmin) {
     return (
@@ -220,4 +220,3 @@ function StatsCard() {
     </div>
   );
 }
-

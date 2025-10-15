@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 def _require_admin(user: UserPublic) -> None:
-    if not bool(getattr(user, "is_admin", False)):
+    if str(getattr(user, "role", "")) != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
 
 
@@ -227,4 +227,3 @@ async def admin_stats(
         "user_visits": [{"date": k, "count": visit_map[k]} for k in buckets],
         "user_signups": [{"date": k, "count": signup_map[k]} for k in buckets],
     }
-
