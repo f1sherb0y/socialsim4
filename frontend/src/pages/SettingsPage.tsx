@@ -7,7 +7,7 @@ import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
 import { TitleCard } from "../components/TitleCard";
 import { AppSelect } from "../components/AppSelect";
-import { Icon } from "../components/Icon";
+import { Link2Icon, TrashIcon, DownloadIcon, StarIcon, StarFilledIcon, EyeOpenIcon, EyeClosedIcon } from "@radix-ui/react-icons";
 
 type Tab = "profile" | "security" | "providers_llm" | "providers_search";
 
@@ -232,7 +232,7 @@ export function SettingsPage() {
                         disabled={testingId !== null}
                         style={{ borderColor: 'var(--border)', color: '#2563eb' }}
                       >
-                        {testingId === provider.id ? <span className="spinner" aria-hidden /> : <Icon name="test" />}
+                        {testingId === provider.id ? <span className="spinner" aria-hidden /> : <Link2Icon />}
                       </button>
                       <button
                         type="button"
@@ -243,7 +243,7 @@ export function SettingsPage() {
                         disabled={active || activateProvider.isPending}
                         style={{ borderColor: 'var(--border)', color: '#f59e0b' }}
                       >
-                        {active ? <Icon name="star-solid" /> : <Icon name="star" />}
+                        {active ? <StarFilledIcon /> : <StarIcon />}
                       </button>
                       <button
                         type="button"
@@ -260,7 +260,7 @@ export function SettingsPage() {
                         disabled={deleteProvider.isPending}
                         style={{ borderColor: 'var(--border)', color: '#ef4444' }}
                       >
-                        <Icon name="delete" />
+                        <TrashIcon />
                       </button>
                     </div>
                     {idx < (providersQuery.data?.length || 0) - 1 && <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', margin: '0.4rem 0 0 0', opacity: 0.8 }} />}
@@ -326,19 +326,7 @@ export function SettingsPage() {
                     aria-label={keyVisible ? (t('common.hide') || 'Hide') : (t('common.show') || 'Show')}
                     onClick={() => setKeyVisible((prev) => !prev)}
                   >
-                    {keyVisible ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M17.94 17.94L6.06 6.06"/>
-                        <path d="M10.58 10.58a3 3 0 004.24 4.24"/>
-                        <path d="M9.88 4.12A9.91 9.91 0 0121 12c-1.64 2.9-4.88 5-9 5a9.91 9.91 0 01-4.12-.88"/>
-                        <path d="M3 3l18 18"/>
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                    )}
+                    {keyVisible ? <EyeClosedIcon /> : <EyeOpenIcon />}
                   </button>
                 </div>
               </label>
@@ -351,7 +339,7 @@ export function SettingsPage() {
                 disabled={createProvider.isPending}
                 style={{ color: '#16a34a' }}
               >
-                {createProvider.isPending ? <span className="spinner" aria-hidden /> : <Icon name="save" />}
+                {createProvider.isPending ? <span className="spinner" aria-hidden /> : <DownloadIcon />}
               </button>
             </form>
           </>
@@ -484,15 +472,7 @@ export function SettingsPage() {
                   disabled={upsertSearch.isPending}
                   style={{ color: '#16a34a' }}
                 >
-                  {upsertSearch.isPending ? (
-                    <span className="spinner" aria-hidden />
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                      <path d="M17 21v-8H7v8"/>
-                      <path d="M7 3v5h8"/>
-                    </svg>
-                  )}
+                  {upsertSearch.isPending ? <span className="spinner" aria-hidden /> : <DownloadIcon />}
                 </button>
                 {searchProvider && (
                   <div style={{ color: "#94a3b8", lineHeight: 1 }}>

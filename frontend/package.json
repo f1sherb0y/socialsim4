@@ -39,3 +39,4 @@
     "vite": "^4.5.14"
   }
 }
+    "@radix-ui/react-icons": "^1.3.0",
