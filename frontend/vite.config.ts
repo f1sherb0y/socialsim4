@@ -2,7 +2,6 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import mdx from "@mdx-js/rollup";
 import rehypePrism from 'rehype-prism-plus';
-import { preProcess, postProcess } from "./src/lib/rehype-pre-raw.js";
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -127,11 +126,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
-      mdx({
-        // Ensure MDXProvider components (e.g., custom `pre`) are respected
-        providerImportSource: '@mdx-js/react',
-        rehypePlugins: [preProcess, rehypePrism, postProcess],
-      }),
+      mdx({ providerImportSource: '@mdx-js/react', rehypePlugins: [rehypePrism] }),
       docsVirtualModule(),
     ],
     define: {
