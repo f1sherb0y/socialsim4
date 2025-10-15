@@ -13,6 +13,7 @@
     "new": "New",
     "saved": "Saved",
     "settings": "Settings",
+    "admin": "Admin",
     "login": "Login",
     "register": "Register",
     "signout": "Sign out"
@@ -78,6 +79,7 @@
       "add": "Add provider",
       "llmTab": "LLM providers",
       "searchTab": "Search providers",
+      "setSearchProvider": "Configure Search Provider",
       "searchTitle": "Search provider",
       "fields": {
         "label": "Label",
@@ -202,3 +204,65 @@
     }
   }
 }
+  "admin": {
+    "title": "Admin Console",
+    "noAccess": "You do not have permission to view this page.",
+    "common": {
+      "from": "From",
+      "to": "To",
+      "sort": "Sort",
+      "active": "Active",
+      "disabled": "Disabled",
+      "fetchError": "Failed to fetch data.",
+      "all": "All"
+    },
+    "users": {
+      "title": "Users",
+      "name": "Name",
+      "organization": "Organization",
+      "sort": {
+        "nameAsc": "Name ↑",
+        "nameDesc": "Name ↓",
+        "orgAsc": "Org ↑",
+        "orgDesc": "Org ↓",
+        "createdAsc": "Created ↑",
+        "createdDesc": "Created ↓"
+      },
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "organization": "Organization",
+        "created": "Created at",
+        "status": "Status"
+      }
+    },
+    "sims": {
+      "title": "Simulations",
+      "username": "Username",
+      "scene": "Scene type",
+      "sort": {
+        "usernameAsc": "Username ↑",
+        "usernameDesc": "Username ↓",
+        "sceneAsc": "Scene ↑",
+        "sceneDesc": "Scene ↓",
+        "createdAsc": "Created ↑",
+        "createdDesc": "Created ↓"
+      },
+      "columns": {
+        "user": "User",
+        "name": "Name",
+        "scene": "Scene",
+        "created": "Created at"
+      }
+    },
+    "stats": {
+      "title": "Statistics",
+      "period": "Period",
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly",
+      "simRuns": "Simulation runs",
+      "userVisits": "User visits",
+      "userSignups": "User signups"
+    }
+  }

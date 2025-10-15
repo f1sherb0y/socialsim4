@@ -10,6 +10,7 @@ import { SavedSimulationsPage } from "./pages/SavedSimulationsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SimulationWizardPage } from "./pages/SimulationWizardPage";
 import { SimulationPage } from "./pages/SimulationPage";
+import { AdminPage } from "./pages/AdminPage";
 import { RequireAuth } from "./components/RequireAuth";
 import { Layout } from "./components/Layout";
 
@@ -66,6 +67,16 @@ export default function App() {
             <RequireAuth>
               <Layout>
                 <SettingsPage />
+              </Layout>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth>
+              <Layout>
+                <AdminPage />
               </Layout>
             </RequireAuth>
           }

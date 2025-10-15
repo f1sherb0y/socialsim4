@@ -28,6 +28,9 @@ export function NavBar() {
               {item.label}
             </Link>
           ))}
+          {Boolean((user as any)?.is_admin === true) && (
+            <Link to="/admin" className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}>{t('nav.admin') || 'Admin'}</Link>
+          )}
         </div>
       </div>
       <div className="nav-right">

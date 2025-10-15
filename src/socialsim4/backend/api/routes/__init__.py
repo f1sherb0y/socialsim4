@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from . import auth, config, providers, scenes, simulations, search_providers
+from . import auth, config, providers, scenes, simulations, search_providers, admin
 
 
 router = APIRouter()
@@ -11,3 +11,4 @@ router.include_router(scenes.router, prefix="/scenes", tags=["scenes"])
 router.include_router(simulations.router, prefix="/simulations", tags=["simulations"])
 router.include_router(providers.router, prefix="/providers", tags=["providers"])
 router.include_router(search_providers.router, prefix="/search-providers", tags=["search-providers"])
+router.include_router(admin.router, prefix="/admin", tags=["admin"])

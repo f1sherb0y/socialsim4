@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     phone_number: str | None = None
     is_active: bool
     is_verified: bool
+    is_admin: bool | None = False
     created_at: datetime
     updated_at: datetime
 

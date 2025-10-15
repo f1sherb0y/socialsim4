@@ -13,6 +13,7 @@
     "new": "新建",
     "saved": "已保存",
     "settings": "设置",
+    "admin": "管理后台",
     "login": "登录",
     "register": "注册",
     "signout": "退出"
@@ -78,6 +79,7 @@
       "add": "新增提供商",
       "llmTab": "LLM 提供商",
       "searchTab": "搜索提供商",
+      "setSearchProvider": "配置搜索提供商",
       "searchTitle": "搜索提供商",
       "fields": {
         "label": "名称",
@@ -202,3 +204,65 @@
     }
   }
 }
+  "admin": {
+    "title": "管理后台",
+    "noAccess": "你没有访问权限。",
+    "common": {
+      "from": "起始",
+      "to": "结束",
+      "sort": "排序",
+      "active": "启用",
+      "disabled": "停用",
+      "fetchError": "获取数据失败。",
+      "all": "全部"
+    },
+    "users": {
+      "title": "用户列表",
+      "name": "姓名/昵称",
+      "organization": "组织",
+      "sort": {
+        "nameAsc": "姓名 ↑",
+        "nameDesc": "姓名 ↓",
+        "orgAsc": "组织 ↑",
+        "orgDesc": "组织 ↓",
+        "createdAsc": "注册时间 ↑",
+        "createdDesc": "注册时间 ↓"
+      },
+      "columns": {
+        "name": "姓名",
+        "email": "邮箱",
+        "organization": "组织",
+        "created": "注册时间",
+        "status": "状态"
+      }
+    },
+    "sims": {
+      "title": "仿真列表",
+      "username": "用户名",
+      "scene": "仿真类型",
+      "sort": {
+        "usernameAsc": "用户名 ↑",
+        "usernameDesc": "用户名 ↓",
+        "sceneAsc": "类型 ↑",
+        "sceneDesc": "类型 ↓",
+        "createdAsc": "创建时间 ↑",
+        "createdDesc": "创建时间 ↓"
+      },
+      "columns": {
+        "user": "用户",
+        "name": "名称",
+        "scene": "类型",
+        "created": "创建时间"
+      }
+    },
+    "stats": {
+      "title": "统计概览",
+      "period": "时间粒度",
+      "day": "按日",
+      "week": "按周",
+      "month": "按月",
+      "simRuns": "仿真运行次数",
+      "userVisits": "用户访问",
+      "userSignups": "用户注册"
+    }
+  }

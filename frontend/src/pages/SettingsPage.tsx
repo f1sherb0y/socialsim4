@@ -358,104 +358,104 @@ export function SettingsPage() {
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{searchProvider ? (searchProvider.base_url || '-') : '-'}</div>
               </div>
             </div>
-        <div className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', fontSize: '0.85rem' }}>
-          <h2 style={{ margin: 0, fontSize: "0.9rem" }}>{t('settings.providers.searchTitle') || t('settings.providers.searchTab')}</h2>
+            <div className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', fontSize: '0.85rem' }}>
+              <h2 style={{ margin: 0, fontSize: "0.9rem" }}>{t('settings.providers.setSearchProvider')}</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-            <label>
-              Provider
-              <AppSelect
-                value={searchDraft.provider}
-                options={[
-                  { value: "ddg", label: "DuckDuckGo" },
-                  { value: "serpapi", label: "SerpAPI" },
-                  { value: "serper", label: "Serper" },
-                  { value: "tavily", label: "Tavily" },
-                  { value: "mock", label: "Mock" },
-                ]}
-                onChange={(val) => setSearchDraft((p) => ({ ...p, provider: val }))}
-                size="small"
-              />
-            </label>
+                <label>
+                  Provider
+                  <AppSelect
+                    value={searchDraft.provider}
+                    options={[
+                      { value: "ddg", label: "DuckDuckGo" },
+                      { value: "serpapi", label: "SerpAPI" },
+                      { value: "serper", label: "Serper" },
+                      { value: "tavily", label: "Tavily" },
+                      { value: "mock", label: "Mock" },
+                    ]}
+                    onChange={(val) => setSearchDraft((p) => ({ ...p, provider: val }))}
+                    size="small"
+                  />
+                </label>
                 {(searchDraft.provider === "serpapi" || searchDraft.provider === "serper" || searchDraft.provider === "tavily") && (
                   <>
-                <label>
-                  Base URL
-                  <input className="input small" value={searchDraft.base_url} onChange={(e) => setSearchDraft((p) => ({ ...p, base_url: e.target.value }))} />
-                </label>
-                <label>
-                  API Key
-                  <input className="input small" value={searchDraft.api_key} onChange={(e) => setSearchDraft((p) => ({ ...p, api_key: e.target.value }))} />
-                </label>
+                    <label>
+                      Base URL
+                      <input className="input small" value={searchDraft.base_url} onChange={(e) => setSearchDraft((p) => ({ ...p, base_url: e.target.value }))} />
+                    </label>
+                    <label>
+                      API Key
+                      <input className="input small" value={searchDraft.api_key} onChange={(e) => setSearchDraft((p) => ({ ...p, api_key: e.target.value }))} />
+                    </label>
                   </>
                 )}
                 {searchDraft.provider === "ddg" && (
                   <>
-                <label>
-                  Region
-                  <input className="input small" value={String((searchDraft.config as any).region || "")} onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), region: e.target.value } }))} />
-                </label>
-                <label>
-                  SafeSearch
-                  <input className="input small" value={String((searchDraft.config as any).safesearch || "moderate")} onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), safesearch: e.target.value } }))} />
-                </label>
+                    <label>
+                      Region
+                      <input className="input small" value={String((searchDraft.config as any).region || "")} onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), region: e.target.value } }))} />
+                    </label>
+                    <label>
+                      SafeSearch
+                      <input className="input small" value={String((searchDraft.config as any).safesearch || "moderate")} onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), safesearch: e.target.value } }))} />
+                    </label>
                   </>
                 )}
                 {searchDraft.provider === "tavily" && (
                   <>
                     <label>
                       Search Depth
-                  <AppSelect
-                    value={String((searchDraft.config as any).search_depth || "basic")}
-                    options={[
-                      { value: "basic", label: "basic" },
-                      { value: "advanced", label: "advanced" },
-                    ]}
-                    onChange={(val) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), search_depth: val } }))}
-                    size="small"
-                  />
-                </label>
+                      <AppSelect
+                        value={String((searchDraft.config as any).search_depth || "basic")}
+                        options={[
+                          { value: "basic", label: "basic" },
+                          { value: "advanced", label: "advanced" },
+                        ]}
+                        onChange={(val) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), search_depth: val } }))}
+                        size="small"
+                      />
+                    </label>
                     <label>
                       Include Answer
-                  <input
-                    type="checkbox"
-                    checked={Boolean((searchDraft.config as any).include_answer || false)}
-                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), include_answer: e.target.checked } }))}
-                  />
-                </label>
-                <label>
-                  Topic
-                  <input
-                    className="input small"
-                    value={String((searchDraft.config as any).topic || "")}
-                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), topic: e.target.value } }))}
-                  />
-                </label>
-                <label>
-                  Days (time range)
-                  <input
-                    className="input small"
-                    type="number"
-                    min={1}
-                    value={Number((searchDraft.config as any).days || 7)}
-                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), days: Number(e.target.value || 0) } }))}
-                  />
-                </label>
-                <label>
-                  Include Domains (comma-separated)
-                  <input
-                    className="input small"
-                    value={String((searchDraft.config as any).include_domains || "")}
-                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), include_domains: e.target.value } }))}
-                  />
-                </label>
-                <label>
-                  Exclude Domains (comma-separated)
-                  <input
-                    className="input small"
-                    value={String((searchDraft.config as any).exclude_domains || "")}
-                    onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), exclude_domains: e.target.value } }))}
-                  />
-                </label>
+                      <input
+                        type="checkbox"
+                        checked={Boolean((searchDraft.config as any).include_answer || false)}
+                        onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), include_answer: e.target.checked } }))}
+                      />
+                    </label>
+                    <label>
+                      Topic
+                      <input
+                        className="input small"
+                        value={String((searchDraft.config as any).topic || "")}
+                        onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), topic: e.target.value } }))}
+                      />
+                    </label>
+                    <label>
+                      Days (time range)
+                      <input
+                        className="input small"
+                        type="number"
+                        min={1}
+                        value={Number((searchDraft.config as any).days || 7)}
+                        onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), days: Number(e.target.value || 0) } }))}
+                      />
+                    </label>
+                    <label>
+                      Include Domains (comma-separated)
+                      <input
+                        className="input small"
+                        value={String((searchDraft.config as any).include_domains || "")}
+                        onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), include_domains: e.target.value } }))}
+                      />
+                    </label>
+                    <label>
+                      Exclude Domains (comma-separated)
+                      <input
+                        className="input small"
+                        value={String((searchDraft.config as any).exclude_domains || "")}
+                        onChange={(e) => setSearchDraft((p) => ({ ...p, config: { ...(p.config || {}), exclude_domains: e.target.value } }))}
+                      />
+                    </label>
                   </>
                 )}
                 {searchDraft.provider === "mock" && (

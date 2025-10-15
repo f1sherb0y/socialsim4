@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     require_email_verification: bool = False
 
     allowed_origins: list[str] = []
+    admin_emails: list[str] = []
 
     model_config = SettingsConfigDict(
         extra="ignore",
