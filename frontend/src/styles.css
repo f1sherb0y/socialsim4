@@ -548,6 +548,18 @@ textarea::placeholder {
   border: 2px solid transparent;
 }
 
+/* Small inline spinner for icon-only buttons */
+@keyframes spin360 { to { transform: rotate(360deg); } }
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-b);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin360 0.8s linear infinite;
+}
+
 :root.theme-dark .scroll-panel::-webkit-scrollbar-thumb {
   background-color: rgba(148, 163, 184, 0.35);
 }

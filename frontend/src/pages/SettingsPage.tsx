@@ -19,6 +19,7 @@ export function SettingsPage() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const queryClient = useQueryClient();
   const [testHints, setTestHints] = useState<Record<number, { ok: boolean; msg: string }>>({});
+  const [testingId, setTestingId] = useState<number | null>(null);
 
 
   const providersQuery = useQuery({
@@ -104,6 +105,9 @@ export function SettingsPage() {
 
   const testProvider = useMutation({
     mutationFn: async (providerId: number) => apiTestProvider(providerId),
+    onMutate: (providerId: number) => {
+      setTestingId(providerId);
+    },
     onSuccess: (_data, providerId) => {
       setTestHints((prev) => ({ ...prev, [providerId]: { ok: true, msg: t('settings.providers.testOk') || 'OK' } }));
       setTimeout(() => {
@@ -124,6 +128,9 @@ export function SettingsPage() {
           return copy;
         });
       }, 3000);
+    },
+    onSettled: () => {
+      setTestingId(null);
     },
   });
 
@@ -211,9 +218,38 @@ export function SettingsPage() {
                           {testHints[provider.id].ok ? '✓' : '✕'} {testHints[provider.id].msg}
                         </span>
                       )}
-                      <button type="button" className="button small" onClick={() => testProvider.mutate(provider.id)} disabled={testProvider.isPending}>{t('settings.providers.test')}</button>
-                      {!active && <button type="button" className="button small" onClick={() => activateProvider.mutate(provider.id)} disabled={activateProvider.isPending}>{t('settings.providers.makeActive') || 'Use'}</button>}
-                      <button type="button" className="button button-danger small" onClick={() => deleteProvider.mutate(provider.id)} disabled={deleteProvider.isPending}>{t('saved.delete')}</button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        title={t('settings.providers.test')}
+                        aria-label={t('settings.providers.test')}
+                        onClick={() => testProvider.mutate(provider.id)}
+                        disabled={testingId !== null}
+                        style={{ borderColor: 'var(--border)', color: '#2563eb' }}
+                      >
+                        {testingId === provider.id ? <span className="spinner" aria-hidden /> : '🔌'}
+                      </button>
+                      {!active && (
+                        <button
+                          type="button"
+                          className="button small"
+                          onClick={() => activateProvider.mutate(provider.id)}
+                          disabled={activateProvider.isPending}
+                        >
+                          {t('settings.providers.makeActive') || 'Use'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="icon-button"
+                        title={t('saved.delete')}
+                        aria-label={t('saved.delete')}
+                        onClick={() => deleteProvider.mutate(provider.id)}
+                        disabled={deleteProvider.isPending}
+                        style={{ borderColor: 'var(--border)', color: '#ef4444' }}
+                      >
+                        🗑
+                      </button>
                     </div>
                   </div>
                 );
