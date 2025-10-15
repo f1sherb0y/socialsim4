@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/auth";
 import { useTranslation } from "react-i18next";
 import { TitleCard } from "../components/TitleCard";
 import { AppSelect } from "../components/AppSelect";
+import { Icon } from "../components/Icon";
 
 type Tab = "profile" | "security" | "providers_llm" | "providers_search";
 
@@ -203,13 +204,13 @@ export function SettingsPage() {
         {activeTab === 'providers_llm' && (
           <>
             {/* List (no outer card) */}
-            <div style={{ display: 'grid', gap: '0.5rem' }}>
+            <div className="card" style={{ display: 'grid', gap: 0, padding: '0.2rem 0.6rem' }}>
               {providersQuery.isLoading && <div>{t('settings.providers.loading')}</div>}
               {providersQuery.error && <div style={{ color: "#f87171" }}>{t('settings.providers.error')}</div>}
-              {(providersQuery.data ?? []).map((provider) => {
+              {(providersQuery.data ?? []).map((provider, idx) => {
                 const active = Boolean((provider.config as any)?.active);
                 return (
-                  <div key={provider.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '0.5rem 0.6rem' }}>
+                  <div key={provider.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '0.5rem 0' }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.name}</div>
                       <div style={{ color: 'var(--muted)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -231,15 +232,7 @@ export function SettingsPage() {
                         disabled={testingId !== null}
                         style={{ borderColor: 'var(--border)', color: '#2563eb' }}
                       >
-                        {testingId === provider.id ? (
-                          <span className="spinner" aria-hidden />
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="M9 2v4M15 2v4"/>
-                            <path d="M7 6h10v5a5 5 0 0 1-10 0V6z"/>
-                            <path d="M12 16v6"/>
-                          </svg>
-                        )}
+                        {testingId === provider.id ? <span className="spinner" aria-hidden /> : <Icon name="test" />}
                       </button>
                       <button
                         type="button"
@@ -250,15 +243,7 @@ export function SettingsPage() {
                         disabled={active || activateProvider.isPending}
                         style={{ borderColor: 'var(--border)', color: '#f59e0b' }}
                       >
-                        {active ? (
-                          <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0" aria-hidden>
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.9 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.9 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
-                          </svg>
-                        )}
+                        {active ? <Icon name="star-solid" /> : <Icon name="star" />}
                       </button>
                       <button
                         type="button"
@@ -275,14 +260,10 @@ export function SettingsPage() {
                         disabled={deleteProvider.isPending}
                         style={{ borderColor: 'var(--border)', color: '#ef4444' }}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M3 6h18"/>
-                          <path d="M8 6V4h8v2"/>
-                          <path d="M6 6l1 14h10l1-14"/>
-                          <path d="M10 11v6M14 11v6"/>
-                        </svg>
+                        <Icon name="delete" />
                       </button>
                     </div>
+                    {idx < (providersQuery.data?.length || 0) - 1 && <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', margin: '0.4rem 0 0 0', opacity: 0.8 }} />}
                   </div>
                 );
               })}
@@ -290,8 +271,8 @@ export function SettingsPage() {
             </div>
 
             {/* Add form */}
-            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem', marginTop: '0.6rem' }}>
-              <h2 style={{ margin: 0, fontSize: "1rem" }}>{t('settings.providers.add')}</h2>
+            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', marginTop: '0.6rem', fontSize: '0.95rem' }}>
+              <h2 style={{ margin: 0, fontSize: "0.95rem" }}>{t('settings.providers.add')}</h2>
               <label>
                 {t('settings.providers.fields.label')}
                 <input className="input"
@@ -362,8 +343,15 @@ export function SettingsPage() {
                 </div>
               </label>
               {createProvider.error && <div style={{ color: "#f87171" }}>{t('settings.providers.createFailed') || 'Failed to add provider.'}</div>}
-              <button type="submit" className="button" disabled={createProvider.isPending}>
-                {createProvider.isPending ? t('settings.providers.save') + '…' : t('settings.providers.save')}
+              <button
+                type="submit"
+                className="icon-button square"
+                title={t('settings.providers.save')}
+                aria-label={t('settings.providers.save')}
+                disabled={createProvider.isPending}
+                style={{ color: '#16a34a' }}
+              >
+                {createProvider.isPending ? <span className="spinner" aria-hidden /> : <Icon name="save" />}
               </button>
             </form>
           </>
