@@ -403,10 +403,10 @@ export function SimulationWizardPage() {
                   {/* Scene specific configuration */}
                   <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
                     <div className="panel-subtitle">{t('wizard.sceneSpecific') || 'Scene configuration'}</div>
-                    {Object.keys(currentScene.config_schema ?? {}).filter((k) => k !== 'initial_events').length === 0 && (
+                    {Object.keys(currentScene.config_schema ?? {}).filter((k) => k !== 'initial_events' && k !== 'emotion_enabled').length === 0 && (
                       <div style={{ color: "#94a3b8" }}>{t('wizard.noExtraConfig')}</div>
                     )}
-                    {Object.entries(currentScene.config_schema ?? {}).filter(([key]) => key !== 'initial_events').map(([key, value]) => {
+                    {Object.entries(currentScene.config_schema ?? {}).filter(([key]) => key !== 'initial_events' && key !== 'emotion_enabled').map(([key, value]) => {
                       const initial = sceneConfig[key] ?? value;
                       const type = typeof value;
                       if (type === 'boolean') {
