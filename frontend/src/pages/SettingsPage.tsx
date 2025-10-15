@@ -265,7 +265,13 @@ export function SettingsPage() {
                         className="icon-button square"
                         title={t('saved.delete')}
                         aria-label={t('saved.delete')}
-                        onClick={() => deleteProvider.mutate(provider.id)}
+                        onClick={() => {
+                          if (active) {
+                            const msg = t('settings.providers.deleteActiveConfirm') || 'This provider is active. Delete anyway?';
+                            if (!window.confirm(msg)) return;
+                          }
+                          deleteProvider.mutate(provider.id);
+                        }}
                         disabled={deleteProvider.isPending}
                         style={{ borderColor: 'var(--border)', color: '#ef4444' }}
                       >
@@ -334,11 +340,24 @@ export function SettingsPage() {
                   />
                   <button
                     type="button"
-                    className="button"
+                    className="icon-button square"
+                    title={keyVisible ? (t('common.hide') || 'Hide') : (t('common.show') || 'Show')}
+                    aria-label={keyVisible ? (t('common.hide') || 'Hide') : (t('common.show') || 'Show')}
                     onClick={() => setKeyVisible((prev) => !prev)}
-                    style={{ width: "fit-content" }}
                   >
-                    {keyVisible ? t('common.hide') : t('common.show')}
+                    {keyVisible ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M17.94 17.94L6.06 6.06"/>
+                        <path d="M10.58 10.58a3 3 0 004.24 4.24"/>
+                        <path d="M9.88 4.12A9.91 9.91 0 0121 12c-1.64 2.9-4.88 5-9 5a9.91 9.91 0 01-4.12-.88"/>
+                        <path d="M3 3l18 18"/>
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
                   </button>
                 </div>
               </label>
@@ -468,8 +487,24 @@ export function SettingsPage() {
                 )}
               </div>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <button type="button" className="button" onClick={() => upsertSearch.mutate()} disabled={upsertSearch.isPending}>
-                  Save Search Provider
+                <button
+                  type="button"
+                  className="icon-button square"
+                  title={t('settings.providers.save')}
+                  aria-label={t('settings.providers.save')}
+                  onClick={() => upsertSearch.mutate()}
+                  disabled={upsertSearch.isPending}
+                  style={{ color: '#16a34a' }}
+                >
+                  {upsertSearch.isPending ? (
+                    <span className="spinner" aria-hidden />
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                      <path d="M17 21v-8H7v8"/>
+                      <path d="M7 3v5h8"/>
+                    </svg>
+                  )}
                 </button>
                 {searchProvider && (
                   <div style={{ color: "#94a3b8", lineHeight: 1 }}>

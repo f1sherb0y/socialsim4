@@ -93,6 +93,7 @@
       "testOk": "Connectivity verified",
       "testFail": "Test failed",
       "createFailed": "Failed to add provider.",
+      "deleteActiveConfirm": "This provider is currently active. Delete anyway?",
       "hasKey": "Key stored",
       "neverTested": "never tested",
       "loading": "Loading…",

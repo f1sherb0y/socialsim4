@@ -93,6 +93,7 @@
       "testOk": "连接已验证",
       "testFail": "测试失败",
       "createFailed": "新增提供商失败。",
+      "deleteActiveConfirm": "该提供商当前正在使用，确认要删除吗？",
       "hasKey": "是否保存密钥",
       "neverTested": "从未测试",
       "loading": "加载中…",
