@@ -271,8 +271,8 @@ export function SettingsPage() {
             </div>
 
             {/* Add form */}
-            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', marginTop: '0.6rem', fontSize: '0.95rem' }}>
-              <h2 style={{ margin: 0, fontSize: "0.95rem" }}>{t('settings.providers.add')}</h2>
+            <form onSubmit={handleCreateProvider} className="card" style={{ gap: "0.25rem", padding: '0.45rem 0.55rem', marginTop: '0.6rem', fontSize: '0.85rem' }}>
+              <h2 style={{ margin: 0, fontSize: "0.9rem" }}>{t('settings.providers.add')}</h2>
               <label>
                 {t('settings.providers.fields.label')}
                 <input className="input"
@@ -357,8 +357,8 @@ export function SettingsPage() {
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{searchProvider ? (searchProvider.base_url || '-') : '-'}</div>
               </div>
             </div>
-            <div className="card" style={{ gap: "0.35rem", padding: '0.6rem 0.7rem' }}>
-              <h2 style={{ margin: 0, fontSize: "1rem" }}>Search Provider</h2>
+        <div className="card" style={{ gap: "0.3rem", padding: '0.5rem 0.6rem', fontSize: '0.85rem' }}>
+          <h2 style={{ margin: 0, fontSize: "0.9rem" }}>Search Provider</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                 <label>
                   Provider
