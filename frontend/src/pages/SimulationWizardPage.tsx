@@ -145,6 +145,7 @@ export function SimulationWizardPage() {
         "Scene start: Lily feels Alex has become emotionally distant, while Alex thinks Lily is overreacting. The host will guide them to express their emotions and seek resolution.",
       ];
     }
+    if (cfg.emotion_enabled === undefined) cfg.emotion_enabled = false;
     setSceneConfig(cfg);
     setAgents(defaultAgentsForScene(scene.type));
     setLastSceneType(scene.type);
@@ -352,22 +353,20 @@ export function SimulationWizardPage() {
               {currentScene ? (
                 <div style={{ display: "grid", gap: "0.75rem", marginTop: "0.5rem" }}>
                   {/* Emotional features (only for Emotional Conflict Scene) */}
-                  {sceneType === EMOTIONAL_CONFLICT_SCENE && (
-                    <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                      <div>
-                        <div className="panel-subtitle">{t('wizard.emotionEnabled')}</div>
-                        <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{t('wizard.emotionHint')}</div>
-                      </div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(sceneConfig.emotion_enabled)}
-                          onChange={(e) => setSceneConfig((prev) => ({ ...prev, emotion_enabled: e.target.checked }))}
-                        />
-                        {Boolean(sceneConfig.emotion_enabled) ? t('common.show') : t('common.hide')}
-                      </label>
+                  <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                    <div>
+                      <div className="panel-subtitle">{t('wizard.emotionEnabled')}</div>
+                      <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{t('wizard.emotionHint')}</div>
                     </div>
-                  )}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(sceneConfig.emotion_enabled)}
+                        onChange={(e) => setSceneConfig((prev) => ({ ...prev, emotion_enabled: e.target.checked }))}
+                      />
+                      {Boolean(sceneConfig.emotion_enabled) ? t('common.show') : t('common.hide')}
+                    </label>
+                  </div>
                   {/* Events configuration */}
                   <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
                     <div className="panel-subtitle">{t('wizard.events') || 'Initial events'}</div>

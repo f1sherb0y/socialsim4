@@ -46,6 +46,8 @@ def scene_config_template(scene_key: str, scene_cls) -> dict:
         ]
     else:
         config_schema.setdefault("initial_events", [])
+    # Ensure toggle is present for all scenes; default off unless explicitly set
+    config_schema.setdefault("emotion_enabled", False)
 
     # Read from registry; fallback to scene introspection if not present
     reg = SCENE_ACTIONS.get(scene_key)

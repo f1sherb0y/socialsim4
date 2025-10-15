@@ -130,7 +130,7 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
     # Build agents from agent_config
     items = (getattr(sim_record, "agent_config", {}) or {}).get("agents") or []
     built_agents = []
-    emotion_enabled = cfg["emotion_enabled"] if scene_type == "emotional_conflict_scene" else False
+    emotion_enabled = cfg["emotion_enabled"] if ("emotion_enabled" in cfg) else False
     for cfg_agent in items:
         aname = str(cfg_agent.get("name") or "").strip() or "Agent"
         profile = str(cfg_agent.get("profile") or "")
