@@ -11,6 +11,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SimulationWizardPage } from "./pages/SimulationWizardPage";
 import { SimulationPage } from "./pages/SimulationPage";
 import { AdminPage } from "./pages/AdminPage";
+import { DocsPage } from "./pages/DocsPage";
 import { RequireAuth } from "./components/RequireAuth";
 import { Layout } from "./components/Layout";
 
@@ -29,6 +30,14 @@ export default function App() {
                 <DashboardPage />
               </Layout>
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/docs/*"
+          element={
+            <Layout>
+              <DocsPage />
+            </Layout>
           }
         />
         <Route

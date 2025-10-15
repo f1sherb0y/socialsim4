@@ -16,6 +16,7 @@ export function NavBar() {
     { to: "/simulations/new", label: t('nav.new') },
     { to: "/simulations/saved", label: t('nav.saved') },
     { to: "/settings/providers", label: t('nav.settings') },
+    { to: "/docs", label: t('nav.docs') || 'Docs' },
   ];
 
   return (

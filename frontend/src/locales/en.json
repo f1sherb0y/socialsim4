@@ -13,6 +13,7 @@
     "new": "New",
     "saved": "Saved",
     "settings": "Settings",
+    "docs": "Docs",
     "admin": "Admin",
     "login": "Login",
     "register": "Register",
@@ -155,6 +156,8 @@
       "submit": "Create account",
       "success": "Registration successful. Check your email.",
       "failed": "Registration failed",
+      "invalidPhone": "Invalid phone number format. Use +123456789 (8–15 digits).",
+      "invalidPhoneTitle": "Use E.164 format: +123456789 (8–15 digits)",
       "have": "Already registered?",
       "signin": "Sign in"
     }

@@ -64,7 +64,7 @@ function UsersCard() {
   return (
     <div className="card" style={{ display: 'grid', gap: '0.5rem' }}>
       <div className="panel-subtitle">{t('admin.users.title')}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
         <label style={{ display: 'grid', gap: 4 }}>
           {t('admin.users.name')}
           <input className="input small" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -245,7 +245,20 @@ function LineChart({ series, color }: { series: { date: string; count: number }[
         <RLineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
           <XAxis dataKey="date" hide tick={false} axisLine={false} tickLine={false} />
           <YAxis hide tick={false} axisLine={false} tickLine={false} domain={["dataMin", "dataMax"]} />
-          <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v: any) => [String(v), '']} labelFormatter={(l) => l} />
+          <Tooltip
+            contentStyle={{
+              fontSize: 12,
+              background: 'var(--overlay-bg)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '6px 8px',
+            }}
+            labelStyle={{ color: 'var(--muted)' }}
+            itemStyle={{ color: 'var(--text)' }}
+            formatter={(v: any) => [String(v), '']}
+            labelFormatter={(l) => l}
+          />
           <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
         </RLineChart>
       </ResponsiveContainer>

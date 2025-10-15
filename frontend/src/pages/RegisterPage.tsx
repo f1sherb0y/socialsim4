@@ -28,6 +28,14 @@ export function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
+      // simple client-side validation for phone (E.164-like)
+      const phone = String(form.phone_number || '').trim();
+      const phoneOk = /^\+?[1-9]\d{7,14}$/.test(phone);
+      if (!phoneOk) {
+        setLoading(false);
+        setError('invalid_phone');
+        return;
+      }
       await apiClient.post("/auth/register", {
         organization: form.organization,
         email: form.email,
@@ -38,8 +46,18 @@ export function RegisterPage() {
       });
       setSuccess(true);
       setTimeout(() => navigate("/login"), 1500);
-    } catch (err) {
-      setError("Registration failed");
+    } catch (err: any) {
+      // Prefer server-provided detail message if available
+      const detail = (err?.response?.data?.detail ?? err?.response?.data?.message) as any;
+      if (typeof detail === 'string' && detail.trim()) {
+        setError(detail.trim());
+      } else if (Array.isArray(detail) && detail.length) {
+        const first = detail[0];
+        const msg = String(first?.msg || first?.message || 'Registration failed');
+        setError(msg);
+      } else {
+        setError("register_failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -67,13 +85,18 @@ export function RegisterPage() {
         </label>
         <label>
           {t('auth.register.phone')}
-          <input className="input" value={form.phone_number} onChange={(e) => handleChange("phone_number", e.target.value)} required />
+          <input className="input" value={form.phone_number} onChange={(e) => handleChange("phone_number", e.target.value)} required pattern="^\+?[1-9]\d{7,14}$" title={t('auth.register.invalidPhoneTitle') || '+123456789 (8-15 digits)'} />
         </label>
         <label>
           {t('auth.register.password')}
           <input className="input" type="password" value={form.password} onChange={(e) => handleChange("password", e.target.value)} required />
         </label>
-        {error && <div style={{ color: "#f87171" }}>{t('auth.register.failed')}</div>}
+        {error === 'invalid_phone' && <div style={{ color: "#f87171" }}>{t('auth.register.invalidPhone')}</div>}
+        {error && error !== 'invalid_phone' && (
+          <div style={{ color: "#f87171" }}>
+            {error === 'register_failed' ? t('auth.register.failed') : `Error: ${String(error).toLowerCase()}`}
+          </div>
+        )}
         {success && <div style={{ color: "#34d399" }}>{t('auth.register.success')}</div>}
         <button type="submit" className="button" disabled={loading}>
           {loading ? t('auth.register.submit') + '…' : t('auth.register.submit')}
