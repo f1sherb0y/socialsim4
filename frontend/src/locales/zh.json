@@ -4,7 +4,8 @@
     "hide": "隐藏",
     "show": "显示",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "none": "（无）"
   },
   "brand": "SocialSim4",
   "nav": {
@@ -115,7 +116,9 @@
     "loadingScenes": "正在加载场景…",
     "fetchScenesError": "无法获取场景。",
     "basicActions": "基础动作",
-    "allowedActions": "可选动作"
+    "allowedActions": "可选动作",
+    "emotionEnabled": "启用情绪功能",
+    "emotionHint": "开启后，智能体每回合会输出情绪更新。"
   },
   "auth": {
     "login": {
@@ -174,6 +177,16 @@
     "dealTag": "发牌",
     "bottom": "底牌",
     "status": "状态",
-    "syncing": "同步中…"
+    "syncing": "同步中…",
+    "agentStatus": {
+      "title": "智能体状态",
+      "emotion": "情绪",
+      "plan": "计划",
+      "goals": "目标",
+      "milestones": "里程碑",
+      "strategy": "策略",
+      "notes": "备注",
+      "priority": "优先级"
+    }
   }
 }

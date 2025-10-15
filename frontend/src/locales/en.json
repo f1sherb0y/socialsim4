@@ -4,7 +4,8 @@
     "hide": "Hide",
     "show": "Show",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "none": "(none)"
   },
   "brand": "SocialSim4",
   "nav": {
@@ -115,7 +116,9 @@
     "loadingScenes": "Loading scenes…",
     "fetchScenesError": "Unable to fetch scenes.",
     "basicActions": "Basic actions",
-    "allowedActions": "Allowed actions"
+    "allowedActions": "Allowed actions",
+    "emotionEnabled": "Enable emotion tracking",
+    "emotionHint": "When enabled, agents emit emotion updates each turn."
   },
   "auth": {
     "login": {
@@ -174,6 +177,16 @@
     "dealTag": "Deal",
     "bottom": "Bottom",
     "status": "Status",
-    "syncing": "Syncing…"
+    "syncing": "Syncing…",
+    "agentStatus": {
+      "title": "Agent status",
+      "emotion": "Emotion",
+      "plan": "Plan",
+      "goals": "Goals",
+      "milestones": "Milestones",
+      "strategy": "Strategy",
+      "notes": "Notes",
+      "priority": "priority"
+    }
   }
 }

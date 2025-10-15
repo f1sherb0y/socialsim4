@@ -6,15 +6,16 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.database import get_session
-from ...dependencies import get_current_user, get_db_session, settings
-from ...models.simulation import Simulation, SimulationLog, SimulationSnapshot
-from ...models.user import User, ProviderConfig, SearchProviderConfig
 from socialsim4.core.llm import create_llm_client
 from socialsim4.core.llm_config import LLMConfig
 from socialsim4.core.search_config import SearchConfig
-from socialsim4.core.tools.web.search import create_search_client
 from socialsim4.core.simtree import SimTree
+from socialsim4.core.tools.web.search import create_search_client
+
+from ...core.database import get_session
+from ...dependencies import get_current_user, get_db_session, settings
+from ...models.simulation import Simulation, SimulationLog, SimulationSnapshot
+from ...models.user import ProviderConfig, SearchProviderConfig, User
 from ...schemas.common import Message
 from ...schemas.simtree import (
     SimulationTreeAdvanceChainPayload,
@@ -591,6 +592,7 @@ async def simulation_tree_state(
             {
                 "name": name,
                 "role": agent.properties.get("role"),
+                "emotion": agent.emotion,
                 "plan_state": agent.plan_state,
                 "short_memory": agent.short_memory.get_all(),
             }

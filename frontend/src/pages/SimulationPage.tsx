@@ -203,6 +203,36 @@ export function SimulationPage() {
           });
           return;
         }
+        if (payload.type === "emotion_update") {
+          const data = payload.data ?? {};
+          const agentName = String(data.agent ?? "");
+          const emotion = String(data.emotion ?? "");
+          setAgents((prev) => {
+            const idx = prev.findIndex((agent) => agent.name === agentName);
+            if (idx === -1) return prev;
+            const copy = [...prev];
+            const target = copy[idx]!;
+            copy[idx] = { ...target, emotion } as any;
+            return copy;
+          });
+          setEvents((prev) => [...prev, payload]);
+          return;
+        }
+        if (payload.type === "plan_update") {
+          const data = payload.data ?? {};
+          const agentName = String(data.agent ?? "");
+          const plan = (data.plan ?? {}) as any;
+          setAgents((prev) => {
+            const idx = prev.findIndex((agent) => agent.name === agentName);
+            if (idx === -1) return prev;
+            const copy = [...prev];
+            const target = copy[idx]!;
+            copy[idx] = { ...target, plan_state: plan } as any;
+            return copy;
+          });
+          setEvents((prev) => [...prev, payload]);
+          return;
+        }
         setEvents((prev) => [...prev, payload]);
       });
       nodeWsRef.current = ws;
@@ -466,6 +496,10 @@ export function SimulationPage() {
     return memory.map((entry) => ({ role: String(entry.role ?? ""), content: String(entry.content ?? "") }));
   }, [agents, selectedAgent]);
 
+  const selectedAgentInfo = useMemo(() => agents.find((a) => a.name === selectedAgent), [agents, selectedAgent]);
+  const selectedEmotion = selectedAgentInfo?.emotion || "neutral";
+  const selectedPlan = selectedAgentInfo?.plan_state as any;
+
   const formattedEvents = useMemo(() => {
     return (events || []).map((event, idx) => formatEvent(event, idx, t)).filter(Boolean) as JSX.Element[];
   }, [events, t]);
@@ -708,7 +742,7 @@ export function SimulationPage() {
                 whiteSpace: "pre-wrap",
               }}
             >
-              {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>No events yet.</div>}
+              {formattedEvents.length ? formattedEvents : <div style={{ color: "#94a3b8" }}>{t('sim.noEvents')}</div>}
             </div>
           </section>
 
@@ -725,10 +759,55 @@ export function SimulationPage() {
             <AppSelect
               options={agents.map((agent) => ({ value: agent.name, label: agent.name }))}
               value={selectedAgent}
-              placeholder="No agents"
+              placeholder={t('sim.noAgents')}
               onChange={setSelectedAgent}
               size="small"
             />
+            <div className="card" style={{ marginTop: "0.5rem", display: "grid", gap: "0.35rem" }}>
+              <div className="panel-subtitle">{t('sim.agentStatus.title')}</div>
+              <div>
+                <strong>{t('sim.agentStatus.emotion')}:</strong> {String(selectedEmotion)}
+              </div>
+              <div>
+                <strong>{t('sim.agentStatus.plan')}</strong>
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.goals')}</div>
+                  {Array.isArray(selectedPlan?.goals) && selectedPlan.goals.length ? (
+                    <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
+                      {selectedPlan.goals.map((g: any) => (
+                        <li key={g.id}>
+                          [{String(g.id)}] {String(g.desc)} ({t('sim.agentStatus.priority')}: {String(g.priority)}, {t('sim.status').toLowerCase()}: {String(g.status)})
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ color: "#94a3b8" }}>{t('common.none')}</div>
+                  )}
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.milestones')}</div>
+                  {Array.isArray(selectedPlan?.milestones) && selectedPlan.milestones.length ? (
+                    <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
+                      {selectedPlan.milestones.map((m: any) => (
+                        <li key={m.id}>
+                          [{String(m.id)}] {String(m.desc)} ({t('sim.status')}: {String(m.status)})
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ color: "#94a3b8" }}>{t('common.none')}</div>
+                  )}
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.strategy')}</div>
+                  <div>{String(selectedPlan?.strategy || "") || t('common.none')}</div>
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{t('sim.agentStatus.notes')}</div>
+                  <div>{String(selectedPlan?.notes || "") || t('common.none')}</div>
+                </div>
+              </div>
+            </div>
             <div
               ref={agentRef}
               className="card scroll-panel"
@@ -751,7 +830,7 @@ export function SimulationPage() {
                   ))}
                 </ul>
               ) : (
-                <div style={{ color: "#94a3b8" }}>No agent messages yet.</div>
+                <div style={{ color: "#94a3b8" }}>{t('sim.noAgentMsgs')}</div>
               )}
             </div>
           </section>

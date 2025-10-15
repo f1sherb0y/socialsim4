@@ -114,10 +114,20 @@ export async function getSimEvents(id: string, node: number): Promise<any[]> {
 
 export type AgentMemory = { role: string; content: string };
 
+export type PlanGoal = { id: string; desc: string; priority: string; status: string };
+export type PlanMilestone = { id: string; desc: string; status: string };
+export type PlanState = {
+  goals: PlanGoal[];
+  milestones: PlanMilestone[];
+  strategy: string;
+  notes: string;
+};
+
 export type AgentInfo = {
   name: string;
   role?: string;
-  plan_state: unknown;
+  emotion?: string;
+  plan_state: PlanState;
   short_memory: AgentMemory[];
 };
 

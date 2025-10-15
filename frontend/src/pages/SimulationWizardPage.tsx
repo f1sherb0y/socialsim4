@@ -52,6 +52,7 @@ export function SimulationWizardPage() {
   }, [currentScene]);
 
   const SIMPLE_CHAT_SCENE = "simple_chat_scene";
+  const EMOTIONAL_CONFLICT_SCENE = "emotional_conflict_scene";
   const defaultSimpleAgents = useMemo(
     () => [
       {
@@ -79,6 +80,26 @@ export function SimulationWizardPage() {
   // Default agents per scene (lightweight templates for quick start)
   const defaultAgentsForScene = (type: string) => {
     if (type === SIMPLE_CHAT_SCENE) return defaultSimpleAgents;
+    if (type === EMOTIONAL_CONFLICT_SCENE) return [
+      {
+        name: "Host",
+        profile:
+          "You are the host of the emotional dialogue room. Your role is to maintain order, keep the conversation balanced, and help both sides express their true feelings and find understanding.",
+        action_space: ["send_message"],
+      },
+      {
+        name: "Lily",
+        profile:
+          "You are Lily, a straightforward and emotional person. You feel your partner Alex has been distant lately — always on the phone, not replying to your messages. You easily swing between anger, sadness, and a fragile hope that Alex still cares.",
+        action_space: ["send_message"],
+      },
+      {
+        name: "Alex",
+        profile:
+          "You are Alex, Lily’s partner. You are introverted and tend to avoid conflict. Recently you’ve been under work pressure, but you haven’t explained it clearly to Lily, causing misunderstandings. In the conversation, you may start defensive or cold, but gradually show regret and a wish to reconcile.",
+        action_space: ["send_message"],
+      },
+    ];
     if (type === "council_scene") return [
       { name: "Host", profile: "Neutral chair of the council.", action_space: ["send_message"] },
       { name: "Rep. Chen Wei", profile: "Centrist economist.", action_space: ["send_message"] },
@@ -116,6 +137,14 @@ export function SimulationWizardPage() {
   const handleSelectScene = (scene: SceneOption) => {
     setSceneType(scene.type);
     const cfg = { ...(scene.config_schema || {}) } as Record<string, any>;
+    // Emotional conflict scene custom defaults
+    if (scene.type === EMOTIONAL_CONFLICT_SCENE) {
+      cfg.emotion_enabled = true;
+      cfg.initial_events = [
+        "Participants: Host, Lily, Alex",
+        "Scene start: Lily feels Alex has become emotionally distant, while Alex thinks Lily is overreacting. The host will guide them to express their emotions and seek resolution.",
+      ];
+    }
     setSceneConfig(cfg);
     setAgents(defaultAgentsForScene(scene.type));
     setLastSceneType(scene.type);
@@ -322,6 +351,23 @@ export function SimulationWizardPage() {
               <div className="panel-title">{t('wizard.configureScene')}</div>
               {currentScene ? (
                 <div style={{ display: "grid", gap: "0.75rem", marginTop: "0.5rem" }}>
+                  {/* Emotional features (only for Emotional Conflict Scene) */}
+                  {sceneType === EMOTIONAL_CONFLICT_SCENE && (
+                    <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <div>
+                        <div className="panel-subtitle">{t('wizard.emotionEnabled')}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{t('wizard.emotionHint')}</div>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(sceneConfig.emotion_enabled)}
+                          onChange={(e) => setSceneConfig((prev) => ({ ...prev, emotion_enabled: e.target.checked }))}
+                        />
+                        {Boolean(sceneConfig.emotion_enabled) ? t('common.show') : t('common.hide')}
+                      </label>
+                    </div>
+                  )}
                   {/* Events configuration */}
                   <div className="card" style={{ display: "grid", gap: "0.5rem" }}>
                     <div className="panel-subtitle">{t('wizard.events') || 'Initial events'}</div>

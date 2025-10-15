@@ -82,6 +82,7 @@ ACTION_SPACE_MAP = {
 
 SCENE_MAP = {
     "simple_chat_scene": SimpleChatScene,
+    "emotional_conflict_scene": SimpleChatScene,
     "council_scene": CouncilScene,
     "village_scene": VillageScene,
     "werewolf_scene": WerewolfScene,
@@ -95,6 +96,10 @@ ORDERING_MAP = _ORDERING_MAP
 # with ACTION_SPACE_MAP keys.
 SCENE_ACTIONS: dict[str, dict[str, list[str]]] = {
     "simple_chat_scene": {
+        "basic": ["send_message", "yield"],
+        "allowed": ["web_search", "view_page"],
+    },
+    "emotional_conflict_scene": {
         "basic": ["send_message", "yield"],
         "allowed": ["web_search", "view_page"],
     },
@@ -119,6 +124,7 @@ SCENE_ACTIONS: dict[str, dict[str, list[str]]] = {
 # Scene descriptions for selection UI and docs
 SCENE_DESCRIPTIONS: dict[str, str] = {
     "simple_chat_scene": "Open chat room with optional web tools. Agents converse naturally; use search/page tools when needed.",
+    "emotional_conflict_scene": "Guided emotional dialogue among participants in a chat room; designed to surface and reconcile feelings.",
     "council_scene": "Legislative council debate and voting around a draft text; supports voting and status actions.",
     "village_scene": "Grid-based village simulation with movement, looking around, gathering, and resting.",
     "werewolf_scene": "Social deduction game with night/day phases and role-specific actions (moderated flow).",
