@@ -1,9 +1,10 @@
 import asyncio
 import os
+from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlparse
 
 import pytest
-from fastapi.testclient import TestClient
+from litestar.testing import TestClient
 from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -11,7 +12,6 @@ from socialsim4.backend.core.config import get_settings
 from socialsim4.backend.db.base import Base
 from socialsim4.backend.models.token import RefreshToken, VerificationToken
 from socialsim4.backend.models.user import User
-from socialsim4.backend.dependencies import get_db_session, get_email_sender
 from socialsim4.backend.main import app
 
 
@@ -46,14 +46,15 @@ def _clean_database() -> None:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def override_db_session() -> None:
-    async def override_get_db_session():
+def override_db_session(monkeypatch) -> None:
+    @asynccontextmanager
+    async def _test_get_session():
         async with TestSessionLocal() as session:
             yield session
 
-    app.dependency_overrides[get_db_session] = override_get_db_session
+    monkeypatch.setattr("socialsim4.backend.core.database.get_session", _test_get_session)
+    monkeypatch.setattr("socialsim4.backend.api.routes.auth.get_session", _test_get_session)
     yield
-    app.dependency_overrides.pop(get_db_session, None)
 
 
 @pytest.fixture(autouse=True)
@@ -86,9 +87,9 @@ def email_stub():
             return True
 
     sender = DummySender()
-    app.dependency_overrides[get_email_sender] = lambda: sender
+    monkeypatch.setattr("socialsim4.backend.dependencies.get_email_sender", lambda: sender)
+    monkeypatch.setattr("socialsim4.backend.api.routes.auth.get_email_sender", lambda: sender)
     yield sender
-    app.dependency_overrides.pop(get_email_sender, None)
 
 
 @pytest.fixture

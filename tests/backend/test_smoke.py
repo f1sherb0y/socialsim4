@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+from litestar.testing import TestClient
 
 from socialsim4.backend.main import app
 

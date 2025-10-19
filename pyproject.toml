@@ -7,7 +7,7 @@ packages = [{ include = "socialsim4", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.112.0"
+litestar = "^2.8.3"
 uvicorn = { extras = ["standard"], version = "^0.30.0" }
 sqlalchemy = "^2.0.23"
 psycopg = { extras = ["binary"], version = "^3.1.18" }

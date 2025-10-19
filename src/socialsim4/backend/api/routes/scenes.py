@@ -1,10 +1,7 @@
-from fastapi import APIRouter
-
 from socialsim4.core.agent import Agent
 from socialsim4.core.registry import SCENE_ACTIONS, SCENE_DESCRIPTIONS, SCENE_MAP
+from litestar import Router, get
 
-
-router = APIRouter()
 
 PUBLIC_SCENE_KEYS = {key for key in SCENE_MAP.keys()} - {"village_scene"}
 
@@ -85,7 +82,7 @@ def scene_config_template(scene_key: str, scene_cls) -> dict:
     }
 
 
-@router.get("/")
+@get("/")
 async def list_scenes() -> list[dict]:
     scenes: list[dict] = []
     for key, cls in SCENE_MAP.items():
@@ -93,3 +90,6 @@ async def list_scenes() -> list[dict]:
             continue
         scenes.append(scene_config_template(key, cls))
     return scenes
+
+
+router = Router(path="/scenes", route_handlers=[list_scenes])

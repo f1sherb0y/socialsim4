@@ -1,12 +1,8 @@
-from fastapi import APIRouter
-
 from ...core.config import get_settings
+from litestar import Router, get
 
 
-router = APIRouter()
-
-
-@router.get("/")
+@get("/")
 async def read_config() -> dict:
     settings = get_settings()
     return {
@@ -14,3 +10,6 @@ async def read_config() -> dict:
         "debug": settings.debug,
         "allowed_origins": settings.allowed_origins,
     }
+
+
+router = Router(path="/config", route_handlers=[read_config])
