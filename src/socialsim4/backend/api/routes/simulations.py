@@ -172,7 +172,7 @@ async def create_simulation(request: Request, payload: SimulationCreate) -> Simu
         return SimulationBase.model_validate(sim)
 
 
-@get("/{simulation_id}")
+@get("/{simulation_id:str}")
 async def read_simulation(request: Request, simulation_id: str) -> SimulationBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -181,7 +181,7 @@ async def read_simulation(request: Request, simulation_id: str) -> SimulationBas
         return SimulationBase.model_validate(sim)
 
 
-@patch("/{simulation_id}")
+@patch("/{simulation_id:str}")
 async def update_simulation(request: Request, simulation_id: str, payload: SimulationUpdate) -> SimulationBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -200,7 +200,7 @@ async def update_simulation(request: Request, simulation_id: str, payload: Simul
         return SimulationBase.model_validate(sim)
 
 
-@delete("/{simulation_id}", status_code=204)
+@delete("/{simulation_id:str}", status_code=204)
 async def delete_simulation(request: Request, simulation_id: str) -> None:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -211,7 +211,7 @@ async def delete_simulation(request: Request, simulation_id: str) -> None:
         SIM_TREE_REGISTRY.remove(simulation_id)
 
 
-@post("/{simulation_id}/save", status_code=201)
+@post("/{simulation_id:str}/save", status_code=201)
 async def create_snapshot(request: Request, simulation_id: str, payload: SnapshotCreate) -> SnapshotBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -240,7 +240,7 @@ async def create_snapshot(request: Request, simulation_id: str, payload: Snapsho
         return SnapshotBase.model_validate(snapshot)
 
 
-@get("/{simulation_id}/snapshots")
+@get("/{simulation_id:str}/snapshots")
 async def list_snapshots(request: Request, simulation_id: str) -> list[SnapshotBase]:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -255,7 +255,7 @@ async def list_snapshots(request: Request, simulation_id: str) -> list[SnapshotB
         return [SnapshotBase.model_validate(s) for s in snapshots]
 
 
-@get("/{simulation_id}/logs")
+@get("/{simulation_id:str}/logs")
 async def list_logs(request: Request, simulation_id: str, limit: int = 200) -> list[SimulationLogEntry]:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -271,7 +271,7 @@ async def list_logs(request: Request, simulation_id: str, limit: int = 200) -> l
         return [SimulationLogEntry.model_validate(log) for log in logs]
 
 
-@post("/{simulation_id}/start")
+@post("/{simulation_id:str}/start")
 async def start_simulation(request: Request, simulation_id: str) -> Message:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -283,7 +283,7 @@ async def start_simulation(request: Request, simulation_id: str) -> Message:
         return Message(message="Simulation start enqueued")
 
 
-@post("/{simulation_id}/resume")
+@post("/{simulation_id:str}/resume")
 async def resume_simulation(request: Request, simulation_id: str, snapshot_id: int | None = None) -> Message:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -315,7 +315,7 @@ async def resume_simulation(request: Request, simulation_id: str, snapshot_id: i
         return Message(message="Simulation resume enqueued")
 
 
-@post("/{simulation_id}/copy", status_code=201)
+@post("/{simulation_id:str}/copy", status_code=201)
 async def copy_simulation(request: Request, simulation_id: str) -> SimulationBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -338,7 +338,7 @@ async def copy_simulation(request: Request, simulation_id: str) -> SimulationBas
         return SimulationBase.model_validate(new_sim)
 
 
-@get("/{simulation_id}/tree/graph")
+@get("/{simulation_id:str}/tree/graph")
 async def simulation_tree_graph(request: Request, simulation_id: str) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -376,7 +376,7 @@ async def simulation_tree_graph(request: Request, simulation_id: str) -> dict:
         }
 
 
-@post("/{simulation_id}/tree/advance_frontier")
+@post("/{simulation_id:str}/tree/advance_frontier")
 async def simulation_tree_advance_frontier(
     request: Request,
     simulation_id: str,
@@ -426,7 +426,7 @@ async def simulation_tree_advance_frontier(
         return {"children": [int(c) for c in produced]}
 
 
-@post("/{simulation_id}/tree/advance_multi")
+@post("/{simulation_id:str}/tree/advance_multi")
 async def simulation_tree_advance_multi(
     request: Request,
     simulation_id: str,
@@ -478,7 +478,7 @@ async def simulation_tree_advance_multi(
         return {"children": [int(c) for c in result_children]}
 
 
-@post("/{simulation_id}/tree/advance_chain")
+@post("/{simulation_id:str}/tree/advance_chain")
 async def simulation_tree_advance_chain(
     request: Request,
     simulation_id: str,
@@ -523,7 +523,7 @@ async def simulation_tree_advance_chain(
         return {"child": int(last)}
 
 
-@post("/{simulation_id}/tree/branch")
+@post("/{simulation_id:str}/tree/branch")
 async def simulation_tree_branch(
     request: Request,
     simulation_id: str,
@@ -552,22 +552,21 @@ async def simulation_tree_branch(
         return {"child": int(cid)}
 
 
-@delete("/{simulation_id}/tree/node/{node_id}")
+@delete("/{simulation_id:str}/tree/node/{node_id:int}")
 async def simulation_tree_delete_subtree(
     request: Request,
     simulation_id: str,
     node_id: int,
-) -> dict:
+) -> None:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
         record.tree.delete_subtree(int(node_id))
         _broadcast(record, {"type": "deleted", "data": {"node": int(node_id)}})
-        return {"ok": True}
 
 
-@get("/{simulation_id}/tree/sim/{node_id}/events")
+@get("/{simulation_id:str}/tree/sim/{node_id:int}/events")
 async def simulation_tree_events(request: Request, simulation_id: str, node_id: int) -> list:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -578,7 +577,7 @@ async def simulation_tree_events(request: Request, simulation_id: str, node_id: 
         return node.get("logs", [])
 
 
-@get("/{simulation_id}/tree/sim/{node_id}/state")
+@get("/{simulation_id:str}/tree/sim/{node_id:int}/state")
 async def simulation_tree_state(request: Request, simulation_id: str, node_id: int) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -601,56 +600,56 @@ async def simulation_tree_state(request: Request, simulation_id: str, node_id: i
         return {"turns": simulator.turns, "agents": agents}
 
 
-@websocket("/{simulation_id}/tree/events")
-async def simulation_tree_events_ws(websocket: WebSocket, simulation_id: str) -> None:
+@websocket("/{simulation_id:str}/tree/events")
+async def simulation_tree_events_ws(socket: WebSocket, simulation_id: str) -> None:
     print("incoming conn!!!!")
-    token = websocket.query_params.get("token")
+    token = socket.query_params.get("token")
     async with get_session() as session:
         user = await _resolve_user_from_token(token or "", session)
         if user is None:
-            await websocket.close(code=1008)
+            await socket.close(code=1008)
             return
         sim = await _get_simulation_for_owner(session, user.id, simulation_id)
         record = await _get_tree_record(sim, session, user.id)
-    await websocket.accept()
+    await socket.accept()
     queue: asyncio.Queue = asyncio.Queue()
     record.subs.append(queue)
     print("sub added, record accepted")
     try:
         while True:
             event = await queue.get()
-            await websocket.send_json(event)
+            await socket.send_json(event)
     finally:
         if queue in record.subs:
             record.subs.remove(queue)
 
 
-@websocket("/{simulation_id}/tree/{node_id}/events")
+@websocket("/{simulation_id:str}/tree/{node_id:int}/events")
 async def simulation_tree_node_events_ws(
-    websocket: WebSocket,
+    socket: WebSocket,
     simulation_id: str,
     node_id: int,
 ) -> None:
     print("incoming conn!!!!")
-    token = websocket.query_params.get("token")
+    token = socket.query_params.get("token")
     async with get_session() as session:
         user = await _resolve_user_from_token(token or "", session)
         if user is None:
-            await websocket.close(code=1008)
+            await socket.close(code=1008)
             return
         sim = await _get_simulation_for_owner(session, user.id, simulation_id)
         record = await _get_tree_record(sim, session, user.id)
 
         if int(node_id) not in record.tree.nodes:
-            await websocket.close(code=1008)
+            await socket.close(code=1008)
             return
-    await websocket.accept()
+    await socket.accept()
     queue: asyncio.Queue = asyncio.Queue()
     record.tree.add_node_sub(int(node_id), queue)
     try:
         while True:
             event = await queue.get()
-            await websocket.send_json(event)
+            await socket.send_json(event)
     finally:
         record.tree.remove_node_sub(int(node_id), queue)
 

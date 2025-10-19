@@ -46,7 +46,7 @@ async def create_search_provider(request: Request, payload: SearchProviderCreate
         return _serialize(provider)
 
 
-@patch("/{provider_id}")
+@patch("/{provider_id:int}")
 async def update_search_provider(request: Request, provider_id: int, payload: SearchProviderUpdate) -> SearchProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -68,7 +68,7 @@ async def update_search_provider(request: Request, provider_id: int, payload: Se
         return _serialize(provider)
 
 
-@delete("/{provider_id}", status_code=204)
+@delete("/{provider_id:int}", status_code=204)
 async def delete_search_provider(request: Request, provider_id: int) -> None:
     token = extract_bearer_token(request)
     async with get_session() as session:

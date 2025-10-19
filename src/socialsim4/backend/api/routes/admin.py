@@ -232,7 +232,7 @@ async def admin_stats(request: Request, period: str = "day") -> dict:
         }
 
 
-@patch("/users/{user_id}/role")
+@patch("/users/{user_id:int}/role")
 async def admin_update_user_role(request: Request, user_id: int, payload: RoleUpdate) -> UserPublic:
     token = extract_bearer_token(request)
     async with get_session() as session:

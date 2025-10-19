@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     debug: bool = False
     app_name: str = "SocialSim4 Backend"
     api_prefix: str = "/api"
+    backend_root_path: str = ""
+    frontend_dist_path: str | None = None
 
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000

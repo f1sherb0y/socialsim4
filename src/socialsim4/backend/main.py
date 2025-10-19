@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from litestar import Litestar, Router
+from litestar.config.app import AppConfig
 from litestar.config.cors import CORSConfig
 from litestar.openapi import OpenAPIConfig
 from litestar.static_files import StaticFilesConfig
@@ -47,15 +48,19 @@ def create_app() -> Litestar:
     api_prefix = settings.api_prefix or "/api"
     api_routes = Router(path=api_prefix, route_handlers=[api_router])
 
-    return Litestar(
-        route_handlers=[api_routes],
-        on_startup=[_prepare_database],
-        cors_config=cors_config,
-        debug=settings.debug,
-        root_path=settings.backend_root_path,
-        openapi_config=OpenAPIConfig(title=settings.app_name),
-        static_files_config=static_files_config,
-    )
+    app_kwargs: dict = {
+        "route_handlers": [api_routes],
+        "on_startup": [_prepare_database],
+        "cors_config": cors_config,
+        "debug": settings.debug,
+        "openapi_config": OpenAPIConfig(title=settings.app_name, version="1.0.0"),
+        "static_files_config": static_files_config,
+    }
+
+    if settings.backend_root_path:
+        app_kwargs["app_config"] = AppConfig(root_path=settings.backend_root_path)
+
+    return Litestar(**app_kwargs)
 
 
 app = create_app()

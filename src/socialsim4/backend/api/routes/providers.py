@@ -59,7 +59,7 @@ async def create_provider(request: Request, payload: ProviderCreate) -> Provider
         return _serialize_provider(provider)
 
 
-@patch("/{provider_id}")
+@patch("/{provider_id:int}")
 async def update_provider(request: Request, provider_id: int, payload: ProviderUpdate) -> ProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -85,7 +85,7 @@ async def update_provider(request: Request, provider_id: int, payload: ProviderU
         return _serialize_provider(provider)
 
 
-@delete("/{provider_id}", status_code=204)
+@delete("/{provider_id:int}", status_code=204)
 async def delete_provider(request: Request, provider_id: int) -> None:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -96,7 +96,7 @@ async def delete_provider(request: Request, provider_id: int) -> None:
         await session.commit()
 
 
-@post("/{provider_id}/test")
+@post("/{provider_id:int}/test")
 async def test_provider(request: Request, provider_id: int) -> Message:
     token = extract_bearer_token(request)
     async with get_session() as session:
@@ -126,7 +126,7 @@ async def test_provider(request: Request, provider_id: int) -> Message:
         return Message(message="Provider connectivity verified")
 
 
-@post("/{provider_id}/activate")
+@post("/{provider_id:int}/activate")
 async def activate_provider(request: Request, provider_id: int) -> Message:
     token = extract_bearer_token(request)
     async with get_session() as session:
