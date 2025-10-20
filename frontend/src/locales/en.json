@@ -4,7 +4,8 @@
     "hide": "Hide",
     "show": "Show",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "none": "(none)"
   },
   "brand": "SocialSim4",
   "nav": {
@@ -12,6 +13,8 @@
     "new": "New",
     "saved": "Saved",
     "settings": "Settings",
+    "docs": "Docs",
+    "admin": "Admin",
     "login": "Login",
     "register": "Register",
     "signout": "Sign out"
@@ -58,7 +61,9 @@
     "tabs": {
       "profile": "Profile",
       "security": "Security",
-      "providers": "Providers"
+      "providers": "Providers",
+      "llmProviders": "LLM providers",
+      "searchProviders": "Search providers"
     },
     "profile": {
       "email": "Email",
@@ -73,6 +78,10 @@
     "providers": {
       "title": "Provider integrations",
       "add": "Add provider",
+      "llmTab": "LLM providers",
+      "searchTab": "Search providers",
+      "setSearchProvider": "Configure Search Provider",
+      "searchTitle": "Search provider",
       "fields": {
         "label": "Label",
         "provider": "Provider",
@@ -82,6 +91,13 @@
       },
       "save": "Save provider",
       "test": "Test connectivity",
+      "makeActive": "Use",
+      "current": "Current provider: {{name}}",
+      "activeTag": "Active",
+      "testOk": "Connectivity verified",
+      "testFail": "Test failed",
+      "createFailed": "Failed to add provider.",
+      "deleteActiveConfirm": "This provider is currently active. Delete anyway?",
       "hasKey": "Key stored",
       "neverTested": "never tested",
       "loading": "Loading…",
@@ -115,7 +131,9 @@
     "loadingScenes": "Loading scenes…",
     "fetchScenesError": "Unable to fetch scenes.",
     "basicActions": "Basic actions",
-    "allowedActions": "Allowed actions"
+    "allowedActions": "Allowed actions",
+    "emotionEnabled": "Enable emotion tracking",
+    "emotionHint": "When enabled, agents emit emotion updates each turn."
   },
   "auth": {
     "login": {
@@ -138,6 +156,8 @@
       "submit": "Create account",
       "success": "Registration successful. Check your email.",
       "failed": "Registration failed",
+      "invalidPhone": "Invalid phone number format. Use +123456789 (8–15 digits).",
+      "invalidPhoneTitle": "Use E.164 format: +123456789 (8–15 digits)",
       "have": "Already registered?",
       "signin": "Sign in"
     }
@@ -174,6 +194,79 @@
     "dealTag": "Deal",
     "bottom": "Bottom",
     "status": "Status",
-    "syncing": "Syncing…"
+    "syncing": "Syncing…",
+    "agentStatus": {
+      "title": "Agent status",
+      "emotion": "Emotion",
+      "plan": "Plan",
+      "goals": "Goals",
+      "milestones": "Milestones",
+      "strategy": "Strategy",
+      "notes": "Notes",
+      "priority": "priority"
+    }
+  },
+  "admin": {
+    "title": "Admin Console",
+    "noAccess": "You do not have permission to view this page.",
+    "common": {
+      "from": "From",
+      "to": "To",
+      "sort": "Sort",
+      "active": "Active",
+      "disabled": "Disabled",
+      "fetchError": "Failed to fetch data.",
+      "all": "All"
+    },
+    "users": {
+      "title": "Users",
+      "name": "Name",
+      "organization": "Organization",
+      "sort": {
+        "nameAsc": "Name ↑",
+        "nameDesc": "Name ↓",
+        "orgAsc": "Org ↑",
+        "orgDesc": "Org ↓",
+        "createdAsc": "Created ↑",
+        "createdDesc": "Created ↓"
+      },
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "organization": "Organization",
+        "created": "Created at",
+        "status": "Status",
+        "role": "Role"
+      }
+    },
+    "sims": {
+      "title": "Simulations",
+      "username": "Username",
+      "scene": "Scene type",
+      "sort": {
+        "usernameAsc": "Username ↑",
+        "usernameDesc": "Username ↓",
+        "sceneAsc": "Scene ↑",
+        "sceneDesc": "Scene ↓",
+        "createdAsc": "Created ↑",
+        "createdDesc": "Created ↓"
+      },
+      "columns": {
+        "user": "User",
+        "name": "Name",
+        "scene": "Scene",
+        "created": "Created at"
+      }
+    },
+    "stats": {
+      "title": "Statistics",
+      "period": "Period",
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly",
+      "simRuns": "Simulation runs",
+      "userVisits": "User visits",
+      "userSignups": "User signups"
+    }
   }
 }

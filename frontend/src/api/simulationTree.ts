@@ -13,7 +13,7 @@ export type Graph = {
 
 export async function getTreeGraph(id: string): Promise<Graph | null> {
   try {
-    const { data } = await apiClient.get<Graph>(`/simulations/${id}/tree/graph`);
+    const { data } = await apiClient.get<Graph>(`simulations/${id}/tree/graph`);
     return data;
   } catch (error: any) {
     if (error?.response?.status === 404) return null;
@@ -61,7 +61,7 @@ export async function treeAdvanceFrontier(
   turns: number,
   onlyMaxDepth = false,
 ): Promise<{ children: number[] }> {
-  const { data } = await apiClient.post<{ children: number[] }>(`/simulations/${id}/tree/advance_frontier`, {
+  const { data } = await apiClient.post<{ children: number[] }>(`simulations/${id}/tree/advance_frontier`, {
     turns,
     only_max_depth: onlyMaxDepth,
   });
@@ -74,7 +74,7 @@ export async function treeAdvanceMulti(
   turns: number,
   count: number,
 ): Promise<{ children: number[] }> {
-  const { data } = await apiClient.post<{ children: number[] }>(`/simulations/${id}/tree/advance_multi`, {
+  const { data } = await apiClient.post<{ children: number[] }>(`simulations/${id}/tree/advance_multi`, {
     parent,
     turns,
     count,
@@ -87,7 +87,7 @@ export async function treeAdvanceChain(
   parent: number,
   turns: number,
 ): Promise<{ child: number }> {
-  const { data } = await apiClient.post<{ child: number }>(`/simulations/${id}/tree/advance_chain`, {
+  const { data } = await apiClient.post<{ child: number }>(`simulations/${id}/tree/advance_chain`, {
     parent,
     turns,
   });
@@ -95,7 +95,7 @@ export async function treeAdvanceChain(
 }
 
 export async function treeBranchPublic(id: string, parent: number, text: string): Promise<{ child: number }> {
-  const { data } = await apiClient.post<{ child: number }>(`/simulations/${id}/tree/branch`, {
+  const { data } = await apiClient.post<{ child: number }>(`simulations/${id}/tree/branch`, {
     parent,
     ops: [{ op: "public_broadcast", text }],
   });
@@ -103,21 +103,31 @@ export async function treeBranchPublic(id: string, parent: number, text: string)
 }
 
 export async function treeDeleteSubtree(id: string, nodeId: number): Promise<{ ok: boolean }> {
-  const { data } = await apiClient.delete<{ ok: boolean }>(`/simulations/${id}/tree/node/${nodeId}`);
+  const { data } = await apiClient.delete<{ ok: boolean }>(`simulations/${id}/tree/node/${nodeId}`);
   return data;
 }
 
 export async function getSimEvents(id: string, node: number): Promise<any[]> {
-  const { data } = await apiClient.get<any[]>(`/simulations/${id}/tree/sim/${node}/events`);
+  const { data } = await apiClient.get<any[]>(`simulations/${id}/tree/sim/${node}/events`);
   return data;
 }
 
 export type AgentMemory = { role: string; content: string };
 
+export type PlanGoal = { id: string; desc: string; priority: string; status: string };
+export type PlanMilestone = { id: string; desc: string; status: string };
+export type PlanState = {
+  goals: PlanGoal[];
+  milestones: PlanMilestone[];
+  strategy: string;
+  notes: string;
+};
+
 export type AgentInfo = {
   name: string;
   role?: string;
-  plan_state: unknown;
+  emotion?: string;
+  plan_state: PlanState;
   short_memory: AgentMemory[];
 };
 
@@ -127,6 +137,6 @@ export type SimState = {
 };
 
 export async function getSimState(id: string, node: number): Promise<SimState> {
-  const { data } = await apiClient.get<SimState>(`/simulations/${id}/tree/sim/${node}/state`);
+  const { data } = await apiClient.get<SimState>(`simulations/${id}/tree/sim/${node}/state`);
   return data;
 }

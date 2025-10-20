@@ -2,9 +2,8 @@ import json
 import re
 import xml.etree.ElementTree as ET
 
+from socialsim4.core.config import MAX_REPEAT
 from socialsim4.core.memory import ShortTermMemory
-
-from .config import MAX_REPEAT
 
 # 假设的最大上下文字符长度（可调整，根据模型实际上下文窗口）
 MAX_CONTEXT_CHARS = 100000000
@@ -37,6 +36,8 @@ class Agent:
         self.max_repeat = max_repeat
         self.properties = kwargs
         self.log_event = event_handler
+        self.emotion = kwargs.get("emotion", "neutral")
+        self.emotion_enabled = bool(kwargs.get("emotion_enabled", False))
 
         # Lightweight, scene-agnostic plan state persisted across turns
         self.plan_state = {
@@ -98,10 +99,15 @@ Internal Notes:
         # Build action catalog and usage
         action_catalog = "\n".join([f"- {getattr(action, 'NAME', '')}: {getattr(action, 'DESC', '')}".strip() for action in self.action_space])
         action_instructions = "".join(getattr(action, "INSTRUCTION", "") for action in self.action_space)
+        examples_block = ""
+        if scene and scene.get_examples():
+            examples_block = f"Here are some examples:\n{scene.get_examples()}"
 
+        emotion_prompt = f"Your current emotion is {self.emotion}." if self.emotion_enabled else ""
         base = f"""
 You are {self.name}.
 You speak in a {self.style} style.
+{emotion_prompt}
 
 {self.user_profile}
 
@@ -128,7 +134,7 @@ Usage:
 {action_instructions}
 
 
-{("Here are some examples:\n" + scene.get_examples()) if (scene and scene.get_examples() != "") else ""}
+{examples_block}
 
 
 {self.get_output_format()}
@@ -140,7 +146,7 @@ Initial instruction:
         return base
 
     def get_output_format(self):
-        return """
+        base_prompt = """
 Planning guidelines:
 - The Goals, Milestones, Plan, and Current Focus you author here are your inner behavioral plans, not scene-wide commitments. Use them to decide Actions;
 - Goals: stable end-states. Rarely change; name and describe them briefly.
@@ -189,6 +195,23 @@ Strategy for This Turn: Based on your re-evaluation, state your immediate object
 //   <Notes>...</Notes>
 // Use numbered lists for Goals and Milestones.
 """
+        if self.emotion_enabled:
+            emotion_rules = """
+--- Emotion Update ---
+// This section is mandatory.
+Emotion Update Rules:
+- Always output one emotion after each turn to represent your affective state.
+- Use Plutchik’s 8 primary emotions: Joy, Trust, Fear, Surprise, Sadness, Disgust, Anger, Anticipation.
+- Combine two if appropriate to form a Dyad emotion (e.g., Joy + Anticipation = Hope).
+- Determine emotion by analyzing:
+  - Progress toward goals or milestones (positive → Joy/Trust; negative → Sadness/Fear).
+  - Novelty or unexpected events (→ Surprise).
+  - Conflict or obstacles (→ Anger or Disgust).
+  - Anticipation of success or new opportunity (→ Anticipation).
+- Prefer continuity; avoid abrupt switches unless major events occur.
+"""
+            return base_prompt + emotion_rules
+        return base_prompt
 
     def call_llm(self, clients, messages, client_name="chat"):
         client = clients.get(client_name)
@@ -232,14 +255,31 @@ History:
             full_response,
             re.DOTALL,
         )
-        plan_update_match = re.search(r"--- Plan Update ---\s*(.*)$", full_response, re.DOTALL)
+        plan_update_match = re.search(
+            r"--- Plan Update ---\s*(.*?)(?:\n--- Emotion Update ---|\Z)",
+            full_response,
+            re.DOTALL,
+        )
+        emotion_update_match = re.search(r"--- Emotion Update ---\s*(.*)$", full_response, re.DOTALL)
 
         thoughts = thoughts_match.group(1).strip() if thoughts_match else ""
         plan = plan_match.group(1).strip() if plan_match else ""
         action = action_match.group(1).strip() if action_match else ""
         plan_update_block = plan_update_match.group(1).strip() if plan_update_match else ""
+        emotion_update_block = emotion_update_match.group(1).strip() if emotion_update_match else ""
 
-        return thoughts, plan, action, plan_update_block
+        return thoughts, plan, action, plan_update_block, emotion_update_block
+
+    def _parse_emotion_update(self, block):
+        """Parse Emotion Update block.
+        Returns an emotion string or None (for 'no change').
+        """
+        if not block:
+            return None
+        text = block.strip()
+        if text.lower().startswith("no change"):
+            return None
+        return text
 
     def _parse_plan_update(self, block):
         """Parse Plan Update block in strict tag format.
@@ -348,11 +388,8 @@ History:
         self.plan_state = update
         if self.log_event:
             self.log_event(
-                "plan_update_applied",
-                {
-                    "agent": self.name,
-                    "kind": "replace",
-                },
+                "plan_update",
+                {"agent": self.name, "kind": "replace", "plan": update},
             )
         return True
 
@@ -414,11 +451,10 @@ History:
 
     def process(self, clients, initiative=False, scene=None):
         current_length = len(self.short_memory)
-        print(5, current_length, self.last_history_length)
         if current_length == self.last_history_length and not initiative:
             # 没有新事件，无反应
             return {}
-        print(6)
+
         # 检查并总结如果需要
 
         system_prompt = self.system_prompt(scene)
@@ -444,10 +480,22 @@ History:
         for i in range(attempts):
             llm_output = self.call_llm(clients, ctx)
             # print(f"{self.name} LLM output:\n{llm_output}\n{'-' * 40}")
-            thoughts, plan, action_block, plan_update_block = self._parse_full_response(llm_output)
+            (
+                thoughts,
+                plan,
+                action_block,
+                plan_update_block,
+                emotion_update_block,
+            ) = self._parse_full_response(llm_output)
             try:
                 action_data = self._parse_actions(action_block) or self._parse_actions(llm_output)
                 plan_update = self._parse_plan_update(plan_update_block)
+                if self.emotion_enabled:
+                    emotion_update = self._parse_emotion_update(emotion_update_block)
+                    if emotion_update:
+                        self.emotion = emotion_update
+                        if self.log_event:
+                            self.log_event("emotion_update", {"agent": self.name, "emotion": emotion_update})
                 last_exc = None
                 break
             except Exception as e:
@@ -463,9 +511,11 @@ History:
 
         self.short_memory.append("assistant", llm_output)
         if self.log_event:
-            self.log_event("agent_ctx_delta", {"agent": self.name, "role": "assistant", "content": llm_output})
+            self.log_event(
+                "agent_ctx_delta",
+                {"agent": self.name, "role": "assistant", "content": llm_output},
+            )
         self.last_history_length = len(self.short_memory)
-        print(action_data)
 
         return action_data
 
@@ -478,7 +528,10 @@ History:
         """
         self.short_memory.append("user", content)
         if self.log_event:
-            self.log_event("agent_ctx_delta", {"agent": self.name, "role": "user", "content": content})
+            self.log_event(
+                "agent_ctx_delta",
+                {"agent": self.name, "role": "user", "content": content},
+            )
 
     def append_env_message(self, content):
         """Deprecated: use add_env_feedback(). Kept for compatibility."""
@@ -502,6 +555,8 @@ History:
             "max_repeat": self.max_repeat,
             "properties": props,
             "plan_state": plan,
+            "emotion": self.emotion,
+            "emotion_enabled": self.emotion_enabled,
         }
 
     @classmethod
@@ -521,6 +576,11 @@ History:
             event_handler=event_handler,
             **props,
         )
+        agent.emotion = data.get("emotion", "neutral")
+        if "emotion_enabled" in data:
+            agent.emotion_enabled = data["emotion_enabled"]
+        else:
+            agent.emotion_enabled = props["emotion_enabled"]
         agent.short_memory.history = json.loads(json.dumps(data.get("short_memory", [])))
         agent.last_history_length = data.get("last_history_length", 0)
         agent.plan_state = json.loads(

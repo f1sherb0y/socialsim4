@@ -19,6 +19,7 @@ class Simulator:
         max_steps_per_turn=5,
         ordering: Optional[Ordering] = None,
         event_handler: Callable[[str, dict], None] = None,
+        emotion_enabled: bool = False,
     ):
         self.started = False
         self.log_event = event_handler
@@ -38,6 +39,7 @@ class Simulator:
         self.ordering.set_simulation(self)
         self.event_queue = Queue()
         self.order_iter = self.ordering.iter()
+        self.emotion_enabled = emotion_enabled
 
         # Initialize agents for the scene if it's a new simulation
         if broadcast_initial:
@@ -112,6 +114,7 @@ class Simulator:
             # Serialize pending event queue as a list of items
             "event_queue": list(self.event_queue.queue),
             "turns": int(self.turns),
+            "emotion_enabled": self.emotion_enabled,
         }
         return deepcopy(snap)
 
@@ -157,6 +160,7 @@ class Simulator:
             max_steps_per_turn=data.get("max_steps_per_turn", 5),
             ordering=ordering,
             event_handler=log_handler,
+            emotion_enabled=data["emotion_enabled"],
         )
         # Apply ordering state if provided
         simulator.ordering.deserialize(ordering_state)

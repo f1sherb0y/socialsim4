@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-/}
+    environment:
+      SOCIALSIM4_BACKEND_HOST: 0.0.0.0
+      SOCIALSIM4_BACKEND_PORT: 8000
+      SOCIALSIM4_FRONTEND_DIST_PATH: /app/frontend/dist
+      SOCIALSIM4_APP_BASE_URL: ${SOCIALSIM4_APP_BASE_URL:-http://localhost:${APP_PORT:-8080}}
+      SOCIALSIM4_JWT_SIGNING_KEY: ${SOCIALSIM4_JWT_SIGNING_KEY:-please-change-me}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-}
+      ADMIN_ORGANIZATION: ${ADMIN_ORGANIZATION:-}
+    ports:
+      - "${APP_PORT:-8080}:8000"
+    restart: unless-stopped

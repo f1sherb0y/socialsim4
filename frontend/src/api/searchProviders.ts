@@ -9,7 +9,7 @@ export type SearchProvider = {
 };
 
 export async function listSearchProviders(): Promise<SearchProvider[]> {
-  const { data } = await apiClient.get<SearchProvider[]>("/search-providers");
+  const { data } = await apiClient.get<SearchProvider[]>("search-providers");
   return data;
 }
 
@@ -19,7 +19,7 @@ export async function createSearchProvider(payload: {
   api_key?: string | null;
   config?: Record<string, unknown> | null;
 }): Promise<SearchProvider> {
-  const { data } = await apiClient.post<SearchProvider>("/search-providers", payload);
+  const { data } = await apiClient.post<SearchProvider>("search-providers", payload);
   return data;
 }
 
@@ -29,7 +29,6 @@ export async function updateSearchProvider(providerId: number, payload: {
   api_key?: string | null;
   config?: Record<string, unknown> | null;
 }): Promise<SearchProvider> {
-  const { data } = await apiClient.patch<SearchProvider>(`/search-providers/${providerId}`, payload);
+  const { data } = await apiClient.patch<SearchProvider>(`search-providers/${providerId}`, payload);
   return data;
 }
-

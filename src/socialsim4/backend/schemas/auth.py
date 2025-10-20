@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, field_validator
+import re
 
 
 class TokenPair(BaseModel):
@@ -22,6 +23,22 @@ class RegisterRequest(BaseModel):
     full_name: str
     phone_number: str
     password: str
+
+    @field_validator("email", "username", "full_name", "phone_number", mode="before")
+    @classmethod
+    def _strip_ws(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @field_validator("phone_number")
+    @classmethod
+    def _validate_phone(cls, value: str) -> str:
+        # E.164-like: optional '+', leading non-zero, total digits 8-15
+        pattern = re.compile(r"^\+?[1-9]\d{7,14}$")
+        if not pattern.match(value or ""):
+            raise ValueError("invalid phone number format")
+        return value
 
     @field_validator("password")
     @classmethod

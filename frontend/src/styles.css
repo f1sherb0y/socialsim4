@@ -47,6 +47,11 @@ html {
   /* red-600 */
 }
 
+/* Control sizing tokens */
+:root {
+  --control-sm: 30px;
+}
+
 body {
   margin: 0;
   font-family: inherit;
@@ -162,6 +167,7 @@ select.small,
 textarea.small {
   padding: 0.35rem 0.5rem;
   font-size: 0.9rem;
+  height: var(--control-sm);
 }
 
 /* Subtitle style */
@@ -237,6 +243,155 @@ textarea.small {
 .tab-button.active {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25));
   color: var(--text);
+}
+
+/* Docs sidebar items */
+.doc-nav-item {
+  display: block;
+  text-decoration: none;
+}
+
+.doc-nav-item:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+/* -------- MDX / Markdown content styling -------- */
+.doc-body {
+  line-height: 1.75;
+}
+
+.doc-body h1,
+.doc-body h2,
+.doc-body h3,
+.doc-body h4,
+.doc-body h5,
+.doc-body h6 {
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1.25rem 0 0.75rem;
+}
+
+.doc-body h1 {
+  font-size: 1.75rem;
+}
+
+.doc-body h2 {
+  font-size: 1.4rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
+
+.doc-body h3 {
+  font-size: 1.15rem;
+}
+
+.doc-body p {
+  margin: 0.75rem 0;
+}
+
+.doc-body a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.doc-body a:hover {
+  opacity: 0.9;
+}
+
+.doc-body ul,
+.doc-body ol {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+}
+
+.doc-body li {
+  margin: 0.25rem 0;
+}
+
+.doc-body blockquote {
+  margin: 0.9rem 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--accent-b);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--text);
+}
+
+.doc-body code {
+  background: rgba(148, 163, 184, 0.18);
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9em;
+}
+
+.doc-body pre {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  overflow: auto;
+  margin: 0.9rem 0;
+}
+
+:root.theme-light .doc-body pre {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.doc-body pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.code-copy-button {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.code-block-wrapper:hover .code-copy-button {
+  opacity: 1;
+}
+
+.doc-body hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 1rem 0;
+}
+
+.doc-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.doc-body th,
+.doc-body td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+.doc-body th {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+:root.theme-dark .doc-body th {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.doc-body img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.doc-body kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.85em;
 }
 
 .panel-header {
@@ -374,6 +529,26 @@ textarea::placeholder {
   cursor: pointer;
 }
 
+.icon-button:hover {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: var(--muted);
+}
+
+/* Square icon-only button variant */
+.icon-button.square {
+  width: var(--control-sm);
+  height: var(--control-sm);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button.square svg {
+  width: 16px;
+  height: 16px;
+}
+
 .text-button {
   border: none;
   background: transparent;
@@ -446,9 +621,12 @@ textarea::placeholder {
   background: var(--overlay-bg);
   backdrop-filter: blur(var(--overlay-blur));
   -webkit-backdrop-filter: blur(var(--overlay-blur));
-  padding: 5px; /* slightly relaxed */
-  z-index: 1000; /* above navbar */
-  font: inherit; /* match trigger font if wrapped in context */
+  padding: 5px;
+  /* slightly relaxed */
+  z-index: 1000;
+  /* above navbar */
+  font: inherit;
+  /* match trigger font if wrapped in context */
 }
 
 .select-option {
@@ -548,6 +726,23 @@ textarea::placeholder {
   border: 2px solid transparent;
 }
 
+/* Small inline spinner for icon-only buttons */
+@keyframes spin360 {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-b);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin360 0.8s linear infinite;
+}
+
 :root.theme-dark .scroll-panel::-webkit-scrollbar-thumb {
   background-color: rgba(148, 163, 184, 0.35);
 }
@@ -586,4 +781,69 @@ textarea::placeholder {
 
 .rf-controls {
   background: transparent !important;
+}
+
+.doc-body pre[class*="language-"],
+.doc-body code[class*="language-"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.92em;
+}
+
+/* Prism token colors (theme-aware but simple) */
+.doc-body .token.comment,
+.doc-body .token.prolog,
+.doc-body .token.doctype,
+.doc-body .token.cdata {
+  color: #94a3b8;
+}
+
+.doc-body .token.punctuation {
+  color: var(--muted);
+}
+
+.doc-body .token.selector,
+.doc-body .token.tag {
+  color: #f472b6;
+}
+
+.doc-body .token.property,
+.doc-body .token.boolean,
+.doc-body .token.number,
+.doc-body .token.constant,
+.doc-body .token.symbol {
+  color: #f59e0b;
+}
+
+.doc-body .token.attr-name,
+.doc-body .token.string,
+.doc-body .token.char,
+.doc-body .token.builtin,
+.doc-body .token.inserted {
+  color: #22c55e;
+}
+
+.doc-body .token.operator,
+.doc-body .token.entity,
+.doc-body .token.url {
+  color: #a78bfa;
+}
+
+.doc-body .token.atrule,
+.doc-body .token.keyword {
+  color: #38bdf8;
+}
+
+.doc-body .token.function,
+.doc-body .token.class-name {
+  color: #fb7185;
+}
+
+.doc-body .token.regex,
+.doc-body .token.important,
+.doc-body .token.variable {
+  color: #f97316;
+}
+
+.doc-body .token.deleted {
+  color: #ef4444;
 }

@@ -1,0 +1,41 @@
+# Changelog
+
+## Version 3.0 — Core Systems Rebuild
+
+SocialSim4 3.0 refocuses the platform on being an LLM-driven social simulation framework for causal experimentation. The release rebuilds the core around strict Agent/Action/Event/Scene boundaries so every interaction is traceable and reproducible.
+
+### Highlights
+- All-new architecture: agents reason, plan, and decide entirely via LLM calls; actions are the only way to touch the environment; events carry every effect across the system.
+- Scenes replace legacy templates with a compact interface that defines rules, prompts, and event routing while the simulator handles turn orchestration.
+- Action space: each action derives from a strict base class, enabling plug-and-play mixes of shared actions (for example `send_message`) and scene-locked actions (`open_voting`, `play_card`).
+- Simulation Tree (SimTree): capture full simulator state at any node, branch timelines, replay interventions, and stream run logs for counterfactual analysis.
+
+### Scheduling & Agent Runtime
+- Custom ordering strategies: sequential, cycled, random, controlled, and LLM-moderated flows now coexist, letting moderators queue agents dynamically with `schedule_order`.
+- Agents deliver richer, context-aware dialogue, support multi-action turns, and run roughly 4× faster (≈15s per round). Clearer action/event logs drastically reduce post-run debugging.
+
+### Scene Library
+- Refined scenes: Simple Chat, Legislative Council, and Village scenes adopt the new interface, enabling chained actions, procedural rules, and locality-aware conversations.
+- New scenes: Werewolf (moderator-managed social deduction with `open_voting`/`close_voting`) and Landlord Poker (strict turn-based card play with scoring and enforcement).
+
+### Development Experience
+- Development UI now streams per-node deltas over WebSocket, cutting payload sizes and making long simulations easier to inspect in real time.
+
+### Breaking Changes
+- 3.0 is not backward compatible with 2.x simulations. Every run must target the Scene/Action/Event APIs introduced in this release.
+
+### Sample Scenario
+- The bundled Legislative Council run demonstrates nuanced policy debate, moderator-driven agenda control, and auditable event logs across speeches, votes, and scheduling.
+
+## Version 2.0 — Interaction Refinements
+
+**Released:** 2025-06-16
+
+Version 2.0 focused on speeding up iteration and making agent runs easier to configure and review.
+
+### New Capabilities
+- One-click summary button on simulation results pages for rapid post-run reviews.
+- Agent bootstrap from `.txt` and similar config files, auto-generating multi-agent setups.
+- Emotion display module overlays core affect states during inference for a more legible UX.
+- Per-user persistence for multiple LLM API endpoints (chat, generation, embeddings) with automatic reuse on future runs.
+- Published end-to-end user guide covering setup, simulation workflows, and troubleshooting.

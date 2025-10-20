@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     debug: bool = False
     app_name: str = "SocialSim4 Backend"
     api_prefix: str = "/api"
+    backend_root_path: str = ""
+    frontend_dist_path: str | None = None
 
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
@@ -38,6 +40,7 @@ class Settings(BaseSettings):
     require_email_verification: bool = False
 
     allowed_origins: list[str] = []
+    admin_emails: list[str] = []
 
     model_config = SettingsConfigDict(
         extra="ignore",

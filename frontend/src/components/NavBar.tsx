@@ -16,6 +16,7 @@ export function NavBar() {
     { to: "/simulations/new", label: t('nav.new') },
     { to: "/simulations/saved", label: t('nav.saved') },
     { to: "/settings/providers", label: t('nav.settings') },
+    { to: "/docs", label: t('nav.docs') || 'Docs' },
   ];
 
   return (
@@ -28,6 +29,9 @@ export function NavBar() {
               {item.label}
             </Link>
           ))}
+          {String((user as any)?.role || '') === 'admin' && (
+            <Link to="/admin" className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}>{t('nav.admin') || 'Admin'}</Link>
+          )}
         </div>
       </div>
       <div className="nav-right">

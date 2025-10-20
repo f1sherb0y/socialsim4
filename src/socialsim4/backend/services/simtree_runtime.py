@@ -97,8 +97,9 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
     cfg = getattr(sim_record, "scene_config", {}) or {}
     name = getattr(sim_record, "name", scene_type)
 
+
     # Build scene via constructor based on type
-    if scene_type == "simple_chat_scene":
+    if scene_type in {"simple_chat_scene", "emotional_conflict_scene"}:
         # Use generalized initial events; constructor initial can be empty
         scene = scene_cls(name, "")
     elif scene_type == "council_scene":
@@ -129,6 +130,7 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
     # Build agents from agent_config
     items = (getattr(sim_record, "agent_config", {}) or {}).get("agents") or []
     built_agents = []
+    emotion_enabled = cfg["emotion_enabled"] if ("emotion_enabled" in cfg) else False
     for cfg_agent in items:
         aname = str(cfg_agent.get("name") or "").strip() or "Agent"
         profile = str(cfg_agent.get("profile") or "")
@@ -152,7 +154,7 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
                     "initial_instruction": "",
                     "role_prompt": "",
                     "action_space": merged_names,
-                    "properties": {},
+                    "properties": {"emotion_enabled": emotion_enabled},
                 }
             )
         )
@@ -211,6 +213,7 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
         event_handler=_quiet_logger,
         ordering=ordering,
         max_steps_per_turn=3 if scene_type == "landlord_scene" else 5,
+        emotion_enabled=emotion_enabled,
     )
     # Broadcast configured initial events as public events
     for text in cfg.get("initial_events") or []:

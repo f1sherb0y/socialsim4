@@ -1,19 +1,17 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, status
+from litestar import Router, delete, get, patch, post
+from litestar.connection import Request
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...dependencies import get_current_user, get_db_session
-from ...models.user import ProviderConfig
-from ...schemas.common import Message
 from socialsim4.core.llm import create_llm_client
 from socialsim4.core.llm_config import LLMConfig
+
+from ...core.database import get_session
+from ...dependencies import extract_bearer_token, resolve_current_user
+from ...models.user import ProviderConfig
+from ...schemas.common import Message
 from ...schemas.provider import ProviderBase, ProviderCreate, ProviderUpdate
-from ...schemas.user import UserPublic
-
-
-router = APIRouter()
 
 
 def _serialize_provider(provider: ProviderConfig) -> ProviderBase:
@@ -31,112 +29,130 @@ def _serialize_provider(provider: ProviderConfig) -> ProviderBase:
     )
 
 
-@router.get("/", response_model=list[ProviderBase])
-async def list_providers(
-    current_user: UserPublic = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> list[ProviderBase]:
-    result = await session.execute(
-        select(ProviderConfig).where(ProviderConfig.user_id == current_user.id)
-    )
-    providers = result.scalars().all()
-    return [_serialize_provider(p) for p in providers]
+@get("/")
+async def list_providers(request: Request) -> list[ProviderBase]:
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+        providers = result.scalars().all()
+        return [_serialize_provider(p) for p in providers]
 
 
-@router.post("/", response_model=ProviderBase, status_code=status.HTTP_201_CREATED)
-async def create_provider(
-    payload: ProviderCreate,
-    current_user: UserPublic = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> ProviderBase:
-    provider = ProviderConfig(
-        user_id=current_user.id,
-        name=payload.name,
-        provider=payload.provider,
-        model=payload.model,
-        base_url=payload.base_url,
-        api_key=payload.api_key,
-        config=payload.config or {},
-    )
-    session.add(provider)
-    await session.commit()
-    await session.refresh(provider)
-    return _serialize_provider(provider)
+@post("/", status_code=201)
+async def create_provider(request: Request, data: ProviderCreate) -> ProviderBase:
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        provider = ProviderConfig(
+            user_id=current_user.id,
+            name=data.name,
+            provider=data.provider,
+            model=data.model,
+            base_url=data.base_url,
+            api_key=data.api_key,
+            config=data.config or {},
+        )
+        session.add(provider)
+        await session.commit()
+        await session.refresh(provider)
+        return _serialize_provider(provider)
 
 
-@router.patch("/{provider_id}", response_model=ProviderBase)
-async def update_provider(
-    provider_id: int,
-    payload: ProviderUpdate,
-    current_user: UserPublic = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> ProviderBase:
-    provider = await session.get(ProviderConfig, provider_id)
-    assert provider is not None and provider.user_id == current_user.id
+@patch("/{provider_id:int}")
+async def update_provider(request: Request, provider_id: int, data: ProviderUpdate) -> ProviderBase:
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        provider = await session.get(ProviderConfig, provider_id)
+        assert provider is not None and provider.user_id == current_user.id
 
-    if payload.name is not None:
-        provider.name = payload.name
-    if payload.provider is not None:
-        provider.provider = payload.provider
-    if payload.model is not None:
-        provider.model = payload.model
-    if payload.base_url is not None:
-        provider.base_url = payload.base_url
-    if payload.api_key is not None:
-        provider.api_key = payload.api_key
-    if payload.config is not None:
-        provider.config = payload.config
+        if data.name is not None:
+            provider.name = data.name
+        if data.provider is not None:
+            provider.provider = data.provider
+        if data.model is not None:
+            provider.model = data.model
+        if data.base_url is not None:
+            provider.base_url = data.base_url
+        if data.api_key is not None:
+            provider.api_key = data.api_key
+        if data.config is not None:
+            provider.config = data.config
 
-    await session.commit()
-    await session.refresh(provider)
-    return _serialize_provider(provider)
+        await session.commit()
+        await session.refresh(provider)
+        return _serialize_provider(provider)
 
 
-@router.delete("/{provider_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_provider(
-    provider_id: int,
-    current_user: UserPublic = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> None:
-    provider = await session.get(ProviderConfig, provider_id)
-    assert provider is not None and provider.user_id == current_user.id
-    await session.delete(provider)
-    await session.commit()
+@delete("/{provider_id:int}", status_code=204)
+async def delete_provider(request: Request, provider_id: int) -> None:
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        provider = await session.get(ProviderConfig, provider_id)
+        assert provider is not None and provider.user_id == current_user.id
+        await session.delete(provider)
+        await session.commit()
 
 
-@router.post("/{provider_id}/test", response_model=Message)
-async def test_provider(
-    provider_id: int,
-    current_user: UserPublic = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> Message:
-    provider = await session.get(ProviderConfig, provider_id)
-    assert provider is not None and provider.user_id == current_user.id
+@post("/{provider_id:int}/test")
+async def test_provider(request: Request, provider_id: int) -> Message:
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        provider = await session.get(ProviderConfig, provider_id)
+        assert provider is not None and provider.user_id == current_user.id
 
-    dialect = (provider.provider or "").lower()
+        dialect = (provider.provider or "").lower()
+        cfg = LLMConfig(
+            dialect=dialect,
+            api_key=provider.api_key or "",
+            model=provider.model,
+            base_url=provider.base_url,
+            temperature=0.7,
+            top_p=1.0,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            max_tokens=64,
+        )
 
-    cfg = LLMConfig(
-        dialect=dialect,
-        api_key=provider.api_key or "",
-        model=provider.model,
-        base_url=provider.base_url,
-        temperature=0.7,
-        top_p=1.0,
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        max_tokens=64,
-    )
+        provider.last_tested_at = datetime.now(timezone.utc)
+        client = create_llm_client(cfg)
+        client.chat([{"role": "user", "content": "ping"}])
+        provider.last_test_status = "success"
+        provider.last_error = None
+        await session.commit()
+        return Message(message="Provider connectivity verified")
 
-    status_msg = ""
-    provider.last_tested_at = datetime.now(timezone.utc)
-    client = create_llm_client(cfg)
-    _ = client.chat([
-        {"role": "user", "content": "ping"}
-    ])
-    provider.last_test_status = "success"
-    provider.last_error = None
-    status_msg = "Provider connectivity verified"
 
-    await session.commit()
+@post("/{provider_id:int}/activate")
+async def activate_provider(request: Request, provider_id: int) -> Message:
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        provider = await session.get(ProviderConfig, provider_id)
+        assert provider is not None and provider.user_id == current_user.id
 
-    return Message(message=status_msg)
+        result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+        providers = result.scalars().all()
+        for p in providers:
+            if p.id == provider.id:
+                p.config = {"active": True}
+            else:
+                p.config = {}
+        await session.commit()
+        return Message(message="Activated provider")
+
+
+router = Router(
+    path="/providers",
+    route_handlers=[
+        list_providers,
+        create_provider,
+        update_provider,
+        delete_provider,
+        test_provider,
+        activate_provider,
+    ],
+)
