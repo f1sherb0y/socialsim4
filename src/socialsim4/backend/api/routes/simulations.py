@@ -139,7 +139,7 @@ async def list_simulations(request: Request) -> list[SimulationBase]:
 
 
 @post("/", status_code=201)
-async def create_simulation(request: Request, payload: SimulationCreate) -> SimulationBase:
+async def create_simulation(request: Request, data: SimulationCreate) -> SimulationBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -156,14 +156,14 @@ async def create_simulation(request: Request, payload: SimulationCreate) -> Simu
             raise RuntimeError("LLM model required")
 
         sim_id = generate_simulation_id()
-        name = payload.name or generate_simulation_name(sim_id)
+        name = data.name or generate_simulation_name(sim_id)
         sim = Simulation(
             id=sim_id,
             owner_id=current_user.id,
             name=name,
-            scene_type=payload.scene_type,
-            scene_config=payload.scene_config,
-            agent_config=payload.agent_config,
+            scene_type=data.scene_type,
+            scene_config=data.scene_config,
+            agent_config=data.agent_config,
             status="draft",
         )
         session.add(sim)
@@ -182,18 +182,18 @@ async def read_simulation(request: Request, simulation_id: str) -> SimulationBas
 
 
 @patch("/{simulation_id:str}")
-async def update_simulation(request: Request, simulation_id: str, payload: SimulationUpdate) -> SimulationBase:
+async def update_simulation(request: Request, simulation_id: str, data: SimulationUpdate) -> SimulationBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         sim = await _get_simulation_for_owner(session, current_user.id, simulation_id)
 
-        if payload.name is not None:
-            sim.name = payload.name
-        if payload.status is not None:
-            sim.status = payload.status
-        if payload.notes is not None:
-            sim.notes = payload.notes
+        if data.name is not None:
+            sim.name = data.name
+        if data.status is not None:
+            sim.status = data.status
+        if data.notes is not None:
+            sim.notes = data.notes
 
         await session.commit()
         await session.refresh(sim)
@@ -212,7 +212,7 @@ async def delete_simulation(request: Request, simulation_id: str) -> None:
 
 
 @post("/{simulation_id:str}/save", status_code=201)
-async def create_snapshot(request: Request, simulation_id: str, payload: SnapshotCreate) -> SnapshotBase:
+async def create_snapshot(request: Request, simulation_id: str, data: SnapshotCreate) -> SnapshotBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -227,7 +227,7 @@ async def create_snapshot(request: Request, simulation_id: str, payload: Snapsho
             t = int(sim_snap.get("turns", 0)) if isinstance(sim_snap, dict) else 0
             if t > max_turns:
                 max_turns = t
-        label = payload.label or f"Snapshot {datetime.now(timezone.utc).isoformat()}"
+        label = data.label or f"Snapshot {datetime.now(timezone.utc).isoformat()}"
         snapshot = SimulationSnapshot(
             simulation_id=sim.id,
             label=label,
@@ -380,15 +380,15 @@ async def simulation_tree_graph(request: Request, simulation_id: str) -> dict:
 async def simulation_tree_advance_frontier(
     request: Request,
     simulation_id: str,
-    payload: SimulationTreeAdvanceFrontierPayload,
+    data: SimulationTreeAdvanceFrontierPayload,
 ) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
         tree = record.tree
-        parents = tree.frontier(True) if payload.only_max_depth else tree.leaves()
-        turns = int(payload.turns)
+        parents = tree.frontier(True) if data.only_max_depth else tree.leaves()
+        turns = int(data.turns)
         allocations = {pid: tree.copy_sim(pid) for pid in parents}
         for pid, cid in allocations.items():
             tree.attach(pid, [{"op": "advance", "turns": turns}], cid)
@@ -430,18 +430,18 @@ async def simulation_tree_advance_frontier(
 async def simulation_tree_advance_multi(
     request: Request,
     simulation_id: str,
-    payload: SimulationTreeAdvanceMultiPayload,
+    data: SimulationTreeAdvanceMultiPayload,
 ) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
         tree = record.tree
-        parent = int(payload.parent)
-        count = int(payload.count)
+        parent = int(data.parent)
+        count = int(data.count)
         if count <= 0:
             return {"children": []}
-        turns = int(payload.turns)
+        turns = int(data.turns)
         children = [tree.copy_sim(parent) for _ in range(count)]
         for cid in children:
             tree.attach(parent, [{"op": "advance", "turns": turns}], cid)
@@ -482,15 +482,15 @@ async def simulation_tree_advance_multi(
 async def simulation_tree_advance_chain(
     request: Request,
     simulation_id: str,
-    payload: SimulationTreeAdvanceChainPayload,
+    data: SimulationTreeAdvanceChainPayload,
 ) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
         tree = record.tree
-        parent = int(payload.parent)
-        steps = max(1, int(payload.turns))
+        parent = int(data.parent)
+        steps = max(1, int(data.turns))
         last = parent
         for _ in range(steps):
             cid = tree.copy_sim(last)
@@ -527,14 +527,14 @@ async def simulation_tree_advance_chain(
 async def simulation_tree_branch(
     request: Request,
     simulation_id: str,
-    payload: SimulationTreeBranchPayload,
+    data: SimulationTreeBranchPayload,
 ) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
         tree = record.tree
-        cid = tree.branch(int(payload.parent), [dict(op) for op in payload.ops])
+        cid = tree.branch(int(data.parent), [dict(op) for op in data.ops])
         node = tree.nodes[cid]
         _broadcast(
             record,

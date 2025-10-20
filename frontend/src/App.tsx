@@ -1,17 +1,17 @@
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import i18n from "./i18n";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { DashboardPage } from "./pages/DashboardPage";
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
-import { SavedSimulationsPage } from "./pages/SavedSimulationsPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { SimulationWizardPage } from "./pages/SimulationWizardPage";
-import { SimulationPage } from "./pages/SimulationPage";
-import { AdminPage } from "./pages/AdminPage";
-import { DocsPage } from "./pages/DocsPage";
+const SavedSimulationsPage = lazy(() => import('./pages/SavedSimulationsPage').then(m => ({ default: m.SavedSimulationsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const SimulationWizardPage = lazy(() => import('./pages/SimulationWizardPage').then(m => ({ default: m.SimulationWizardPage })));
+const SimulationPage = lazy(() => import('./pages/SimulationPage').then(m => ({ default: m.SimulationPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const DocsPage = lazy(() => import('./pages/DocsPage').then(m => ({ default: m.DocsPage })));
 import { RequireAuth } from "./components/RequireAuth";
 import { Layout } from "./components/Layout";
 

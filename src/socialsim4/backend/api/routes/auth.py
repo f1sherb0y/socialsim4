@@ -28,7 +28,7 @@ settings = get_settings()
 
 
 @post("/register", status_code=201)
-async def register(payload: RegisterRequest) -> UserPublic:
+async def register(data: RegisterRequest) -> UserPublic:
     if settings.require_email_verification:
         if not settings.email_enabled:
             raise HTTPException(status_code=500, detail="Email verification enabled but SMTP settings are missing")
@@ -36,18 +36,18 @@ async def register(payload: RegisterRequest) -> UserPublic:
             raise HTTPException(status_code=500, detail="Email verification enabled but APP base URL is missing")
 
     async with get_session() as session:
-        if (await session.execute(select(User).where(User.email == payload.email))).scalar_one_or_none():
+        if (await session.execute(select(User).where(User.email == data.email))).scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Email already registered")
-        if (await session.execute(select(User).where(User.username == payload.username))).scalar_one_or_none():
+        if (await session.execute(select(User).where(User.username == data.username))).scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Username already registered")
 
         user = User(
-            organization=payload.organization,
-            email=payload.email,
-            username=payload.username,
-            full_name=payload.full_name,
-            phone_number=payload.phone_number,
-            hashed_password=hash_password(payload.password),
+            organization=data.organization,
+            email=data.email,
+            username=data.username,
+            full_name=data.full_name,
+            phone_number=data.phone_number,
+            hashed_password=hash_password(data.password),
             is_active=True,
             is_verified=not settings.require_email_verification,
         )
@@ -65,11 +65,11 @@ async def register(payload: RegisterRequest) -> UserPublic:
 
 
 @post("/login")
-async def login(payload: LoginRequest) -> TokenPair:
+async def login(data: LoginRequest) -> TokenPair:
     async with get_session() as session:
-        result = await session.execute(select(User).where(User.email == payload.email))
+        result = await session.execute(select(User).where(User.email == data.email))
         user = result.scalar_one_or_none()
-        if user is None or not verify_password(payload.password, user.hashed_password):
+        if user is None or not verify_password(data.password, user.hashed_password):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         if not user.is_active:
             raise HTTPException(status_code=403, detail="User disabled")
@@ -98,9 +98,9 @@ async def login(payload: LoginRequest) -> TokenPair:
 
 
 @post("/verify")
-async def verify_email(payload: VerificationRequest) -> Message:
+async def verify_email(data: VerificationRequest) -> Message:
     async with get_session() as session:
-        token = await get_verification_token(session, payload.token)
+        token = await get_verification_token(session, data.token)
         if token is None:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
 
@@ -134,10 +134,10 @@ async def read_me(request: Request) -> UserPublic:
 
 
 @post("/token/refresh")
-async def refresh_token(payload: RefreshRequest) -> TokenPair:
+async def refresh_token(data: RefreshRequest) -> TokenPair:
     try:
         decoded = jwt.decode(
-            payload.refresh_token,
+            data.refresh_token,
             key=settings.jwt_signing_key.get_secret_value(),
             algorithms=[settings.jwt_algorithm],
         )
@@ -152,7 +152,7 @@ async def refresh_token(payload: RefreshRequest) -> TokenPair:
         raise HTTPException(status_code=401, detail="Invalid token subject")
 
     async with get_session() as session:
-        token_q = await session.execute(select(RefreshToken).where(RefreshToken.token == payload.refresh_token))
+        token_q = await session.execute(select(RefreshToken).where(RefreshToken.token == data.refresh_token))
         token_db = token_q.scalar_one_or_none()
         if token_db is None or token_db.revoked_at is not None:
             raise HTTPException(status_code=401, detail="Token revoked")

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from litestar import Litestar, Router
+from litestar import Litestar, Router, get
 from litestar.config.app import AppConfig
 from litestar.config.cors import CORSConfig
 from litestar.openapi import OpenAPIConfig
-from litestar.static_files import StaticFilesConfig
+from litestar.response import File
+from litestar.static_files import create_static_files_router
 
 from .api.routes import router as api_router
 from .core.config import get_settings
@@ -41,20 +42,45 @@ def create_app() -> Litestar:
     if not index_file.is_file():
         raise RuntimeError(f"Frontend index.html missing: {index_file}")
 
-    static_files_config = [
-        StaticFilesConfig(path="/", directories=[str(dist_dir)], html_mode=True, name="frontend")
-    ]
+    assets_router = create_static_files_router(
+        path="/assets",
+        directories=[str(dist_dir / "assets")],
+        name="frontend-assets",
+    )
 
     api_prefix = settings.api_prefix or "/api"
     api_routes = Router(path=api_prefix, route_handlers=[api_router])
 
+    index_path = str(index_file)
+
+    def _spa_response() -> File:
+        return File(
+            index_path,
+            content_disposition_type="inline",
+            media_type="text/html",
+        )
+
+    @get("/{path:path}")
+    async def spa_fallback(path: str = "") -> File:
+        return _spa_response()
+
+    @get("/")
+    async def home_page() -> File:
+        return _spa_response()
+
+    spa_router = Router(path="/", route_handlers=[home_page, spa_fallback])
+
+    def _log_routes(app: Litestar) -> None:
+        for route in sorted(app.routes, key=lambda r: r.path):
+            methods = route.methods or ["WS"]
+            print(f"[litestar] {sorted(methods)} {route.path}")
+
     app_kwargs: dict = {
-        "route_handlers": [api_routes],
-        "on_startup": [_prepare_database],
+        "route_handlers": [api_routes, assets_router, spa_router],
+        "on_startup": [_prepare_database, _log_routes],
         "cors_config": cors_config,
         "debug": settings.debug,
         "openapi_config": OpenAPIConfig(title=settings.app_name, version="1.0.0"),
-        "static_files_config": static_files_config,
     }
 
     if settings.backend_root_path:

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState, lazy } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TitleCard } from '../components/TitleCard';
@@ -40,7 +40,13 @@ export function DocsPage() {
     return map[currentPath];
   }, [docsIndex, lang, currentPath]);
 
-  const Comp = useMdxComponent(modKey);
+  const modules = useMemo(() => import.meta.glob('/src/doc/**/*.mdx'), []);
+  const Comp = useMemo(() => {
+    if (!modKey) return null;
+    const importer = modules[modKey];
+    if (!importer) return null;
+    return lazy(importer as any);
+  }, [modKey, modules]);
 
   return (
     <div className="scroll-panel" style={{ height: '100%', overflow: 'auto' }}>
@@ -150,21 +156,5 @@ function buildTree(paths: string[]): Node {
   return root;
 }
 
-function useMdxComponent(key?: string) {
-  const [Comp, setComp] = useState<any>(null);
-  useEffect(() => {
-    let active = true;
-    if (!key) {
-      setComp(null);
-      return;
-    }
-    import(/* @vite-ignore */ key).then((mod) => {
-      if (!active) return;
-      setComp(() => mod.default);
-    });
-    return () => { active = false; };
-  }, [key]);
-  return Comp;
-}
 
 // copy button removed per request

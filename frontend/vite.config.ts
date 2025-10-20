@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import mdx from "@mdx-js/rollup";
 import rehypePrism from 'rehype-prism-plus';
@@ -121,14 +121,41 @@ function titleize(s: string) {
   return s.replace(/\.mdx$/i, '').replace(/(^|[-_\s])\w/g, (m) => m.toUpperCase());
 }
 
+function normalizeBaseUrl(value: string) {
+  if (value.endsWith("/")) return value;
+  return `${value}/`;
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const baseUrl = normalizeBaseUrl(env.FRONTEND_BASE_URL ?? "/");
+  // Cast Rollup-only plugins to Vite's PluginOption to satisfy TS
+  const mdxPlugin = mdx({
+    providerImportSource: '@mdx-js/react',
+    rehypePlugins: [rehypePrism]
+  }) as unknown as PluginOption;
+  const docsPlugin = docsVirtualModule() as unknown as PluginOption;
   return {
+    base: baseUrl,
     plugins: [
       react(),
-      mdx({ providerImportSource: '@mdx-js/react', rehypePlugins: [rehypePrism] }),
-      docsVirtualModule(),
-    ],
+      mdxPlugin,
+      docsPlugin,
+    ] as PluginOption[],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (id.includes('src/doc/')) {
+              // Put each doc file in its own chunk
+              const match = /src\/doc\/(.*?)\.mdx/.exec(id);
+              if (match?.[1]) return `doc-${match[1].replace(/\//g, '-')}`;
+            }
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1300,
+    },
     define: {
       __APP_VERSION__: JSON.stringify(env.npm_package_version ?? "dev"),
     },

@@ -10,6 +10,6 @@ export type SceneOption = {
 };
 
 export async function listScenes(): Promise<SceneOption[]> {
-  const { data } = await apiClient.get<SceneOption[]>("/scenes");
+  const { data } = await apiClient.get<SceneOption[]>("scenes");
   return data;
 }

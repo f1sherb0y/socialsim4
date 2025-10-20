@@ -99,6 +99,9 @@ Internal Notes:
         # Build action catalog and usage
         action_catalog = "\n".join([f"- {getattr(action, 'NAME', '')}: {getattr(action, 'DESC', '')}".strip() for action in self.action_space])
         action_instructions = "".join(getattr(action, "INSTRUCTION", "") for action in self.action_space)
+        examples_block = ""
+        if scene and scene.get_examples():
+            examples_block = f"Here are some examples:\n{scene.get_examples()}"
 
         emotion_prompt = f"Your current emotion is {self.emotion}." if self.emotion_enabled else ""
         base = f"""
@@ -131,7 +134,7 @@ Usage:
 {action_instructions}
 
 
-{("Here are some examples:\n" + scene.get_examples()) if (scene and scene.get_examples() != "") else ""}
+{examples_block}
 
 
 {self.get_output_format()}

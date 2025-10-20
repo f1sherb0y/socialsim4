@@ -40,18 +40,18 @@ async def list_providers(request: Request) -> list[ProviderBase]:
 
 
 @post("/", status_code=201)
-async def create_provider(request: Request, payload: ProviderCreate) -> ProviderBase:
+async def create_provider(request: Request, data: ProviderCreate) -> ProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         provider = ProviderConfig(
             user_id=current_user.id,
-            name=payload.name,
-            provider=payload.provider,
-            model=payload.model,
-            base_url=payload.base_url,
-            api_key=payload.api_key,
-            config=payload.config or {},
+            name=data.name,
+            provider=data.provider,
+            model=data.model,
+            base_url=data.base_url,
+            api_key=data.api_key,
+            config=data.config or {},
         )
         session.add(provider)
         await session.commit()
@@ -60,25 +60,25 @@ async def create_provider(request: Request, payload: ProviderCreate) -> Provider
 
 
 @patch("/{provider_id:int}")
-async def update_provider(request: Request, provider_id: int, payload: ProviderUpdate) -> ProviderBase:
+async def update_provider(request: Request, provider_id: int, data: ProviderUpdate) -> ProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         provider = await session.get(ProviderConfig, provider_id)
         assert provider is not None and provider.user_id == current_user.id
 
-        if payload.name is not None:
-            provider.name = payload.name
-        if payload.provider is not None:
-            provider.provider = payload.provider
-        if payload.model is not None:
-            provider.model = payload.model
-        if payload.base_url is not None:
-            provider.base_url = payload.base_url
-        if payload.api_key is not None:
-            provider.api_key = payload.api_key
-        if payload.config is not None:
-            provider.config = payload.config
+        if data.name is not None:
+            provider.name = data.name
+        if data.provider is not None:
+            provider.provider = data.provider
+        if data.model is not None:
+            provider.model = data.model
+        if data.base_url is not None:
+            provider.base_url = data.base_url
+        if data.api_key is not None:
+            provider.api_key = data.api_key
+        if data.config is not None:
+            provider.config = data.config
 
         await session.commit()
         await session.refresh(provider)

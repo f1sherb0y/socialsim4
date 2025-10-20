@@ -5,13 +5,6 @@ import { copySimulation as apiCopySimulation, deleteSimulation as apiDeleteSimul
 import { useTranslation } from "react-i18next";
 import { TitleCard } from "../components/TitleCard";
 
-type Simulation = {
-  id: string;
-  name: string;
-  status: string;
-  created_at: string;
-};
-
 export function SavedSimulationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();

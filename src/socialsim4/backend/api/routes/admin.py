@@ -233,12 +233,12 @@ async def admin_stats(request: Request, period: str = "day") -> dict:
 
 
 @patch("/users/{user_id:int}/role")
-async def admin_update_user_role(request: Request, user_id: int, payload: RoleUpdate) -> UserPublic:
+async def admin_update_user_role(request: Request, user_id: int, data: RoleUpdate) -> UserPublic:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         _require_admin(current_user)
-        role = (payload.role or "").strip()
+        role = (data.role or "").strip()
         if role not in {"user", "admin"}:
             raise HTTPException(status_code=400, detail="Invalid role")
         db_user = await session.get(User, int(user_id))

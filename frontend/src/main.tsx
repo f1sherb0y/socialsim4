@@ -7,6 +7,14 @@ import App from "./App";
 import "./styles.css";
 import "./i18n";
 
+const rawBaseUrl = import.meta.env.BASE_URL;
+const basename =
+  rawBaseUrl === "/"
+    ? ""
+    : rawBaseUrl.length > 1 && rawBaseUrl.endsWith("/")
+      ? rawBaseUrl.slice(0, -1)
+      : rawBaseUrl;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -17,9 +25,10 @@ const queryClient = new QueryClient({
 });
 
 const root = document.getElementById("root") as HTMLElement;
+console.log("Mounting SocialSim4 frontend", rawBaseUrl, basename);
 const tree = (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <App />
     </BrowserRouter>
   </QueryClientProvider>

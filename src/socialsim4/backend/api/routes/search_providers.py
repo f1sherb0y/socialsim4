@@ -29,16 +29,16 @@ async def list_search_providers(request: Request) -> list[SearchProviderBase]:
 
 
 @post("/", status_code=201)
-async def create_search_provider(request: Request, payload: SearchProviderCreate) -> SearchProviderBase:
+async def create_search_provider(request: Request, data: SearchProviderCreate) -> SearchProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         provider = SearchProviderConfig(
             user_id=current_user.id,
-            provider=payload.provider,
-            base_url=payload.base_url,
-            api_key=payload.api_key,
-            config=payload.config or {},
+            provider=data.provider,
+            base_url=data.base_url,
+            api_key=data.api_key,
+            config=data.config or {},
         )
         session.add(provider)
         await session.commit()
@@ -47,21 +47,21 @@ async def create_search_provider(request: Request, payload: SearchProviderCreate
 
 
 @patch("/{provider_id:int}")
-async def update_search_provider(request: Request, provider_id: int, payload: SearchProviderUpdate) -> SearchProviderBase:
+async def update_search_provider(request: Request, provider_id: int, data: SearchProviderUpdate) -> SearchProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         provider = await session.get(SearchProviderConfig, provider_id)
         assert provider is not None and provider.user_id == current_user.id
 
-        if payload.provider is not None:
-            provider.provider = payload.provider
-        if payload.base_url is not None:
-            provider.base_url = payload.base_url
-        if payload.api_key is not None:
-            provider.api_key = payload.api_key
-        if payload.config is not None:
-            provider.config = payload.config
+        if data.provider is not None:
+            provider.provider = data.provider
+        if data.base_url is not None:
+            provider.base_url = data.base_url
+        if data.api_key is not None:
+            provider.api_key = data.api_key
+        if data.config is not None:
+            provider.config = data.config
 
         await session.commit()
         await session.refresh(provider)

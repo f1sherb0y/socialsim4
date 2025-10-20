@@ -29,7 +29,7 @@ export async function adminListUsers(params: {
   created_to?: string;
   sort?: string; // e.g., name_asc, org_desc, created_desc
 }): Promise<AdminUser[]> {
-  const { data } = await apiClient.get<AdminUser[]>("/admin/users", { params });
+  const { data } = await apiClient.get<AdminUser[]>("admin/users", { params });
   return data;
 }
 
@@ -40,7 +40,7 @@ export async function adminListSimulations(params: {
   created_to?: string;
   sort?: string; // username_asc, scene_desc, created_desc
 }): Promise<AdminSimulation[]> {
-  const { data } = await apiClient.get<AdminSimulation[]>("/admin/simulations", { params });
+  const { data } = await apiClient.get<AdminSimulation[]>("admin/simulations", { params });
   return data;
 }
 
@@ -52,11 +52,11 @@ export type AdminStats = {
 };
 
 export async function adminGetStats(period: "day" | "week" | "month"): Promise<AdminStats> {
-  const { data } = await apiClient.get<AdminStats>("/admin/stats", { params: { period } });
+  const { data } = await apiClient.get<AdminStats>("admin/stats", { params: { period } });
   return data;
 }
 
 export async function adminUpdateUserRole(userId: number, role: 'user' | 'admin'): Promise<AdminUser> {
-  const { data } = await apiClient.patch<AdminUser>(`/admin/users/${userId}/role`, { role });
+  const { data } = await apiClient.patch<AdminUser>(`admin/users/${userId}/role`, { role });
   return data;
 }

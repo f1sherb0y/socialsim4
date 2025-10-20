@@ -2,10 +2,34 @@ import axios from "axios";
 
 import { useAuthStore } from "../store/auth";
 
-export const API_BASE_URL = (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined) ?? "http://localhost:8000/api";
+const configuredBackendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL as string | undefined;
+const rawFrontendBaseUrl = import.meta.env.BASE_URL;
+const frontendBasePath = rawFrontendBaseUrl === "/" ? "" : rawFrontendBaseUrl.replace(/\/$/, "");
+const origin = window.location.origin;
+const defaultBackendBaseUrl = `${origin}${frontendBasePath}/api`;
+
+function resolveBackendBaseUrl(candidate: string | undefined): string {
+  const trimmed = candidate?.trim();
+  if (!trimmed) {
+    return defaultBackendBaseUrl;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/")) {
+    return `${origin}${trimmed}`;
+  }
+  if (frontendBasePath) {
+    return `${origin}${frontendBasePath}/${trimmed}`;
+  }
+  return `${origin}/${trimmed}`;
+}
+
+export const API_BASE_URL = resolveBackendBaseUrl(configuredBackendBaseUrl).replace(/\/+$/, "");
+console.log("Api base url is :", API_BASE_URL);
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/`,
 });
 
 apiClient.interceptors.request.use((config) => {
