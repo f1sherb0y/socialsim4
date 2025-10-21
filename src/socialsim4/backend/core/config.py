@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     debug: bool = False
     app_name: str = "SocialSim4 Backend"
     api_prefix: str = "/api"
-    backend_root_path: str = ""
+    backend_root_path: str = "/css/socialsim"
     frontend_dist_path: str | None = None
 
     backend_host: str = "0.0.0.0"
@@ -51,11 +51,7 @@ class Settings(BaseSettings):
 
     @property
     def email_enabled(self) -> bool:
-        return (
-            self.email_smtp_host is not None
-            and self.email_smtp_port is not None
-            and self.email_from is not None
-        )
+        return self.email_smtp_host is not None and self.email_smtp_port is not None and self.email_from is not None
 
 
 @lru_cache

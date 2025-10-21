@@ -4,10 +4,10 @@ from pathlib import Path
 
 from litestar import Litestar, Router, get
 from litestar.config.cors import CORSConfig
+from litestar.connection import Request
+from litestar.enums import MediaType
 from litestar.openapi import OpenAPIConfig
 from litestar.response import File, Response
-from litestar.enums import MediaType
-from litestar.connection import Request
 from litestar.static_files import create_static_files_router
 
 from .api.routes import router as api_router
@@ -26,9 +26,7 @@ async def _prepare_database() -> None:
 def internal_error_handler(request: Request, exc: Exception) -> Response:
     # Return JSON error for any unhandled exception (HTTP 500)
     # Note: 4xx HTTPException responses will continue to use Litestar's default handling.
-    return Response(
-        content={"error": str(exc)}, media_type=MediaType.JSON, status_code=500
-    )
+    return Response(content={"error": str(exc)}, media_type=MediaType.JSON, status_code=500)
 
 
 def create_app() -> Litestar:
@@ -44,9 +42,7 @@ def create_app() -> Litestar:
         )
 
     root_dir = Path(__file__).resolve().parents[3]
-    dist_dir = Path(
-        settings.frontend_dist_path or root_dir / "frontend" / "dist"
-    ).resolve()
+    dist_dir = Path(settings.frontend_dist_path or root_dir / "frontend" / "dist").resolve()
     index_file = dist_dir / "index.html"
     if not dist_dir.is_dir():
         raise RuntimeError(f"Frontend dist directory missing: {dist_dir}")
@@ -81,13 +77,15 @@ def create_app() -> Litestar:
 
     spa_router = Router(path="/", route_handlers=[home_page, spa_fallback])
 
+    base_router = Router(path=settings.backend_root_path, route_handlers=[api_routes, assets_router, spa_router])
+
     def _log_routes(app: Litestar) -> None:
         for route in sorted(app.routes, key=lambda r: r.path):
             methods = route.methods or ["WS"]
             print(f"[litestar] {sorted(methods)} {route.path}")
 
     app_kwargs: dict = {
-        "route_handlers": [api_routes, assets_router, spa_router],
+        "route_handlers": [base_router],
         "on_startup": [_prepare_database, _log_routes],
         "cors_config": cors_config,
         "debug": settings.debug,

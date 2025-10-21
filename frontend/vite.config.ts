@@ -131,6 +131,7 @@ export default defineConfig(({ mode }) => {
   // Allow Docker build-time env (process.env) to drive Vite base as well as .env files
   const baseFromEnv = process.env.FRONTEND_BASE_URL || env.FRONTEND_BASE_URL || "/";
   const baseUrl = normalizeBaseUrl(baseFromEnv);
+  console.log("baseUrl is:", baseUrl)
   // Cast Rollup-only plugins to Vite's PluginOption to satisfy TS
   const mdxPlugin = mdx({
     providerImportSource: '@mdx-js/react',

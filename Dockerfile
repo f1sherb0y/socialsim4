@@ -1,16 +1,17 @@
-ARG FRONTEND_BASE_URL=/
-
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
+
+ARG FRONTEND_BASE_URL=/
 
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend ./
 ENV FRONTEND_BASE_URL=${FRONTEND_BASE_URL}
-RUN npm run build
+RUN FRONTEND_BASE_URL=${FRONTEND_BASE_URL} npm run build
 
 FROM python:3.11-slim AS backend
+ARG FRONTEND_BASE_URL=/
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
