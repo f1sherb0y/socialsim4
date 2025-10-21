@@ -40,7 +40,9 @@ async def admin_list_users(
         conditions = []
         if q:
             like = f"%{q}%"
-            conditions.append((User.full_name.ilike(like)) | (User.username.ilike(like)))
+            conditions.append(
+                (User.full_name.ilike(like)) | (User.username.ilike(like))
+            )
         if org:
             conditions.append(User.organization.ilike(f"%{org}%"))
         if created_from:
@@ -84,7 +86,9 @@ async def admin_list_simulations(
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         _require_admin(current_user)
-        stmt = select(Simulation, User.username).join(User, Simulation.owner_id == User.id)
+        stmt = select(Simulation, User.username).join(
+            User, Simulation.owner_id == User.id
+        )
         conditions = []
         if user:
             conditions.append(User.username.ilike(f"%{user}%"))
@@ -156,11 +160,11 @@ async def admin_stats(request: Request, period: str = "day") -> dict:
             sim_map = {k: 0 for k in buckets}
             visit_map = {k: 0 for k in buckets}
             signup_map = {k: 0 for k in buckets}
-            for (created_at,), in sim_rows:
+            for (created_at,) in sim_rows:
                 k = _floor_day(created_at).isoformat()
                 if k in sim_map:
                     sim_map[k] += 1
-            for (created_at, last_login_at) in user_rows:
+            for created_at, last_login_at in user_rows:
                 k = _floor_day(created_at).isoformat()
                 if k in signup_map:
                     signup_map[k] += 1
@@ -180,11 +184,11 @@ async def admin_stats(request: Request, period: str = "day") -> dict:
             sim_map = {k: 0 for k in buckets}
             visit_map = {k: 0 for k in buckets}
             signup_map = {k: 0 for k in buckets}
-            for (created_at,), in sim_rows:
+            for (created_at,) in sim_rows:
                 k = _floor_week(created_at).isoformat()
                 if k in sim_map:
                     sim_map[k] += 1
-            for (created_at, last_login_at) in user_rows:
+            for created_at, last_login_at in user_rows:
                 k = _floor_week(created_at).isoformat()
                 if k in signup_map:
                     signup_map[k] += 1
@@ -211,11 +215,11 @@ async def admin_stats(request: Request, period: str = "day") -> dict:
         sim_map = {k: 0 for k in buckets}
         visit_map = {k: 0 for k in buckets}
         signup_map = {k: 0 for k in buckets}
-        for (created_at,), in sim_rows:
+        for (created_at,) in sim_rows:
             key = f"{created_at.year:04d}-{created_at.month:02d}"
             if key in sim_map:
                 sim_map[key] += 1
-        for (created_at, last_login_at) in user_rows:
+        for created_at, last_login_at in user_rows:
             key = f"{created_at.year:04d}-{created_at.month:02d}"
             if key in signup_map:
                 signup_map[key] += 1
@@ -233,7 +237,9 @@ async def admin_stats(request: Request, period: str = "day") -> dict:
 
 
 @patch("/users/{user_id:int}/role")
-async def admin_update_user_role(request: Request, user_id: int, data: RoleUpdate) -> UserPublic:
+async def admin_update_user_role(
+    request: Request, user_id: int, data: RoleUpdate
+) -> UserPublic:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)

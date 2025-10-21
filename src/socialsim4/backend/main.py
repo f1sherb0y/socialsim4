@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from litestar import Litestar, Router, get
-from litestar.config.app import AppConfig
 from litestar.config.cors import CORSConfig
 from litestar.openapi import OpenAPIConfig
-from litestar.response import File
+from litestar.response import File, Response
+from litestar.enums import MediaType
+from litestar.connection import Request
 from litestar.static_files import create_static_files_router
 
 from .api.routes import router as api_router
@@ -22,6 +23,14 @@ async def _prepare_database() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
+def internal_error_handler(request: Request, exc: Exception) -> Response:
+    # Return JSON error for any unhandled exception (HTTP 500)
+    # Note: 4xx HTTPException responses will continue to use Litestar's default handling.
+    return Response(
+        content={"error": str(exc)}, media_type=MediaType.JSON, status_code=500
+    )
+
+
 def create_app() -> Litestar:
     settings = get_settings()
 
@@ -35,7 +44,9 @@ def create_app() -> Litestar:
         )
 
     root_dir = Path(__file__).resolve().parents[3]
-    dist_dir = Path(settings.frontend_dist_path or root_dir / "frontend" / "dist").resolve()
+    dist_dir = Path(
+        settings.frontend_dist_path or root_dir / "frontend" / "dist"
+    ).resolve()
     index_file = dist_dir / "index.html"
     if not dist_dir.is_dir():
         raise RuntimeError(f"Frontend dist directory missing: {dist_dir}")
@@ -82,9 +93,6 @@ def create_app() -> Litestar:
         "debug": settings.debug,
         "openapi_config": OpenAPIConfig(title=settings.app_name, version="1.0.0"),
     }
-
-    if settings.backend_root_path:
-        app_kwargs["app_config"] = AppConfig(root_path=settings.backend_root_path)
 
     return Litestar(**app_kwargs)
 

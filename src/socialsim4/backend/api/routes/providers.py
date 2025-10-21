@@ -34,7 +34,9 @@ async def list_providers(request: Request) -> list[ProviderBase]:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+        result = await session.execute(
+            select(ProviderConfig).where(ProviderConfig.user_id == current_user.id)
+        )
         providers = result.scalars().all()
         return [_serialize_provider(p) for p in providers]
 
@@ -44,6 +46,19 @@ async def create_provider(request: Request, data: ProviderCreate) -> ProviderBas
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
+        # Determine if this will be the first provider for this user
+        existing = await session.execute(
+            select(ProviderConfig.id)
+            .where(ProviderConfig.user_id == current_user.id)
+            .limit(1)
+        )
+        has_any = existing.scalars().first() is not None
+
+        cfg = dict(data.config or {})
+        if not has_any:
+            # First provider: mark as active by default
+            cfg["active"] = True
+
         provider = ProviderConfig(
             user_id=current_user.id,
             name=data.name,
@@ -51,7 +66,7 @@ async def create_provider(request: Request, data: ProviderCreate) -> ProviderBas
             model=data.model,
             base_url=data.base_url,
             api_key=data.api_key,
-            config=data.config or {},
+            config=cfg,
         )
         session.add(provider)
         await session.commit()
@@ -60,7 +75,9 @@ async def create_provider(request: Request, data: ProviderCreate) -> ProviderBas
 
 
 @patch("/{provider_id:int}")
-async def update_provider(request: Request, provider_id: int, data: ProviderUpdate) -> ProviderBase:
+async def update_provider(
+    request: Request, provider_id: int, data: ProviderUpdate
+) -> ProviderBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -134,7 +151,9 @@ async def activate_provider(request: Request, provider_id: int) -> Message:
         provider = await session.get(ProviderConfig, provider_id)
         assert provider is not None and provider.user_id == current_user.id
 
-        result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+        result = await session.execute(
+            select(ProviderConfig).where(ProviderConfig.user_id == current_user.id)
+        )
         providers = result.scalars().all()
         for p in providers:
             if p.id == provider.id:

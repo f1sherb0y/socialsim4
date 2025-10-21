@@ -128,7 +128,9 @@ function normalizeBaseUrl(value: string) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const baseUrl = normalizeBaseUrl(env.FRONTEND_BASE_URL ?? "/");
+  // Allow Docker build-time env (process.env) to drive Vite base as well as .env files
+  const baseFromEnv = process.env.FRONTEND_BASE_URL || env.FRONTEND_BASE_URL || "/";
+  const baseUrl = normalizeBaseUrl(baseFromEnv);
   // Cast Rollup-only plugins to Vite's PluginOption to satisfy TS
   const mdxPlugin = mdx({
     providerImportSource: '@mdx-js/react',

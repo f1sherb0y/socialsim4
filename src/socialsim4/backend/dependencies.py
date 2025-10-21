@@ -35,7 +35,9 @@ async def resolve_current_user(session: AsyncSession, token: str) -> UserPublic:
             algorithms=[settings.jwt_algorithm],
         )
     except JWTError as exc:
-        raise HTTPException(status_code=401, detail="Could not validate credentials") from exc
+        raise HTTPException(
+            status_code=401, detail="Could not validate credentials"
+        ) from exc
 
     subject = payload.get("sub")
     if subject is None:

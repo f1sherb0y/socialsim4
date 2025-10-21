@@ -42,13 +42,19 @@ async def _get_simulation_for_owner(
     simulation_id: str,
 ) -> Simulation:
     result = await session.execute(
-        select(Simulation).where(Simulation.owner_id == owner_id, Simulation.id == simulation_id.upper())
+        select(Simulation).where(
+            Simulation.owner_id == owner_id, Simulation.id == simulation_id.upper()
+        )
     )
     return result.scalar_one()
 
 
-async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int) -> SimTreeRecord:
-    result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == user_id))
+async def _get_tree_record(
+    sim: Simulation, session: AsyncSession, user_id: int
+) -> SimTreeRecord:
+    result = await session.execute(
+        select(ProviderConfig).where(ProviderConfig.user_id == user_id)
+    )
     items = result.scalars().all()
     active = [p for p in items if (p.config or {}).get("active")]
     if len(active) != 1:
@@ -75,7 +81,9 @@ async def _get_tree_record(sim: Simulation, session: AsyncSession, user_id: int)
     )
     llm_client = create_llm_client(cfg)
 
-    result_s = await session.execute(select(SearchProviderConfig).where(SearchProviderConfig.user_id == user_id))
+    result_s = await session.execute(
+        select(SearchProviderConfig).where(SearchProviderConfig.user_id == user_id)
+    )
     sprov = result_s.scalars().first()
     if sprov is None:
         s_cfg = SearchConfig(dialect="ddg", api_key="", base_url=None, params={})
@@ -132,7 +140,9 @@ async def list_simulations(request: Request) -> list[SimulationBase]:
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         result = await session.execute(
-            select(Simulation).where(Simulation.owner_id == current_user.id).order_by(Simulation.created_at.desc())
+            select(Simulation)
+            .where(Simulation.owner_id == current_user.id)
+            .order_by(Simulation.created_at.desc())
         )
         sims = result.scalars().all()
         return [SimulationBase.model_validate(sim) for sim in sims]
@@ -143,7 +153,9 @@ async def create_simulation(request: Request, data: SimulationCreate) -> Simulat
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        result = await session.execute(select(ProviderConfig).where(ProviderConfig.user_id == current_user.id))
+        result = await session.execute(
+            select(ProviderConfig).where(ProviderConfig.user_id == current_user.id)
+        )
         provider = result.scalars().first()
         if provider is None:
             raise RuntimeError("LLM provider not configured")
@@ -182,7 +194,9 @@ async def read_simulation(request: Request, simulation_id: str) -> SimulationBas
 
 
 @patch("/{simulation_id:str}")
-async def update_simulation(request: Request, simulation_id: str, data: SimulationUpdate) -> SimulationBase:
+async def update_simulation(
+    request: Request, simulation_id: str, data: SimulationUpdate
+) -> SimulationBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -212,7 +226,9 @@ async def delete_simulation(request: Request, simulation_id: str) -> None:
 
 
 @post("/{simulation_id:str}/save", status_code=201)
-async def create_snapshot(request: Request, simulation_id: str, data: SnapshotCreate) -> SnapshotBase:
+async def create_snapshot(
+    request: Request, simulation_id: str, data: SnapshotCreate
+) -> SnapshotBase:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -256,7 +272,9 @@ async def list_snapshots(request: Request, simulation_id: str) -> list[SnapshotB
 
 
 @get("/{simulation_id:str}/logs")
-async def list_logs(request: Request, simulation_id: str, limit: int = 200) -> list[SimulationLogEntry]:
+async def list_logs(
+    request: Request, simulation_id: str, limit: int = 200
+) -> list[SimulationLogEntry]:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -284,7 +302,9 @@ async def start_simulation(request: Request, simulation_id: str) -> Message:
 
 
 @post("/{simulation_id:str}/resume")
-async def resume_simulation(request: Request, simulation_id: str, snapshot_id: int | None = None) -> Message:
+async def resume_simulation(
+    request: Request, simulation_id: str, snapshot_id: int | None = None
+) -> Message:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
@@ -340,40 +360,53 @@ async def copy_simulation(request: Request, simulation_id: str) -> SimulationBas
 
 @get("/{simulation_id:str}/tree/graph")
 async def simulation_tree_graph(request: Request, simulation_id: str) -> dict:
-    token = extract_bearer_token(request)
-    async with get_session() as session:
-        current_user = await resolve_current_user(session, token)
-        sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
-        tree = record.tree
-        attached_ids = {int(nid) for nid, node in tree.nodes.items() if node.get("depth") is not None}
-        nodes = [
-            {"id": int(node["id"]), "depth": int(node["depth"])}
-            for node in tree.nodes.values()
-            if node.get("depth") is not None
-        ]
-        edges = []
-        for pid, children in tree.children.items():
-            if pid not in attached_ids:
-                continue
-            for cid in children:
-                if cid not in attached_ids:
+    try:
+        token = extract_bearer_token(request)
+        async with get_session() as session:
+            current_user = await resolve_current_user(session, token)
+            sim, record = await _get_simulation_and_tree(
+                session, current_user.id, simulation_id
+            )
+            tree = record.tree
+            attached_ids = {
+                int(nid)
+                for nid, node in tree.nodes.items()
+                if node.get("depth") is not None
+            }
+            nodes = [
+                {"id": int(node["id"]), "depth": int(node["depth"])}
+                for node in tree.nodes.values()
+                if node.get("depth") is not None
+            ]
+            edges = []
+            for pid, children in tree.children.items():
+                if pid not in attached_ids:
                     continue
-                et = tree.nodes[cid]["edge_type"]
-                edges.append({"from": int(pid), "to": int(cid), "type": et})
-        depth_map = {int(node["id"]): int(node["depth"]) for node in tree.nodes.values() if node.get("depth") is not None}
-        outdeg = {i: 0 for i in depth_map}
-        for edge in edges:
-            outdeg[edge["from"]] = outdeg.get(edge["from"], 0) + 1
-        leaves = [i for i, degree in outdeg.items() if degree == 0]
-        max_depth = max(depth_map.values()) if depth_map else 0
-        frontier = [i for i in leaves if depth_map.get(i) == max_depth]
-        return {
-            "root": int(tree.root) if tree.root is not None else None,
-            "frontier": frontier,
-            "running": [int(n) for n in record.running],
-            "nodes": nodes,
-            "edges": edges,
-        }
+                for cid in children:
+                    if cid not in attached_ids:
+                        continue
+                    et = tree.nodes[cid]["edge_type"]
+                    edges.append({"from": int(pid), "to": int(cid), "type": et})
+            depth_map = {
+                int(node["id"]): int(node["depth"])
+                for node in tree.nodes.values()
+                if node.get("depth") is not None
+            }
+            outdeg = {i: 0 for i in depth_map}
+            for edge in edges:
+                outdeg[edge["from"]] = outdeg.get(edge["from"], 0) + 1
+            leaves = [i for i, degree in outdeg.items() if degree == 0]
+            max_depth = max(depth_map.values()) if depth_map else 0
+            frontier = [i for i in leaves if depth_map.get(i) == max_depth]
+            return {
+                "root": int(tree.root) if tree.root is not None else None,
+                "frontier": frontier,
+                "running": [int(n) for n in record.running],
+                "nodes": nodes,
+                "edges": edges,
+            }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @post("/{simulation_id:str}/tree/advance_frontier")
@@ -385,7 +418,9 @@ async def simulation_tree_advance_frontier(
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        _, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         tree = record.tree
         parents = tree.frontier(True) if data.only_max_depth else tree.leaves()
         turns = int(data.turns)
@@ -435,7 +470,9 @@ async def simulation_tree_advance_multi(
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        sim, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         tree = record.tree
         parent = int(data.parent)
         count = int(data.count)
@@ -487,7 +524,9 @@ async def simulation_tree_advance_chain(
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        sim, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        sim, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         tree = record.tree
         parent = int(data.parent)
         steps = max(1, int(data.turns))
@@ -532,7 +571,9 @@ async def simulation_tree_branch(
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        _, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         tree = record.tree
         cid = tree.branch(int(data.parent), [dict(op) for op in data.ops])
         node = tree.nodes[cid]
@@ -561,28 +602,38 @@ async def simulation_tree_delete_subtree(
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        _, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         record.tree.delete_subtree(int(node_id))
         _broadcast(record, {"type": "deleted", "data": {"node": int(node_id)}})
 
 
 @get("/{simulation_id:str}/tree/sim/{node_id:int}/events")
-async def simulation_tree_events(request: Request, simulation_id: str, node_id: int) -> list:
+async def simulation_tree_events(
+    request: Request, simulation_id: str, node_id: int
+) -> list:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        _, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         node = record.tree.nodes.get(int(node_id))
         assert node is not None
         return node.get("logs", [])
 
 
 @get("/{simulation_id:str}/tree/sim/{node_id:int}/state")
-async def simulation_tree_state(request: Request, simulation_id: str, node_id: int) -> dict:
+async def simulation_tree_state(
+    request: Request, simulation_id: str, node_id: int
+) -> dict:
     token = extract_bearer_token(request)
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
-        _, record = await _get_simulation_and_tree(session, current_user.id, simulation_id)
+        _, record = await _get_simulation_and_tree(
+            session, current_user.id, simulation_id
+        )
         node = record.tree.nodes.get(int(node_id))
         assert node is not None
         simulator = node["sim"]
